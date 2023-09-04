@@ -26,13 +26,7 @@ SECRET_KEY = get_random_secret_key()
 # SECURITY WARNING: don't run with debug turned on in production!
 #Desarrollo
 DEBUG = True
-#Producccion
-#DEBUG = False
-# SECURE_HSTS_SECONDS = 31536000  # Establece el tiempo deseado en segundos, por ejemplo, un año (31536000 segundos)
-# SECURE_SSL_REDIRECT = True
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
-SESSION_SECURE_COOKIE = False
+
 ALLOWED_HOSTS = ['*']
 
 
@@ -49,7 +43,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'apirest',
-    'wkhtmltopdf'
+  
 ]
 
 MIDDLEWARE = [
@@ -157,10 +151,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #      'http://192.168.1.110:8000',
 #      'http://192.168.1.40:8000',
 # ]
-CORS_ALLOW_ALL_ORIGINS=True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-WKHTMLTOPDF_CMD = r'C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe'
 
 JAZZMIN_SETTINGS = {
    
