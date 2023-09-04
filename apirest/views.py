@@ -463,7 +463,7 @@ class ProducAddView(generics.GenericAPIView):
                     total,1,datas['opt']['local'],datas['opt']['tipo'],datas['cabeceras']['direccion'],datas['opt']['precio'],params,\
                     str(data[0][0]).strip(),datas['opt']['almacen'],datas['cabeceras']['ruc'],datas['opt']['obs'],18,igv,base_impo,\
                     gui_inclu[0],'','',0,'F1',0,0,0,0,0,0,'','','','','','',round(self.sumaSDesc(datas['detalle']),2),\
-                    round(total1-self.sumaSDesc(datas['detalle']),2),0)
+                    abs(round(total1-self.sumaSDesc(datas['detalle']),2)),0)
            
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
             self.querys(conn,sql,params,'post')
@@ -475,7 +475,7 @@ class ProducAddView(generics.GenericAPIView):
            
             for item in datas['detalle']:
                 conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
-                params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',item['talla'],'S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
+                params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',item['talla'],'S',str(data[0][0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
                           datas['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
                
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
