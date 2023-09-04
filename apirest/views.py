@@ -440,7 +440,7 @@ class ProducAddView(generics.GenericAPIView):
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
             sql = " SELECT TOP 1 MOV_COMPRO FROM cabepedido WHERE ven_codigo=? ORDER BY MOV_COMPRO DESC"
             params = datas['vendedor']['codigo']
-            data = self.querys(conn,sql,params,'get')[0]
+            data = self.querys(conn,sql,(params,),'get')[0]
         
             cor = str(data[0].split('-')[0])+'-'+str(int(data[0].split('-')[-1])+1).zfill(7)
             
@@ -462,7 +462,7 @@ class ProducAddView(generics.GenericAPIView):
             params = (cor,fecha,datas['cabeceras']['codigo'],'S', datas['vendedor']['codigo'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
                     total,1,datas['opt']['local'],datas['opt']['tipo'],datas['cabeceras']['direccion'],datas['opt']['precio'],params,\
                     str(data[0][0]).strip(),datas['opt']['almacen'],datas['cabeceras']['ruc'],datas['opt']['obs'],18,igv,base_impo,\
-                    gui_inclu[0],'','',0,'F1',0,0,0,0,0,0,'','','','','',total1,round(self.sumaSDesc(datas['detalle']),2),\
+                    gui_inclu[0],'','',0,'F1',0,0,0,0,0,0,'','','','','','',round(self.sumaSDesc(datas['detalle']),2),\
                     round(total1-self.sumaSDesc(datas['detalle']),2),0)
            
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
