@@ -438,12 +438,12 @@ class ProducAddView(generics.GenericAPIView):
         try:
 
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
-            sql = " SELECT TOP 1 MOV_COMPRO FROM cabepedido WHERE ven_codigo=? ORDER BY MOV_COMPRO DESC"
+            sql = " SELECT TOP 1 MOV_COMPRO FROM cabepedido WHERE SUBSTRING(mov_compro,1,3)=? ORDER BY MOV_COMPRO DESC"
             params = datas['vendedor']['codigo']
             data = self.querys(conn,sql,(params,),'get')[0]
-        
-            cor = str(data[0].split('-')[0])+'-'+str(int(data[0].split('-')[-1])+1).zfill(7)
-            
+          
+            cor = str(params)+'-'+str(int(data[0].split('-')[-1])+1).zfill(7)
+            print(cor)
             sql5 = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
             data = self.querys(conn,sql5,(),'get')
