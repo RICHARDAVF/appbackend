@@ -579,7 +579,7 @@ class EditPedidoView(generics.GenericAPIView):
         datos = {}
         conn = QuerysDb.conexion(host,db,user,password)
         sql = """
-                SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre 
+                SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,a.tal_codigo
                 FROM movipedido AS a 
                 INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
                 WHERE a.mov_compro = ?
@@ -589,7 +589,7 @@ class EditPedidoView(generics.GenericAPIView):
      
         articulos =[]
         for index,item in enumerate(data):
-            d={'id':index,'codigo':item[0],'cantidad':item[1],'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip()}
+            d={'id':index,'codigo':item[0],'cantidad':item[1],'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip(),'talla':item[6].strip()}
             articulos.append(d)
       
         sql = """SELECT MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,ven_codigo,FECHAUSU,
@@ -672,7 +672,7 @@ class EstadoPedido(generics.GenericAPIView):
         sql = """
         SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2
         FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)
-        ORDER BY MOV_FECHA DESC
+        ORDER BY MOV_FECHA,MOV_COMPRO DESC
         """
         try:
             conn = QuerysDb.conexion(host,db,user,password)

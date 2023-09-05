@@ -263,7 +263,6 @@ class StockReview(generics.GenericAPIView):
         params = (codigo,almacen,ubicacion)
         if talla!='x':
             params = (codigo,almacen,ubicacion,talla)
-
         sql = f"""
                 SELECT 'mom_cant' = ISNULL(
                     SUM(
@@ -365,8 +364,10 @@ class StockReview(generics.GenericAPIView):
                     GROUP BY b.mov_compro, a.art_codigo, a.tal_codigo, b.ubi_codig2, b.ubi_codigo
                 ) AS zzz;
             """
+      
         if pedido_numero!='x':
-            params = (codigo,almacen,ubicacion,talla,pedido_numero)
+            params = (pedido_numero,codigo,almacen,ubicacion,talla,pedido_numero)
+           
             sql = f"""
                     SELECT 'mom_cant' = ISNULL(SUM(zzz.mom_cant), 0)
                     FROM (
@@ -388,7 +389,7 @@ class StockReview(generics.GenericAPIView):
                                 AND z.elimini = 0
                                 AND zz.elimini = 0
                                 AND zz.ped_cierre = 0
-                                AND zz.mov_compro <> '004-0000022'
+                                AND zz.mov_compro <> ?
                         )
                         FROM movipedido a
                         INNER JOIN cabepedido b ON a.mov_compro = b.MOV_COMPRO
