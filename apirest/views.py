@@ -670,7 +670,7 @@ class EstadoPedido(generics.GenericAPIView):
         user = kwargs['user']
         password = kwargs['password']
         sql = """
-        SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2
+        SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo
         FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)
         ORDER BY MOV_FECHA,MOV_COMPRO DESC
         """
@@ -682,7 +682,7 @@ class EstadoPedido(generics.GenericAPIView):
             conn.commit()
             conn.close()
             estados = [{"id":index,"codigo_pedido":value[0],"fecha":value[1].strftime("%Y-%m-%d"),"cliente":value[2].strip(),\
-                        "subtotal":value[3],"igv":value[4],"total":value[5],"status1":value[6],"status2":value[7]}for index,value in enumerate(datos)]
+                        "subtotal":value[3],"igv":value[4],"total":value[5],"status1":value[6],"status2":value[7],"codigo":value[8].strip()}for index,value in enumerate(datos)]
             return Response({"states":estados})
         except Exception as e:
             return Response({'message':str(e)})
