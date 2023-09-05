@@ -643,7 +643,7 @@ class PedidosView(generics.GenericAPIView):
             WHEN (a.ped_status IN (1, 0) OR a.ped_statu2 IN (1, 0)) THEN 'PENDIENTE' 
             WHEN (a.ped_status = 2 AND a.ped_statu2 = 2) THEN 'APROBADO' 
         END,
-        b.aux_razon, ROU_BRUTO, ROU_IGV, rou_submon
+        b.aux_razon, ROU_BRUTO, ROU_IGV, rou_submon,a.ven_codigo
         FROM cabepedido AS a 
         INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.aux_clave
 
@@ -652,7 +652,7 @@ class PedidosView(generics.GenericAPIView):
         estados = []
         for index,value in enumerate(datos):
             estados.append({'id':index,"codigo_pedido":value[0],"fecha":value[1].strftime('%Y-%m-%d'),'status':value[2],"cliente":value[3].strip(),\
-                            "subtotal":value[4],"igv":value[5],"total":value[6]})
+                            "subtotal":value[4],"igv":value[5],"total":value[6],'codigo':value[7].strip()})
             
         
         return Response({'states':estados})
