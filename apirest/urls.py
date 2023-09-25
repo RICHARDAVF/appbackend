@@ -9,10 +9,17 @@ from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
+from apirest.view.clientes.views import ViewPrueba
 from .views import UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,EditPedidoView
 from apirest.view.reporte.views import PDFView,PDFview1
+from apirest.view.savejson.views import SaveJSON
+from apirest.view.fact.views import Facturacion
+from rest_framework_simplejwt import views
 router = routers.DefaultRouter()
 urlpatterns = [
+    #TOKEN,
+    path('token/create/',views.TokenObtainPairView.as_view(),name='create_token'),
+    path('token/refresh/',views.TokenRefreshView.as_view(),name='refresh_token'),
     #LOGIN
     path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view()),
     #PRODUCTOS
@@ -53,6 +60,11 @@ urlpatterns = [
   
     path('reporte1/',PDFView.as_view()),
     path('reporte2/',PDFview1.as_view()),
+
+    #CONSUMO EXTRA
+    path('res/',SaveJSON.as_view()),
+    path('prueba/',ViewPrueba.as_view()),
+    path("fact/",Facturacion.as_view())
 
 
 

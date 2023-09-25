@@ -1,4 +1,5 @@
 from django.db import models
+
 class UsuarioCredencial(models.Model):
     ruc = models.CharField(max_length=50,verbose_name="RUC",null=True,blank=True)
     razon_social = models.CharField(max_length=254,verbose_name='Razon Social',null=True,blank=True)

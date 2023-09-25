@@ -10,7 +10,7 @@ from numpy import array,char
 import requests
 class QuerysDb:
     @classmethod
-    def conexion(self,dbhost,dbname,dbuser,dbpassword):
+    def conexion(self,dbhost:str,dbname:str,dbuser,dbpassword):
         try:
             conn = pyodbc.connect('DRIVER={SQL Server};SERVER=' +
                                dbhost+';DATABASE='+dbname+';UID='+dbuser+';PWD=' + dbpassword)
@@ -26,13 +26,7 @@ class QuerysDb:
             return None
 def index(request):
     return render(request,'index.html')
-class Almacen:
-    def __init__(self,conn,sql,params):
-        self.conn = conn
-        self.sql = sql
-        self.params = params
-    def almacenes(self):
-        pass         
+      
 class UserView(generics.GenericAPIView):
     serializer_class = UsuarioSerializer
     def get(self, request, *args, **kwargs):
@@ -671,7 +665,7 @@ class EstadoPedido(generics.GenericAPIView):
         password = kwargs['password']
         sql = """
         SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo
-        FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)
+        FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE (a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)) AND a.ped_cierre=0 AND a.elimini=0
         ORDER BY MOV_FECHA,MOV_COMPRO DESC
         """
         try:

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key 
 import os
+from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt',
     'apirest',
   
 ]
@@ -89,14 +91,14 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 # }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'app',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': 'mssql',
+        'NAME': 'api_noi_systems',
+        'USER': 'sa',
+        'PASSWORD': 'Noi2011',
+        'HOST': '192.168.1.81',
+        'PORT': '1433',
         'OPTIONS': {
-            'sql_mode': 'STRICT_TRANS_TABLES',
+            'driver': 'ODBC Driver 17 for SQL Server',
         }
     }
 }
@@ -151,6 +153,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #      'http://192.168.1.110:8000',
 #      'http://192.168.1.40:8000',
 # ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),  # Tiempo de vida del token de acceso (30 días)
+    # Otros ajustes...
+}
+
+
+
 
 JAZZMIN_SETTINGS = {
    
