@@ -11,7 +11,8 @@ class LiquiRegaView(generics.GenericAPIView):
                 'mov_fecha'=ISNULL(b.mom_fecha,''),
                 a.mov_codaux,
                 'aux_razon'=ISNULL(c.aux_razon,''),
-                'rou_tventa'=SUM(ISNULL(b.mom_valor,0))
+                'rou_tventa'=SUM(ISNULL(b.mom_valor,0)),
+                a.MOV_MONEDA
 
             FROM guic{datetime.now().year} a 
             LEFT JOIN movipedido b 
@@ -28,7 +29,8 @@ class LiquiRegaView(generics.GenericAPIView):
                 b.mov_compro,
                 a.mov_codaux,
                 c.aux_razon,
-                b.mom_fecha
+                b.mom_fecha,
+                a.MOV_MONEDA
 
             HAVING SUM(ISNULL(b.mom_conreg,0))=0
 
@@ -48,7 +50,8 @@ class LiquiRegaView(generics.GenericAPIView):
             conn.close()
             data=[]
             for index,item in enumerate(dato):
-                d = {'id':index,'pedido':item[0],"fecha":item[1].strftime("%Y-%m-%d"),'codigo':item[2].strip(),'nombre':item[3].strip(),'monto':item[4]}
+                d = {'id':index,'pedido':item[0],"fecha":item[1].strftime("%Y-%m-%d"),
+                     'codigo':item[2].strip(),'nombre':item[3].strip(),'monto':item[4],"moneda":item[5].strip()}
                 data.append(d)
         except Exception as e:
             data['error'] = str(e)

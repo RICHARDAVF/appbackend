@@ -29,7 +29,7 @@ urlpatterns = [
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
     #PEDIDOS
-    path('pedidos/<str:host>/<str:db>/<str:user>/<str:password>/',PedidosView.as_view()),
+    path('pedidos/<str:host>/<str:db>/<str:user>/<str:password>/<int:all>/',PedidosView.as_view()),
     path('pedidos/edit/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',EditPedidoView.as_view()),
     path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/',EstadoPedido.as_view()),
     #CUENTAS

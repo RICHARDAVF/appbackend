@@ -74,7 +74,7 @@ class UserView(generics.GenericAPIView):
                     datos['message']='Usuario o Contraseña incorrecta'
                     return Response(datos,status=status.HTTP_200_OK)
                
-                d = {"cod":data[0][0],'codigo':data[0][1],"usuario":data[0][4].strip(),'ubicacion':data[0][5],'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],'aprobacion1':data[0][13],\
+                d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],"usuario":data[0][4].strip(),'ubicacion':data[0][5],'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],'aprobacion1':data[0][13],\
                      'aprobacion2':data[0][14],'almacen':data[0][-1]}
                       
                 datos['user'] = d
@@ -628,8 +628,9 @@ class PedidosView(generics.GenericAPIView):
         db = kwargs['db']
         user = kwargs['user']
         passwrod = kwargs['password']
+        all_items = kwargs['all']
         conn = QuerysDb.conexion(host,db,user,passwrod)
-        sql ="""
+        sql =f"""
         SELECT a.MOV_COMPRO, a.MOV_FECHA,
         ped_status = CASE 
             WHEN a.elimini = 1 THEN 'ANULADO' 
@@ -637,16 +638,18 @@ class PedidosView(generics.GenericAPIView):
             WHEN (a.ped_status IN (1, 0) OR a.ped_statu2 IN (1, 0)) THEN 'PENDIENTE' 
             WHEN (a.ped_status = 2 AND a.ped_statu2 = 2) THEN 'APROBADO' 
         END,
-        b.aux_razon, ROU_BRUTO, ROU_IGV, rou_submon,a.ven_codigo
+        b.aux_razon, ROU_BRUTO, ROU_IGV, rou_submon,a.ven_codigo,a.MOV_MONEDA
         FROM cabepedido AS a 
-        INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.aux_clave
+        INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.aux_clave 
+       {"WHERE a.ped_cierre=0 AND a.elimini=0" if all_items==0 else ''}
+		ORDER BY MOV_FECHA DESC, MOV_COMPRO DESC
 
         """
         datos = self.querys(conn,sql,())
         estados = []
         for index,value in enumerate(datos):
             estados.append({'id':index,"codigo_pedido":value[0],"fecha":value[1].strftime('%Y-%m-%d'),'status':value[2],"cliente":value[3].strip(),\
-                            "subtotal":value[4],"igv":value[5],"total":value[6],'codigo':value[7].strip()})
+                            "subtotal":value[4],"igv":value[5],"total":value[6],'codigo':value[7].strip(),'moneda':value[8].strip()})
             
         
         return Response({'states':estados})
@@ -664,9 +667,10 @@ class EstadoPedido(generics.GenericAPIView):
         user = kwargs['user']
         password = kwargs['password']
         sql = """
-        SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo
+         SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo,a.MOV_MONEDA,a.gui_exp001
         FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE (a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)) AND a.ped_cierre=0 AND a.elimini=0
-        ORDER BY MOV_FECHA,MOV_COMPRO DESC
+        ORDER BY MOV_FECHA DESC,MOV_COMPRO DESC
+
         """
         try:
             conn = QuerysDb.conexion(host,db,user,password)
@@ -676,7 +680,8 @@ class EstadoPedido(generics.GenericAPIView):
             conn.commit()
             conn.close()
             estados = [{"id":index,"codigo_pedido":value[0],"fecha":value[1].strftime("%Y-%m-%d"),"cliente":value[2].strip(),\
-                        "subtotal":value[3],"igv":value[4],"total":value[5],"status1":value[6],"status2":value[7],"codigo":value[8].strip()}for index,value in enumerate(datos)]
+                        "subtotal":value[3],"igv":value[4],"total":value[5],"status1":value[6],"status2":value[7],\
+                            "codigo":value[8].strip(),'moneda':value[9].strip(),'obs':value[10].strip()}for index,value in enumerate(datos)]
             return Response({"states":estados})
         except Exception as e:
             return Response({'message':str(e)})
