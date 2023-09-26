@@ -1,4 +1,4 @@
-venvapi/
+venv/
 __pycache__/
 insert1.txt
 insert2.txt

@@ -11,7 +11,7 @@ class ListOCview(generics.GenericAPIView):
         sql = f"""
         SELECT  
             a.ped_numero,a.ped_fecha,a.ped_igv,a.ped_subtot,a.ped_submon,b.aux_razon,
-            a.ped_diasen,a.ped_aprob1,a.ped_aprob2,a.ped_aprob3,a.pag_nombre,a.ped_estado 
+            a.ped_diasen,a.ped_aprob1,a.ped_aprob2,a.ped_aprob3,a.pag_nombre,a.ped_estado,a.ped_moneda,a.ped_observ,a.pag_nombre
         FROM 
             orp101{str(datetime.now().year)[2:]} AS a 
         INNER JOIN 
@@ -37,7 +37,7 @@ class ListOCview(generics.GenericAPIView):
            
             d = {'id':index,'pedido_numero':value[0],'fecha':value[1].strftime('%Y-%m-%d'),'igv':value[2],'subtotal':value[3],'total':value[4],\
                  'proveedor':value[5].strip(),'dias_entrega':value[6],'apro1':value[7],'apro2':value[8],'apro3':value[9],\
-                'tipo_pago':value[10],'estado':estado}
+                'tipo_pago':value[10],'estado':estado,'moneda':value[12],'obs':value[13].strip(),"con_pago":value[14].strip()}
             data.append(d)
         return Response({'message':data})
     def post(self,request,*args,**kwargs):
@@ -75,7 +75,7 @@ class DetalleViewOR(generics.GenericAPIView):
         conn = QuerysDb.conexion(host,db,user,password)
         sql =f"""
             SELECT 
-                art_nombre,ped_des1,ped_costou,ped_cant,ped_subt 
+                art_nombre,ped_des1,ped_costou,ped_cant,ped_subt,art_umed
             FROM orp201{str(datetime.now().year)[2:]}
             WHERE 
                 ped_numero=?
@@ -87,6 +87,6 @@ class DetalleViewOR(generics.GenericAPIView):
         conn.close()
         datos = []
         for index,value in enumerate(data):
-            d = {'id':index,'nombre':value[0].strip(),'descuento':value[1],'precio':value[2],'cantidad':value[3],'subtotal':value[4]}
+            d = {'id':index,'nombre':value[0].strip(),'descuento':value[1],'precio':value[2],'cantidad':value[3],'subtotal':value[4],'medida':value[5]}
             datos.append(d)
         return Response({'message':datos})
