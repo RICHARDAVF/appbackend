@@ -89,20 +89,29 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'mssql',
+#         'NAME': 'api_noi_systems',
+#         'USER': 'sa',
+#         'PASSWORD': 'Noi2011',
+#         'HOST': '192.168.1.81',
+#         'PORT': '1433',
+#         'OPTIONS': {
+#             'driver': 'ODBC Driver 17 for SQL Server',
+#         }
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
-        'NAME': 'api_noi_systems',
-        'USER': 'sa',
-        'PASSWORD': 'Noi2011',
-        'HOST': '192.168.1.81',
-        'PORT': '1433',
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        }
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'app',
+        'USER': 'root',
+        'PASSWORD': '',
+        'HOST': 'localhost',  
+        'PORT': '',           
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
