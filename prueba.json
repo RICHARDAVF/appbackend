@@ -1,0 +1,77 @@
+{
+    "serie": "T001",
+    "numero": 877,
+    "fechaEmision": "2023-10-04 12:25:05",
+    "tipoDocumentoGuia": "09",
+    "motivoTraslado": "01",
+    "pesoBrutoTotal": "16.700000",
+    "unidadPesoBruto": "KGM",
+    "modalidadTraslado": "01",
+    "fechaInicioTraslado": "2023-10-04 12:25:05",
+    "ubigeoLlegada": "150142",
+    "direccionLlegada": "Av Vicus B-68",
+    "ubigeoPartida": "150140",
+    "direccionPartida": "CALLE JUAN DEL CARPIO 211",
+    "receptor": {
+        "tipo": 6,
+        "nro": "20515391500",
+        "razonSocial": "Noi Systems S.R.L"
+    },
+    "adicional": {
+        "numeroRucTransportista": "20563361841",
+        "tipoDocumentoTransportista": "6",
+        "denominacionTransportista": "METROPOLIS SOLUCIONES LOGISTICAS S.A.C.",
+        "ordenCompra": "250373",
+        "vendedor": "Administrador",
+        "descripcionMotivoTraslado": "Ventas",
+        "cotizacion": "001-92163515",
+        "operacion": "VENTAS",
+        "dirAlternativa": "Lima-Lima-Peru"
+    },
+    "items": [
+        {
+            "cantidad": "10",
+            "unidadMedida": "NIU",
+            "descripcion": "SUPRA PROTEIN VAINILLA POMO 1200 GR",
+            "codigoItem": "SUPVA002",
+            "adicional": {
+                "peso": "13.600000",
+                "lote": "0730792994149",
+                "fechaVencimiento": "2023-12-12"
+            }
+        },
+        {
+            "cantidad": "10",
+            "unidadMedida": "NIU",
+            "descripcion": "B-SHOT MARACUYA POMO 150 GR",
+            "codigoItem": "BRSMY003",
+            "adicional": {
+                "peso": "2.000000",
+                "lote": "0730792994262",
+                "fechaVencimiento": "2023-09-28"
+            }
+        },
+        {
+            "cantidad": "10",
+            "unidadMedida": "NIU",
+            "descripcion": "B-SHOT  MARACUYA CAJA 15 SACHETS",
+            "codigoItem": "BRSMY004",
+            "adicional": {
+                "peso": "1.100000",
+                "lote": "0730792993494",
+                "fechaVencimiento": "2023-09-28"
+            }
+        },
+        {
+            "cantidad": "10",
+            "unidadMedida": "NIU",
+            "descripcion": "PURIFY SHOT NARANJA SOBRE 5 GR",
+            "codigoItem": "PUSNJ009",
+            "adicional": {
+                "peso": "0.000000",
+                "lote": "0730792994484",
+                "fechaVencimiento": "2023-09-28"
+            }
+        }
+    ]
+}

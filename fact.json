@@ -1,106 +1,54 @@
 {
     "serie": "T001",
-    "numero": "250",
-    "fechaEmision": "2023-09-08 15:18:33",
+    "numero": "119",
+    "fechaEmision": "2023-08-29 09:13:13",
     "tipoDocumentoGuia": "09",
     "motivoTraslado": "01",
     "pesoBrutoTotal": "1",
     "unidadPesoBruto": "KGM",
-    "modalidadTraslado": "02",
-    "fechaInicioTraslado": "2023-09-08 15:18:33",
-    "ubigeoLlegada": "150137",
-    "direccionLlegada": "AV. BOLOGNESI NRO. 495 URB. LOS FICUS  SANTA ANITA LIMA",
-    "ubigeoPartida": "150108",
-    "direccionPartida": "CAL.VOLCAN MISTI MZA. H13 LOTE. 1C LIMA - LIMA - CHORRILLOS",
+    "modalidadTraslado": "01",
+    "fechaInicioTraslado": "2023-08-29 09:13:13",
+    "ubigeoLlegada": "070101",
+    "direccionLlegada": "CALLE CARBONO 220, ZI URB. GRIMANEZA, PROV. CONST. DEL CALLAO",
+    "ubigeoPartida": "150103",
+    "direccionPartida": "CAL.SANTA SOFIA NRO. 163 URB. LOS SAUCES LIMA - LIMA - ATE",
     "receptor": {
         "tipo": "6",
-        "nro": "20100227895",
-        "razonSocial": "TRANSPORTES ANGEL IBARCENA S.A.C."
+        "nro": "20102185863",
+        "razonSocial": "APC CORPORACION S.A."
     },
     "adicional": {
+        "numeroRucTransportista": "20604862524",
+        "tipoDocumentoTransportista": "6",
+        "denominacionTransportista": "FAST COLD E.I.R.L.",
         "vehiculoPrincipal": {
-            "numeroPlacaVehiculo": "BHQ443",
+            "numeroPlacaVehiculo": "BNJ750",
             "numeroCirculacionVehiculo": "0123456789"
         },
         "vehiculosSecundario": [],
-        "conductores": [
-            {
-                "tipoConductor": "Principal",
-                "tipoDocumentoConductor": "1",
-                "numeroDocumentoConductor": "45946737",
-                "nombresConductor": "EDWIN",
-                "apellidosConductor": "DARIO CORDOVA ZAMORA",
-                "numeroLicenciaConductor": "Q45946737"
-            }
-        ],
-        "nombresApellidosConductor": "EDWIN DARIO CORDOVA ZAMORA",
-        "numeroDocumentoConductor": "45946737",
+        "nombresApellidosConductor": "",
+        "numeroDocumentoConductor": "",
         "tipoDocumentoConductor": "1",
-        "licenciaConductor": "Q45946737",
-        "numeroPlacaVehiculo": "BHQ443",
-        "vehiculoMarca": "KIA CERATO",
+        "licenciaConductor": "",
+        "numeroPlacaVehiculo": "BNJ750",
+        "vehiculoMarca": "",
         "certificadoInscripcion": "0123456789",
-        "observaciones": "COT. 193",
-        "ordenCompra": "",
-        "vendedor": "ERICK YAJURE",
-        "ubicacion": "LOCAL PRINCIPAL",
+        "observaciones": "OC 379978",
+        "ordenCompra": "379978",
+        "vendedor": "OFICINA",
+        "ubicacion": "01 LOCAL PRINCIPAL",
         "descripcionMotivoTraslado": "VENTA",
-        "cotizacion": "001-0000193",
-        "operacion": "AESA RAURA",
-        "dirAlternativa": "AV. BOLOGNESI NRO. 495 URB. LOS FICUS"
+        "docRelacionado": "F003-326",
+        "dirAlternativa": "AV. JOSE LARCO NRO. 1301 INT. 1503 COMPLEJO MARRIOT"
     },
     "items": [
         {
-            "cantidad": "1.000",
-            "descripcion": "SENSOR DE PROXIMIDAD CON 4 SENSORES",
-            "codigoItem": "AAAE10084",
-            "unidadMedida": "NIU",
-            "adicional": {
-                "peso": "0.000"
-            }
-        },
-        {
-            "cantidad": "1.000",
-            "descripcion": "TERMINAL DE OJO # 9",
-            "codigoItem": "COCM10193",
-            "unidadMedida": "NIU",
-            "adicional": {
-                "peso": "0.000"
-            }
-        },
-        {
             "cantidad": "10.000",
-            "descripcion": "MANGUERA CORRUGADA 1/4",
-            "codigoItem": "COCE10296",
-            "unidadMedida": "MTR",
+            "descripcion": "FRESA ENTERA CAJA 2X5 KG",
+            "codigoItem": "2102300305",
+            "unidadMedida": "KGM",
             "adicional": {
-                "peso": "0.000"
-            }
-        },
-        {
-            "cantidad": "10.000",
-            "descripcion": "MANGUERA CORRUGADA 5/16",
-            "codigoItem": "COCE10483",
-            "unidadMedida": "MTR",
-            "adicional": {
-                "peso": "0.000"
-            }
-        },
-        {
-            "cantidad": "20.000",
-            "descripcion": "CINTILLOS DELGADOS",
-            "codigoItem": "EQIM10306",
-            "unidadMedida": "NIU",
-            "adicional": {
-                "peso": "0.000"
-            }
-        },
-        {
-            "cantidad": "4.000",
-            "descripcion": "CABLE MELLIZO ROJO Y NEGRO #16",
-            "codigoItem": "AAAE10294",
-            "unidadMedida": "MTR",
-            "adicional": {
+                "cajas": "1",
                 "peso": "0.000"
             }
         }

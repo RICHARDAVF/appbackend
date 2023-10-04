@@ -1,25 +1,24 @@
 from rest_framework import routers
 from django.urls import path,include
 
+from .views import UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,EditPedidoView
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR
 from apirest.view.stock.views import StockView,StockReview
 from apirest.view.inventario.views import InventarioView,ValidateView
 from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
-from apirest.view.traslado.views import TrasladoView
+from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
 from apirest.view.clientes.views import ViewPrueba
-from .views import UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,EditPedidoView
 from apirest.view.reporte.views import PDFView,PDFview1
 from apirest.view.savejson.views import SaveJSON
-from apirest.view.fact.views import Facturacion
-from rest_framework_simplejwt import views
+from apirest.view.fact.views import Facturacion,PDFFACTView
+
 router = routers.DefaultRouter()
 urlpatterns = [
-    #TOKEN,
-    path('token/create/',views.TokenObtainPairView.as_view(),name='create_token'),
-    path('token/refresh/',views.TokenRefreshView.as_view(),name='refresh_token'),
+    #DOMENTACION
+   
     #LOGIN
     path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view()),
     #PRODUCTOS
@@ -56,6 +55,8 @@ urlpatterns = [
     path('li-re/<str:host>/<str:db>/<str:user>/<str:password>/',LiquiRegaView.as_view()),
     #TRASLADO VIEW
     path('traslado/<str:host>/<str:db>/<str:user>/<str:password>/',TrasladoView.as_view()),
+    path('traslado/products/<str:host>/<str:db>/<str:user>/<str:password>/<str:ubi>/<str:local>/',ProducTrasladoView.as_view()),
+    path('traslado/stock/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',StockViewProduct.as_view()),
     #REPORTE
   
     path('reporte1/',PDFView.as_view()),
@@ -64,7 +65,8 @@ urlpatterns = [
     #CONSUMO EXTRA
     path('res/',SaveJSON.as_view()),
     path('prueba/',ViewPrueba.as_view()),
-    path("fact/",Facturacion.as_view())
+    path("fact/",Facturacion.as_view()),
+    path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
 
 
 
