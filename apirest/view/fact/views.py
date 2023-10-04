@@ -358,8 +358,8 @@ class Facturacion(generics.GenericAPIView):
             }
         sql = "SELECT TOP 1 par_url,par_acekey,par_seckey FROM fe_parametro"
         #PARA  GUARDAR EL ARCHIVO JSON  
-        with open("prueba.json","w") as file:
-            json.dump(data,file,indent=4)
+       # with open("prueba.json","w") as file:
+        #    json.dump(data,file,indent=4)
         url,access_key,secret_key = self.query(sql,())
         token,timestap = RequestAPI(access_key.strip(),secret_key.strip()).encryptdates()
         
