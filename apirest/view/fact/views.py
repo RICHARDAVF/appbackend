@@ -7,23 +7,27 @@ import json
 from datetime import date,datetime
 from apirest.views import QuerysDb
 from apirest.view.fact.factappi import RequestAPI
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+import base64
 load_dotenv()
 class Facturacion(generics.GenericAPIView):
-    def query(self,sql,params,opt='get'):
-        conn = QuerysDb.conexion('192.168.1.80','siiasmartfc','sa','Noi2011')
-        cursor = conn.cursor()
-        cursor.execute(sql,params)
-        data = ''
-        if opt =='get':
-            data = cursor.fetchone()
-        conn.commit()
-        conn.close()
-        return data
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def validfecha(self,fecha):
+        try:
+            datetime.strptime(fecha, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
     def post(self,request,*args,**kwargs):
         data = {}
         try:
             datos = request.data
-            tipodoc = "ruc" if datos['tipodoc']==4 else "dni"
+            for item in datos['items']:
+                if not self.validfecha(item['fecha_vencimiento']):
+                    return Response({'error':"Formato de la fecha es incorrecto"})
+            tipodoc = "ruc" if datos['tipodoc']==6 else "dni"
            
             url = f"https://my.apidevs.pro/api/dni/{datos['doc']}" if datos['tipodoc']==1 else f"https://apiperu.dev/api/{tipodoc}/{datos['doc']}"
        
@@ -31,7 +35,16 @@ class Facturacion(generics.GenericAPIView):
                 "Authorization":f"Bearer {os.getenv(f'TOKEN_{tipodoc.upper()}')}"
             })
             res=json.loads(response.text)
-           
+            sql = f"SELECT gui_serie,gui_docum FROM GUIC{datetime.now().year} WHERE gui_ordenc=?"
+            band = False
+            gui_serie = self.query(sql,(datos['num_pedido']))
+            sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
+            num_doc,serie = self.query(sql,('GR','T001'))
+            if gui_serie is  None:
+                gui_serie = num_doc
+                band = True
+            else:
+                gui_serie = gui_serie[1]
             if not res['success']:
                 data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
                 return Response(data)
@@ -40,7 +53,7 @@ class Facturacion(generics.GenericAPIView):
                 return Response(data)
             sql= "SELECT *FROM t_auxiliar WHERE AUX_DOCUM=? AND SUBSTRING(MAA_CODIGO,1,1)='C'"
             dates = self.query(sql,(datos['doc'],))
-            
+           
             codigo_cliente = ''
             if dates is None and res['success']:
                 sql = f"""SELECT MAA_CODIGO, AUX_CODIGO
@@ -104,13 +117,13 @@ class Facturacion(generics.GenericAPIView):
                         DEP_CODIGO,PRO_CODIGO,DIS_CODIGO,AUX_TIPOPE,AUX_DOCUM,AUX_EDI,aux_cuenta,aux_cuentd,aux_condic,aux_estado,aux_tipdoc,aux_fecoru) 
                         VALUES({','.join('?' for i in range(len(params)))})
                 """
-                # self.query(sql,params,'post')
+                self.query(sql,params,'post')
             else:
                 codigo_cliente=dates[2]
-            sql = f"SELECT MOV_COMPRO FROM GUIC{date.today().strftime('%Y')} WHERE MOV_COMPRO=(SELECT MAX(MOV_COMPRO) FROM GUIC{date.today().strftime('%Y')})"
-            result, = self.query(sql,())
-            if result is None:
-                result=0
+            self.query(f"INSERT INTO corret{datetime.now().year}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
+            sql = f"SELECT numero FROM corret{datetime.now().year} WHERE numero=(SELECT MAX(numero) FROM corret{datetime.now().year} WHERE usuario=000)"
+            result= self.query(sql,())
+            
             fecha = date.today().strftime('%Y-%m-%d')
             response = requests.get(f'https://api.apis.net.pe/v1/tipo-cambio-sunat?fecha={fecha}')
             tipo_c = ''
@@ -119,146 +132,185 @@ class Facturacion(generics.GenericAPIView):
                 tipo_c = tc['compra']
             else:
                 return Response({'error':'Errores en la conexion'})
-            sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
-
-            num_doc,serie = self.query(sql,('GR','T001'))
             
-            params = (str(int(result)+1).zfill(11),date.today().strftime('%Y-%m-%d'),codigo_cliente,
-                        "01",
-                        tipo_c,
-                        '001',
-                        date.today().strftime('%Y-%m-%d'),
-                        date.today().strftime('%Y-%m-%d'),
-                        1,
-                        3,
-                        1,
+
+            if  band:
+                for item in datos['items']:
+                   
+                    if self.valid(item['codigo']) is None:
+                        return Response({"Error":f"El codigo {item['codigo']} no existe en la de datos"})
+               
+                params = (str(result[0]).zfill(11),date.today().strftime('%Y-%m-%d'),codigo_cliente,
+                            "01",
+                            tipo_c,
+                            '001',
+                            date.today().strftime('%Y-%m-%d'),
+                            date.today().strftime('%Y-%m-%d'),
+                            1,
+                            3,
+                            1,
+                            '24',
+                            datos['direccion_llegada'],
+                            datos['total'],
+                            '01',
+                            '001',
+                            datos['doc'],
+                            '05',
+                            '01',
+                            1,
+                            datos['moneda'],
+                            datos['base_imponible'],
+                            18,
+                            datos['igv'],
+                            datos['total'],
+                            serie,
+                            num_doc,
+                            '03',
+                            datos['num_pedido'],
+                            "0001",
+                            "GR",
+                            datos['dir_alternativa']
+                        )
+                sql = f"""
+                        INSERT INTO GUIC{date.today().strftime('%Y')}(
+                            MOV_COMPRO,
+                            MOV_FECHA,
+                            MOV_CODAUX,
+                            DOC_CODIGO,
+                            MOV_T_C,
+                            USUARIO,
+                            FECHAUSU,
+                            mov_fvenc,
+                            rou_export,
+                            gui_tipotr,
+                            gui_motivo,
+                            ubi_codigo,
+                            gui_direc,rou_submon,alm_codigo,
+                        ven_codigo,gui_ruc,ope_codigo,pag_codigo,
+                        gui_inclu,MOV_MONEDA,ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,gui_serie,gui_docum,doc_compro,gui_ordenc,tra_codigo,gui_coddoc,gui_exp001) 
+                        VALUES({','.join('?' for i in params)})
+                        """
+                self.query(sql,params,'post')
+                items = datos['items']
+                cont=1
+                for item in items:
+                    cod,name,peso=self.valid(item['codigo'])
+                   
+                    params = (
                         '24',
-                        datos['direccion_llegada'],
-                        datos['total'],
+                        date.today().strftime('%m'),
+                        str(result[0]).zfill(11),
                         '01',
-                        '001',
-                        datos['doc'],
+                        date.today().strftime('%Y-%m-%d'),
+                        cod.strip(),
+                        'S',
                         '05',
-                        '01',
-                        1,
+                        '24',
+                        '24',
+                        item['cantidad'],
+                        round(item['cantidad']*item['precio'],2),
                         datos['moneda'],
-                        datos['base_imponible'],
-                        18,
-                        datos['igv'],
-                        datos['total'],
-                        serie,
-                        num_doc,
+                        tipo_c,
+                        item['precio'],
+                        '001',
+                        date.today().strftime('%Y-%m-%d'),
                         '03',
-                        datos['num_pedido'],
-                        "0001"
-                      )
-            sql = f"""
-                    INSERT INTO GUIC{date.today().strftime('%Y')}(
-                        MOV_COMPRO,
-                        MOV_FECHA,
-                        MOV_CODAUX,
-                        DOC_CODIGO,
-                        MOV_T_C,
-                        USUARIO,
-                        FECHAUSU,
-                        mov_fvenc,
-                        rou_export,
-                        gui_tipotr,
-                        gui_motivo,
-                        ubi_codigo,
-                        gui_direc,rou_submon,alm_codigo,
-                    ven_codigo,gui_ruc,ope_codigo,pag_codigo,gui_inclu,MOV_MONEDA,ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,fac_serie,fac_docum,doc_compro,gui_ordenc,tra_codigo) 
-                    VALUES({','.join('?' for i in params)})
+                        'S',
+                        1,
+                        cont,
+                        '/'.join(str(i) for i in reversed(item['fecha_vencimiento'].split('-'))),
+                        item['lote'],
+                        int(item['cantidad'])*peso
+                    )
+                    
+                    sql1 = f"""
+                        INSERT INTO GUID{date.today().strftime('%Y')}(ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,MOM_FECHA,
+                        ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,UBI_COD,UBI_COD1,MOM_CANT,mom_valor,MOM_MONEDA,MOM_T_C,MOM_PUNIT,
+                        USUARIO,FECHAUSU,doc_compro,art_afecto,gui_inclu,mom_linea,mom_lote,art_codadi,mom_bruto) 
+                        VALUES({','.join('?' for i in params)})
                     """
-            self.query(sql,params,'post')
-            items = datos['items']
-            cont=1
-            for item in items:
-                params = (
-                    '24',
-                    date.today().strftime('%m'),
-                    str(int(result)+1).zfill(11),
-                    '01',
-                    date.today().strftime('%Y-%m-%d'),
-                    item['codigo'],
-                    'S',
-                    '05',
-                    '24',
-                    '24',
-                    item['cantidad'],
-                    round(item['cantidad']*item['precio'],2),
-                    datos['moneda'],
-                    tipo_c,
-                    item['precio'],
-                    '001',
-                    date.today().strftime('%Y-%m-%d'),
-                    '03',
-                    'S',
-                    1,
-                    cont
-                )
-                sql1 = f"""
-                    INSERT INTO GUID{date.today().strftime('%Y')}(ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,MOM_FECHA,
-                    ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,UBI_COD,UBI_COD1,MOM_CANT,mom_valor,MOM_MONEDA,MOM_T_C,MOM_PUNIT,
-                    USUARIO,FECHAUSU,doc_compro,art_afecto,gui_inclu,mom_linea) 
-                    VALUES({','.join('?' for i in params)})
-                """
-                # self.query(sql1,params,'post')
-                params = (
-                    '01',
-                    date.today().strftime('%m'),
-                    '01',
-                    date.today().strftime('%Y-%m-%d'),
-                    item['codigo'],
-                    'S',
-                    '05',
-                    '24',
-                    '24',
-                    item['cantidad'],
-                    round(item['cantidad']*item['precio'],2),
-                    datos['moneda'],
-                    tipo_c,
-                    item['precio'],
-                    '001',
-                    date.today().strftime('%Y-%m-%d'),
-                    'S',
-                    str(int(result)+1).zfill(11),
-                    codigo_cliente,
-                    "GR",
-                    f"{serie}-{num_doc}"
-                )
-                sql2 = f"""
-                    INSERT INTO MOVM{date.today().strftime('%Y')}(ALM_CODIGO,MOM_MES,doc_cod1,MOM_FECHA,
-                    ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,UBI_COD,UBI_COD1,MOM_CANT,mom_valor,MOM_MONEDA,MOM_T_C,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,MOM_D_INT,mom_codaux,mom_retip1,mom_redoc1) 
-                    VALUES({','.join('?' for i in params)})
-                """
-                # self.query(sql2,params,'post')
-                cont+=1
-            sql = "UPDATE t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND doc_serie=?"
-            self.query(sql,(int(num_doc)+1,'GR','T001'),'post')
-            self.beforepost(datos,num_doc)
-            data['message'] = "Los datos se procesaron exitosamente"
+                    self.query(sql1,params,'post')
+                    params = (
+                        '24',
+                        date.today().strftime('%m'),
+                        '01',
+                        date.today().strftime('%Y-%m-%d'),
+                        cod.strip(),
+                        'S',
+                        '05',
+                        '24',
+                        '24',
+                        item['cantidad'],
+                        round(item['cantidad']*item['precio'],2),
+                        datos['moneda'],
+                        tipo_c,
+                        item['precio'],
+                        '001',
+                        date.today().strftime('%Y-%m-%d'),
+                        'S',
+                        str(result[0]).zfill(11),
+                        codigo_cliente,
+                        "GR",
+                        f"{serie}-{num_doc}",
+                        datetime.strptime(item['fecha_vencimiento'],'%Y-%m-%d'),
+                        item['lote'],
+                        int(item['cantidad'])*peso,
+                        cont,
+                        1
+                    )
+                   
+                    sql2 = f"""
+                        INSERT INTO MOVM{date.today().strftime('%Y')}(ALM_CODIGO,MOM_MES,doc_cod1,MOM_FECHA,
+                        ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,UBI_COD,UBI_COD1,MOM_CANT,mom_valor,MOM_MONEDA,
+                        MOM_T_C,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,MOM_D_INT,mom_codaux,mom_retip1,
+                        mom_redoc1,mom_lote,art_codadi,mom_bruto,mom_linea,gui_inclu) 
+                        VALUES({','.join('?' for i in params)})
+                    """
+                    self.query(sql2,params,'post')
+                    cont+=1
+                sql = "UPDATE t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND doc_serie=?"
+            
+                self.query(sql,(int(num_doc)+1,'GR','T001'),'post')
+            
+            data = self.beforepost(datos,gui_serie)
+            #data['message'] = "Los datos se procesaron exitosamente"
         except Exception as e:
             data['error'] = f"Hubo un error en la peticion:{str(e)}"
         return Response(data)
+    def query(self,sql,params,opt='get'):
+        conn = QuerysDb.conexion('192.168.1.80','siiasmartfc','sa','Noi2011')
+        cursor = conn.cursor()
+        cursor.execute(sql,params)
+        data = ''
+        if opt =='get':
+            data = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        return data
+    def valid(self,codigo):
+        sql =  "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
+        return self.query(sql,(codigo,))
     def beforepost(self,datos,num_doc):
         items = datos['items']
-       
         articulos = []
+        peso = 0
         for item in items:
-            sql = "SELECT ume_sunat FROM t_umedida WHERE UME_CODIGO=(SELECT UME_CODIGO FROM t_articulo WHERE ART_CODIGO=?)"
+            sql = "SELECT ume_sunat FROM t_umedida WHERE UME_CODIGO=(SELECT UME_CODIGO FROM t_articulo WHERE art_provee=?)"
             medida= self.query(sql,(item['codigo'],))
-            sql = "SELECT ART_NOMBRE FROM t_articulo WHERE ART_CODIGO=?"
-            name=self.query(sql,(item['codigo'],))
-           
+            sql = "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
+            
+            res=self.query(sql,(item['codigo'],))
+            peso+=res[2]*int(item['cantidad'])
             articulos.append(
                 {
-                    "cantidad":item['cantidad'],
+                    "cantidad":f"{item['cantidad']}",
                     "unidadMedida":medida[0].strip(),
-                    "descripcion":name[0].strip(),
-                    "codigoItem":item['codigo'],
+                    "descripcion":res[1].strip(),
+                    "codigoItem":res[0].strip(),
                     "adicional":{
-                        "peso":0.00,
+                        "peso":f"{res[2]*int(item['cantidad'])}",
+                        "lote":item['codigo'],
+                        "fechaVencimiento":item['fecha_vencimiento']
 
                     }
                     
@@ -268,29 +320,35 @@ class Facturacion(generics.GenericAPIView):
             SELECT ubi_nombre,ubi_direc,ubi_nompos FROM t_ubicacion WHERE ubi_codigo= ?
         """
         dates = self.query(sql,('24',))
+       
         ubi_nombre,dir_partida,ubigeo_partida = dates
+        sql = "SELECT tra_nombre,TRA_RUC FROM T_transporte WHERE TRA_CODIGO=001"
+        nombre,ruc = self.query(sql,())
+        
         data = {"serie": "T001",
                 "numero": int(num_doc),
-                "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S') ,
+                "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 "tipoDocumentoGuia": "09",
                 "motivoTraslado": "01",
-                "pesoBrutoTotal": "1",
+                "pesoBrutoTotal": f"{peso}",
                 "unidadPesoBruto": "KGM",
-                "modalidadTraslado": "02",
-                "fechaInicioTraslado": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "modalidadTraslado": "01",
+                "fechaInicioTraslado":datetime.now().strftime('%Y-%m-%d %H:%M:%S') ,
                 "ubigeoLlegada": datos['ubigeo_llegada'],
                 "direccionLlegada": datos['direccion_llegada'],
-                "direccionPartida": dir_partida.strip(),
                 "ubigeoPartida": ubigeo_partida.strip(),
+                "direccionPartida": dir_partida.strip(),
                 "receptor": {
                     "tipo": datos['tipodoc'],
                     "nro": datos['doc'],
                     "razonSocial": datos['razon_social']
                 },
                 "adicional": {
+                    "numeroRucTransportista": ruc.strip(),
+                    "tipoDocumentoTransportista": "6",
+                    "denominacionTransportista": nombre.strip(),
                     "ordenCompra": datos['num_pedido'],
                     "vendedor": datos['vendedor'],
-                    "ubicacion": ubi_nombre.strip(),
                     "descripcionMotivoTraslado": datos['motivo_traslado'],
                     "cotizacion": datos['num_cotizacion'],
                     "operacion": datos['operacion'],
@@ -299,15 +357,45 @@ class Facturacion(generics.GenericAPIView):
                 "items": articulos
             }
         sql = "SELECT TOP 1 par_url,par_acekey,par_seckey FROM fe_parametro"
+        #PARA  GUARDAR EL ARCHIVO JSON  
         with open("prueba.json","w") as file:
-            file.write(json.dumps(data))
+            json.dump(data,file,indent=4)
         url,access_key,secret_key = self.query(sql,())
-        response = requests.post(url.strip()+'/guiaremitente',headers={
-            "Authorization":f"Fo {RequestAPI(access_key,secret_key).encryptdates()}",
-            "Content-Type":"application/json"
+        token,timestap = RequestAPI(access_key.strip(),secret_key.strip()).encryptdates()
+        
+        response = requests.post(f"{url.strip()}guiaremitente",headers={
+            "Authorization":f"Fo {access_key.strip()}:{token}:{timestap}",
             },
-            data=data
+            json=data
         )
-        print(response.text)
+        return response.json()
         
         
+class PDFFACTView(generics.GenericAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    def get(self,request,*args,**kwargs):
+        serie,numero = kwargs['serie'],kwargs['num']
+        sql = "SELECT TOP 1 par_url,par_acekey,par_seckey FROM fe_parametro"
+        url,access_key,secret_key = self.query(sql,())
+        token,timestap = RequestAPI(access_key.strip(),secret_key.strip()).encryptdates()
+        response = requests.get(f"{url.strip()}guiaremitente/{serie}{numero}/exportar/",headers={
+            "Authorization":f"Fo {access_key.strip()}:{token}:{timestap}",
+            },)
+        if response.status_code==200:
+            base = base64.b64encode(response.content).decode('utf-8')
+            pdf_bytes = base64.b64decode(base)
+            with open('output.pdf', 'wb') as pdf_file:
+                pdf_file.write(pdf_bytes)
+            return Response({'pdf':base})
+        return Response(json.loads(response.text))
+    def query(self,sql,params,opt='get'):
+        conn = QuerysDb.conexion('192.168.1.80','siiasmartfc','sa','Noi2011')
+        cursor = conn.cursor()
+        cursor.execute(sql,params)
+        data = ''
+        if opt =='get':
+            data = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        return data

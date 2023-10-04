@@ -245,7 +245,7 @@ class ProductoView(generics.GenericAPIView):
                             ELSE a.tal_codigo 
                         END
                     )
-                FROM movm2023 a 
+                FROM movm{datetime.now().year} AS a 
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
                 WHERE a.elimini=0 
@@ -271,7 +271,7 @@ class ProductoView(generics.GenericAPIView):
                                                 ELSE -z.mom_cant 
                                             END
                                         ), 0) 
-                                    FROM movm2023 z 
+                                    FROM movm{datetime.now().year} AS z 
                                     LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                     WHERE y.mov_compro=z.mov_pedido 
                                         AND x.art_codigo=z.art_codigo 
@@ -321,7 +321,7 @@ class ProductoView(generics.GenericAPIView):
                     'art_noprom' = '',
                     'art_norega' = ''
                 FROM
-                    movm{datetime.now().year} a
+                    movm{datetime.now().year} AS a
                 LEFT JOIN
                     t_articulo b ON a.ART_CODIGO = b.art_codigo
                 LEFT JOIN
@@ -670,7 +670,6 @@ class EstadoPedido(generics.GenericAPIView):
          SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo,a.MOV_MONEDA,a.gui_exp001
         FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE (a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)) AND a.ped_cierre=0 AND a.elimini=0
         ORDER BY MOV_FECHA DESC,MOV_COMPRO DESC
-
         """
         try:
             conn = QuerysDb.conexion(host,db,user,password)

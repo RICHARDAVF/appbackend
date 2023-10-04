@@ -8,4 +8,4 @@ class RequestAPI:
         self.timestatp = str(int(time()))
         self.signature = f"{self.access_key}|{self.timestatp}"
     def encryptdates(self):
-        return new(self.secret_key.encode(),self.signature.encode(),sha256).hexdigest()
+        return new(self.secret_key.encode(),self.signature.encode(),sha256).hexdigest(),self.timestatp

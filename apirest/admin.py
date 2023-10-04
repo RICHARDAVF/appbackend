@@ -1,7 +1,6 @@
 from django.contrib import admin
-
 from .models import UsuarioCredencial
-
+from rest_framework.authtoken.models import Token
 # Register your models here.
 
 class AdminViewUsuario(admin.ModelAdmin):
@@ -13,3 +12,4 @@ class AdminViewUsuario(admin.ModelAdmin):
 
         
 admin.site.register(UsuarioCredencial,AdminViewUsuario)
+
