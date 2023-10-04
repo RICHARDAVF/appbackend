@@ -384,9 +384,9 @@ class PDFFACTView(generics.GenericAPIView):
             },)
         if response.status_code==200:
             base = base64.b64encode(response.content).decode('utf-8')
-            pdf_bytes = base64.b64decode(base)
-            with open('output.pdf', 'wb') as pdf_file:
-                pdf_file.write(pdf_bytes)
+            # pdf_bytes = base64.b64decode(base)
+            # with open('output.pdf', 'wb') as pdf_file:
+            #     pdf_file.write(pdf_bytes)
             return Response({'pdf':base})
         return Response(json.loads(response.text))
     def query(self,sql,params,opt='get'):
