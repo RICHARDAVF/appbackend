@@ -109,7 +109,10 @@ DATABASES = {
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',  
-        'PORT': '',           
+        'PORT': '',    
+        'OPTIONS': {
+            'sql_mode': 'STRICT_ALL_TABLES',
+        },       
     }
 }
 
