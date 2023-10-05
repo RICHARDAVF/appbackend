@@ -346,8 +346,7 @@ class Facturacion(generics.GenericAPIView):
                     "denominacionTransportista": nombre.strip(),
                     "ordenCompra": datos['num_pedido'],
                     "vendedor": datos['vendedor'],
-                    "descripcionMotivoTraslado": datos['motivo_traslado'],
-                    "operacion": datos['operacion'],
+                    "descripcionMotivoTraslado": "VENTAS",
                     "dirAlternativa": datos['dir_alternativa']
                 },
                 "items": articulos
