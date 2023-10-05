@@ -55,16 +55,18 @@ class Facturacion(generics.GenericAPIView):
             dates = self.query(sql,(datos['doc'],))
            
             codigo_cliente = ''
+            dir_alternativa = ''
             if dates is None and res['success']:
-                sql = f"""SELECT MAA_CODIGO, AUX_CODIGO
+                sql = f"""SELECT MAA_CODIGO, AUX_CODIGO,AUX_DIRECC,DIS_CODIGO,PRO_CODIGO,
                                     FROM t_auxiliar
                                     WHERE AUX_CODIGO = (SELECT MAX(AUX_CODIGO) FROM t_auxiliar WHERE MAA_CODIGO='CT' ) AND  MAA_CODIGO='CT'"""
                 result= self.query(sql,())
                 if result is None:
                     maa,codigo='CT','1'
                 else:
-                    maa,codigo=result
+                    maa,codigo,direccion,distrito,provincia=result
                     codigo = int(codigo)+1
+                    dir_alternativa = f"{direccion.strip()}-{distrito.strip()}-{provincia.strip()}"
                 tipope = 1
                 tipedoc=2
                 if datos['doc'][:2]=='20':
@@ -110,6 +112,7 @@ class Facturacion(generics.GenericAPIView):
                             tipedoc,
                             date.today().strftime('%Y-%m-%d')
                             )
+                    dir_alternativa = f"{ res['data']['direccion']}-{res['data']['distrito']}-{res['data']['provincia']}"
                 codigo_cliente = params[2]
                 sql = f""" 
                     INSERT INTO 
@@ -269,7 +272,7 @@ class Facturacion(generics.GenericAPIView):
             
                 self.query(sql,(int(num_doc)+1,'GR','T003'),'post')
             
-            data = self.beforepost(datos,gui_serie)
+            data = self.beforepost(datos,gui_serie,dir_alternativa)
             #data['message'] = "Los datos se procesaron exitosamente"
         except Exception as e:
             data['error'] = f"Hubo un error en la peticion:{str(e)}"
@@ -287,7 +290,7 @@ class Facturacion(generics.GenericAPIView):
     def valid(self,codigo):
         sql =  "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
         return self.query(sql,(codigo,))
-    def beforepost(self,datos,num_doc):
+    def beforepost(self,datos,num_doc,direc):
         items = datos['items']
         articulos = []
         peso = 0
@@ -345,9 +348,8 @@ class Facturacion(generics.GenericAPIView):
                     "tipoDocumentoTransportista": "6",
                     "denominacionTransportista": nombre.strip(),
                     "ordenCompra": datos['num_pedido'],
-                    "vendedor": datos['vendedor'],
                     "descripcionMotivoTraslado": "VENTAS",
-                    "dirAlternativa": datos['dir_alternativa']
+                    "dirAlternativa": direc
                 },
                 "items": articulos
             }
