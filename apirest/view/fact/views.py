@@ -172,8 +172,8 @@ class Facturacion(generics.GenericAPIView):
                             datos['num_pedido'],
                             "0001",
                             "GR",
-                            datos['dir_alternativa'],
-                            datos['ubigeo_llegada']
+                            datos['ubigeo_llegada'],
+                            datos['observacion']
                         )
                 sql = f"""
                         INSERT INTO GUIC{date.today().strftime('%Y')}(
@@ -187,7 +187,7 @@ class Facturacion(generics.GenericAPIView):
                             gui_direc,rou_submon,alm_codigo,
                         ven_codigo,gui_ruc,ope_codigo,pag_codigo,
                         gui_inclu,MOV_MONEDA,ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,
-                        gui_serie,gui_docum,doc_compro,gui_ordenc,tra_codigo,gui_coddoc,gui_exp001,gui_textol) 
+                        gui_serie,gui_docum,doc_compro,gui_ordenc,tra_codigo,gui_coddoc,gui_textol,gui_exp001) 
                         VALUES({','.join('?' for i in params)})
                         """
                 self.query(sql,params,'post')
@@ -349,7 +349,8 @@ class Facturacion(generics.GenericAPIView):
                     "denominacionTransportista": nombre.strip(),
                     "ordenCompra": datos['num_pedido'],
                     "descripcionMotivoTraslado": "VENTAS",
-                    "dirAlternativa": direc
+                    "dirAlternativa": direc,
+                    "observaciones":datos['observacion']
                 },
                 "items": articulos
             }
