@@ -39,7 +39,7 @@ class Facturacion(generics.GenericAPIView):
             band = False
             gui_serie = self.query(sql,(datos['num_pedido']))
             sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
-            num_doc,serie = self.query(sql,('GR','T001'))
+            num_doc,serie = self.query(sql,('GR','T003'))
             if gui_serie is  None:
                 gui_serie = num_doc
                 band = True
@@ -267,7 +267,7 @@ class Facturacion(generics.GenericAPIView):
                     cont+=1
                 sql = "UPDATE t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND doc_serie=?"
             
-                self.query(sql,(int(num_doc)+1,'GR','T001'),'post')
+                self.query(sql,(int(num_doc)+1,'GR','T003'),'post')
             
             data = self.beforepost(datos,gui_serie)
             #data['message'] = "Los datos se procesaron exitosamente"
@@ -322,7 +322,7 @@ class Facturacion(generics.GenericAPIView):
         sql = "SELECT tra_nombre,TRA_RUC FROM T_transporte WHERE TRA_CODIGO=001"
         nombre,ruc = self.query(sql,())
         
-        data = {"serie": "T001",
+        data = {"serie": "T003",
                 "numero": int(num_doc),
                 "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 "tipoDocumentoGuia": "09",
