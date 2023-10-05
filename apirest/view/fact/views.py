@@ -169,16 +169,12 @@ class Facturacion(generics.GenericAPIView):
                             datos['num_pedido'],
                             "0001",
                             "GR",
-                            datos['dir_alternativa']
+                            datos['dir_alternativa'],
+                            datos['ubigeo_llegada']
                         )
                 sql = f"""
                         INSERT INTO GUIC{date.today().strftime('%Y')}(
-                            MOV_COMPRO,
-                            MOV_FECHA,
-                            MOV_CODAUX,
-                            DOC_CODIGO,
-                            MOV_T_C,
-                            USUARIO,
+                            MOV_COMPRO,MOV_FECHA,MOV_CODAUX,DOC_CODIGO,MOV_T_C,USUARIO,
                             FECHAUSU,
                             mov_fvenc,
                             rou_export,
@@ -187,7 +183,8 @@ class Facturacion(generics.GenericAPIView):
                             ubi_codigo,
                             gui_direc,rou_submon,alm_codigo,
                         ven_codigo,gui_ruc,ope_codigo,pag_codigo,
-                        gui_inclu,MOV_MONEDA,ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,gui_serie,gui_docum,doc_compro,gui_ordenc,tra_codigo,gui_coddoc,gui_exp001) 
+                        gui_inclu,MOV_MONEDA,ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,
+                        gui_serie,gui_docum,doc_compro,gui_ordenc,tra_codigo,gui_coddoc,gui_exp001,gui_textol) 
                         VALUES({','.join('?' for i in params)})
                         """
                 self.query(sql,params,'post')
@@ -350,7 +347,6 @@ class Facturacion(generics.GenericAPIView):
                     "ordenCompra": datos['num_pedido'],
                     "vendedor": datos['vendedor'],
                     "descripcionMotivoTraslado": datos['motivo_traslado'],
-                    "cotizacion": datos['num_cotizacion'],
                     "operacion": datos['operacion'],
                     "dirAlternativa": datos['dir_alternativa']
                 },
@@ -358,7 +354,7 @@ class Facturacion(generics.GenericAPIView):
             }
         sql = "SELECT TOP 1 par_url,par_acekey,par_seckey FROM fe_parametro"
         #PARA  GUARDAR EL ARCHIVO JSON  
-       # with open("prueba.json","w") as file:
+        # with open("prueba.json","w") as file:
         #    json.dump(data,file,indent=4)
         url,access_key,secret_key = self.query(sql,())
         token,timestap = RequestAPI(access_key.strip(),secret_key.strip()).encryptdates()
