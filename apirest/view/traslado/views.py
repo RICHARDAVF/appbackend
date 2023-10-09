@@ -102,7 +102,7 @@ class TrasladoView(generics.GenericAPIView):
                 
                 params = (data['almacen'],datetime.now().month,datetime.now().strftime('%Y-%m-%d'),item['codigo'],'S',data['operacion'],
                         data['ubicacion_salida'],data['ubicacion_salida'],item['cantidad'],data['usuario'],datetime.now(),
-                        item['talla'],data['operacion'],data['ubicacion_salida'],result[1].strip(),result[4].strip(),data['observacion'],f"{result[2].strip()}-{result[3].strip()}",
+                        item['talla'],data['operacion'],data['ubicacion_entrada'],result[1].strip(),result[4].strip(),data['observacion'],f"{result[2].strip()}-{result[3].strip()}",
                         f"{result[5].strip()}-{result[6].strip()}",
                         
                         )
@@ -114,7 +114,7 @@ class TrasladoView(generics.GenericAPIView):
 
                 params = (data['almacen'],datetime.now().month,datetime.now().strftime('%Y-%m-%d'),item['codigo'],'E',data['operacion'],
                         data['ubicacion_entrada'],data['ubicacion_entrada'],item['cantidad'],data['usuario'],datetime.now(),
-                        item['talla'],data['operacion'],data['ubicacion_entrada'],result[4].strip(),result[1].strip(),data['observacion'],f"{result[5].strip()}-{result[6].strip()}",
+                        item['talla'],data['operacion'],data['ubicacion_salida'],result[4].strip(),result[1].strip(),data['observacion'],f"{result[5].strip()}-{result[6].strip()}",
                         f"{result[2].strip()}-{result[3].strip()}")
                 self.querys(credenciales,sql,params,'post')
             sql  = "UPDATE t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND doc_serie=?"

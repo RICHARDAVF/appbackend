@@ -17,7 +17,7 @@ from apirest.view.fact.views import Facturacion,PDFFACTView
 
 router = routers.DefaultRouter()
 urlpatterns = [
-    #DOMENTACION
+    #DOCUMENTACION
    
     #LOGIN
     path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view()),
