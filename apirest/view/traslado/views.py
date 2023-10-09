@@ -36,21 +36,107 @@ class TrasladoView(generics.GenericAPIView):
         return Response(data)
 
     def post(self,request,*args,**kwargs):
+        response = {}
         data = request.data
-        print(data)
         credenciales = request.data['cred']
-        params = ()
+        sql  = f"""
+                SELECT
+                    'stock' = SUM(CASE
+                                    WHEN a.mom_tipmov = 'E' THEN a.mom_cant
+                                    WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1
+                                END)
+                    - (SELECT
+                        'mom_cant' = ISNULL(SUM(zzz.mom_cant), 0)
+                    FROM
+                        (SELECT
+                                'mom_cant' = ISNULL(SUM(x.mom_cant), 0)
+                                        + (SELECT ISNULL(SUM(CASE
+                                                                WHEN z.mov_pedido = ''
+                                                                THEN 0
+                                                                WHEN z.mom_tipmov = 'E' THEN z.mom_cant
+                                                                ELSE -z.mom_cant
+                                                            END), 0)
+                                            FROM movm2023 z
+                                            LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
+                                            WHERE y.mov_compro = z.mov_pedido
+                                            AND x.art_codigo = z.art_codigo
+                                            AND x.tal_codigo = z.tal_codigo
+                                            AND y.ubi_codig2 = z.alm_codigo
+                                            AND y.ubi_codigo = z.ubi_cod1
+                                            AND z.elimini = 0
+                                            AND zz.elimini = 0
+                                            AND zz.ped_cierre = 0)
+                        FROM movipedido x
+                        INNER JOIN cabepedido y ON x.mov_compro = y.mov_compro
+                        WHERE x.art_codigo = a.art_codigo
+                            AND y.ubi_codig2 = a.alm_codigo
+                            AND y.ubi_codigo = a.ubi_cod1
+                            AND x.tal_codigo = a.tal_codigo
+                            AND x.elimini = 0
+                            AND y.ped_cierre = 0
+                        GROUP BY y.mov_compro, x.art_codigo, x.tal_codigo, y.ubi_codig2, y.ubi_codigo) AS zzz)
+                FROM movm2023 a
+                LEFT JOIN cabepedido b ON a.mov_pedido = b.mov_compro
+                WHERE a.art_codigo = ?
+                AND a.alm_codigo = ?
+                AND a.ubi_cod1 = ?
+                AND a.tal_codigo = ?
+                AND a.elimini = 0
+                GROUP BY a.art_codigo, a.alm_codigo, a.ubi_cod1, a.tal_codigo
+            """
+        for item in data['items']:
+            result = self.querys(credenciales,sql,(item['codigo'],data['almacen'],data['ubicacion_salida'],item['talla']))
+            
+            if result[0]<int(item['cantidad']):
+                return Response({'message':f"No hay stock disponible para\nCodigo: {item['codigo']}\nTalla:{item['talla']}\nCantidad solicitada: {item['cantidad']}\nStock disponible: {int(result[0])} "})
+        try:
+            sql = f"""SELECT 
+                        a.usu_almace,a.usu_docal2,a.usu_alma2,
+                        b.doc_docum,a.usu_docalm,a.usu_alma,
+                        c.doc_docum 
+                    FROM t_usuario AS a LEFT JOIN t_documento AS b 
+                    ON a.usu_docal2=b.doc_codigo AND a.usu_alma2=b.doc_serie 
+                    LEFT JOIN t_documento AS c on a.usu_docalm=c.doc_codigo AND a.usu_alma=c.doc_serie WHERE a.usu_codigo=?"""
+            result = self.querys(credenciales,sql,(data['usuario'],),'get')
+            for item in data['items']:
+                
+                params = (data['almacen'],datetime.now().month,datetime.now().strftime('%Y-%m-%d'),item['codigo'],'S',data['operacion'],
+                        data['ubicacion_salida'],data['ubicacion_salida'],item['cantidad'],data['usuario'],datetime.now(),
+                        item['talla'],data['operacion'],data['ubicacion_salida'],result[1].strip(),result[4].strip(),data['observacion'],f"{result[2].strip()}-{result[3].strip()}",
+                        f"{result[5].strip()}-{result[6].strip()}",
+                        
+                        )
+                sql = f""" INSERT INTO movm{datetime.now().year}(alm_codigo,mom_mes,mom_fecha,
+                            art_codigo,mom_tipmov,ope_codigo,ubi_cod,ubi_cod1,mom_cant,
+                            usuario,fechausu,tal_codigo,ope_codig2,ubi_cod2,doc_cod1,doc_cod2,mom_glosa,mom_d_int,mom_d_int2) VALUES({','.join('?' for i in params)}) 
+                        """
+                self.querys(credenciales,sql,params,'post')
+
+                params = (data['almacen'],datetime.now().month,datetime.now().strftime('%Y-%m-%d'),item['codigo'],'E',data['operacion'],
+                        data['ubicacion_entrada'],data['ubicacion_entrada'],item['cantidad'],data['usuario'],datetime.now(),
+                        item['talla'],data['operacion'],data['ubicacion_entrada'],result[4].strip(),result[1].strip(),data['observacion'],f"{result[5].strip()}-{result[6].strip()}",
+                        f"{result[2].strip()}-{result[3].strip()}")
+                self.querys(credenciales,sql,params,'post')
+            sql  = "UPDATE t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND doc_serie=?"
+            params = (str(int(result[3])+1).zfill(7),result[1],result[2])
+            self.querys(credenciales,sql,params,'post')
+            params = (str(int(result[6])+1).zfill(7),result[4],result[5])
+            self.querys(credenciales,sql,params,'post')
+            response['message'] = f"Nota de salida:{result[2].strip()}-{result[3].strip()}\nNota de entrada: {result[5].strip()}-{result[6].strip()}"
+        except Exception as e:
+            print(str(e))
+            response['error'] = f"Ocurrio un error {str(e)}"
+        return Response(response)
+    def querys(self,credenciales,sql,params,opt='get'):
         conn = QuerysDb.conexion(credenciales['bdhost'],credenciales['bdname'],credenciales['bduser'],credenciales['bdpassword'])
         cursor = conn.cursor()
-        sql = f""" INSERT INTO movm{datetime.now().year}(alm_codigo,mom_mes,mom_fecha,
-                    art_codigo,mom_tipmov,ope_codigo,ubi_cod,ubi_cod1,mom_cant,mom_d_int,
-                    usuario,fechausu,doc_cod1,tal_codigo,ope_codig2,ubi_cod2,doc_cod2,
-                    mom_d_int2,mom_glosa) VALUES({','.join('?' for i in params)}) 
-                """
-        # cursor.execute(sql,params)
-        # conn.commit()
-        # conn.close()
-        return Response({'succes':'success'})
+        cursor.execute(sql,params)
+        data = ''
+        if opt=='get':
+            data = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        return data
 class ProducTrasladoView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
        
