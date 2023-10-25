@@ -1,7 +1,8 @@
 from rest_framework import routers
 from django.urls import path,include
 
-from .views import UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,EditPedidoView
+from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
+                    EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView)
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR
 from apirest.view.stock.views import StockView,StockReview
@@ -10,11 +11,10 @@ from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
-from apirest.view.clientes.views import ViewPrueba
 from apirest.view.reporte.views import PDFView,PDFview1
-from apirest.view.savejson.views import SaveJSON
+from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.fact.views import Facturacion,PDFFACTView
-
+from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -27,10 +27,22 @@ urlpatterns = [
     path('product/venta/add/',ProducAddView.as_view()),
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
+    path('client/new/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteCreateView.as_view()),
+    path('client/type/<str:host>/<str:db>/<str:user>/<str:password>/',TypeClienteView.as_view()),
+    
+    #FAMILIA
+    path('familia/<str:host>/<str:db>/<str:user>/<str:password>/',FamiliaView.as_view()),
+    #FUENTE
+    path('fuente/<str:host>/<str:db>/<str:user>/<str:password>/',FuenteView.as_view()),
     #PEDIDOS
     path('pedidos/<str:host>/<str:db>/<str:user>/<str:password>/<int:all>/',PedidosView.as_view()),
     path('pedidos/edit/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',EditPedidoView.as_view()),
     path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/',EstadoPedido.as_view()),
+    path('pedidos/agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
+    path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
+   #LUGAR DE ENTREGA
+    path('lugar/entrega/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:cliente>/',LugarEntregaView.as_view()),
+
     #CUENTAS
     path('cuentas/<str:host>/<str:db>/<str:user>/<str:password>/<int:filter>/',CuentasView.as_view()),
     path('cuentas/read/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<int:filter>/',ReadCuentasView.as_view()),
@@ -57,17 +69,15 @@ urlpatterns = [
     path('traslado/<str:host>/<str:db>/<str:user>/<str:password>/',TrasladoView.as_view()),
     path('traslado/products/<str:host>/<str:db>/<str:user>/<str:password>/<str:ubi>/<str:local>/',ProducTrasladoView.as_view()),
     path('traslado/stock/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',StockViewProduct.as_view()),
+    #UBIGEO
+    path('ubigeo/<str:host>/<str:db>/<str:user>/<str:password>/',UbigeoView.as_view()),
     #REPORTE
-  
     path('reporte1/',PDFView.as_view()),
     path('reporte2/',PDFview1.as_view()),
-
-    #CONSUMO EXTRA
-    path('res/',SaveJSON.as_view()),
-    path('prueba/',ViewPrueba.as_view()),
+    #FACTURACION ELECTRONICA
     path("fact/",Facturacion.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
-
-
+    #VALIDACION DE DOCUMENTOS
+    path('searchdoc/<str:doc>/<str:tipo>/',SearchDNIRUC.as_view(),name='search_doc')
 
 ]

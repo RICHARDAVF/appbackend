@@ -63,7 +63,8 @@ class UserView(generics.GenericAPIView):
                         LEFT JOIN t_vendedor AS b 
                         ON a.ven_codigo=b.ven_codigo 
                         WHERE 
-                            a.USU_ABREV=? AND a.USU_LOGIN=? 
+                            a.USU_ABREV=? AND a.USU_LOGIN=?
+                        
                     """
             
             conn = QuerysDb.conexion(user.bdhost,user.bdname,user.bduser,user.bdpassword)
@@ -74,7 +75,7 @@ class UserView(generics.GenericAPIView):
                     datos['message']='Usuario o Contraseña incorrecta'
                     return Response(datos,status=status.HTTP_200_OK)
                
-                d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],"usuario":data[0][4].strip(),'ubicacion':data[0][5],'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],'aprobacion1':data[0][13],\
+                d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],"usuario":data[0][4].strip(),'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],'aprobacion1':data[0][13],\
                      'aprobacion2':data[0][14],'almacen':data[0][-1]}
                       
                 datos['user'] = d
@@ -382,7 +383,8 @@ class ProductoView(generics.GenericAPIView):
         return datos 
 class ClienteView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
-        sql = 'SELECT ltrim(rtrim(aux_razon)),aux_clave,aux_docum,rtrim(ltrim(aux_direcc)),rtrim(ltrim(aux_telef)),aux_email FROM t_auxiliar WHERE substring(aux_clave,1,1)=?'
+        sql = """SELECT ltrim(rtrim(aux_razon)),aux_clave,aux_docum,rtrim(ltrim(aux_direcc)),rtrim(ltrim(aux_telef)),aux_email 
+        FROM t_auxiliar WHERE substring(aux_clave,1,1)=? ORDER BY  aux_razon ASC"""
         params = 'C'
         host = kwargs['host']
         db = kwargs['db']
@@ -406,7 +408,6 @@ class ProducAddView(generics.GenericAPIView):
         return self.querys(conn,sql,params,'get')
     def post(self,request,*args,**kwargs):
         datas = request.data
-      
         cred = datas['opt']['credencial']
         try:
             sql = "SELECT emp_inclu from t_empresa"
@@ -414,7 +415,6 @@ class ProducAddView(generics.GenericAPIView):
             cursor = conn.cursor()
             cursor.execute(sql,())
             gui_inclu = cursor.fetchone()
-            
             conn.commit()
             conn.close()
         except Exception as e:
@@ -437,7 +437,7 @@ class ProducAddView(generics.GenericAPIView):
             data = self.querys(conn,sql,(params,),'get')[0]
           
             cor = str(params)+'-'+str(int(data[0].split('-')[-1])+1).zfill(7)
-            print(cor)
+        
             sql5 = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
             data = self.querys(conn,sql5,(),'get')
@@ -456,11 +456,12 @@ class ProducAddView(generics.GenericAPIView):
             params = (cor,fecha,datas['cabeceras']['codigo'],'S', datas['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
                     total,1,datas['opt']['local'],datas['opt']['tipo'],datas['cabeceras']['direccion'],datas['opt']['precio'],params,\
                     str(data[0][0]).strip(),datas['opt']['almacen'],datas['cabeceras']['ruc'],datas['opt']['obs'],18,igv,base_impo,\
-                    gui_inclu[0],'','',0,'F1',0,0,0,0,0,0,'','','','','','',round(self.sumaSDesc(datas['detalle']),2),\
+                    gui_inclu[0],'','',datas['tipo_venta'],'F1',0,0,0,0,0,0,datas['agencia'],'',datas['sucursal'],'',datas['nombre'],datas['direccion'],round(self.sumaSDesc(datas['detalle']),2),\
                     abs(round(total1-self.sumaSDesc(datas['detalle']),2)),0)
            
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
             self.querys(conn,sql,params,'post')
+          
             sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
                 mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
@@ -638,7 +639,7 @@ class PedidosView(generics.GenericAPIView):
             WHEN (a.ped_status IN (1, 0) OR a.ped_statu2 IN (1, 0)) THEN 'PENDIENTE' 
             WHEN (a.ped_status = 2 AND a.ped_statu2 = 2) THEN 'APROBADO' 
         END,
-        b.aux_razon, ROU_BRUTO, ROU_IGV, rou_submon,a.ven_codigo,a.MOV_MONEDA
+        b.aux_razon, ROU_BRUTO, ROU_IGV, ROU_TVENTA,a.ven_codigo,a.MOV_MONEDA
         FROM cabepedido AS a 
         INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.aux_clave 
        {"WHERE a.ped_cierre=0 AND a.elimini=0" if all_items==0 else ''}
@@ -667,7 +668,12 @@ class EstadoPedido(generics.GenericAPIView):
         user = kwargs['user']
         password = kwargs['password']
         sql = """
-         SELECT a.MOV_COMPRO,a.MOV_FECHA,b.aux_razon,ROU_BRUTO,ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo,a.MOV_MONEDA,a.gui_exp001
+         SELECT 
+            a.MOV_COMPRO,
+            a.MOV_FECHA,
+            b.aux_razon,
+            ROU_BRUTO,
+            ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo,a.MOV_MONEDA,a.gui_exp001
         FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave WHERE (a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)) AND a.ped_cierre=0 AND a.elimini=0
         ORDER BY MOV_FECHA DESC,MOV_COMPRO DESC
         """
@@ -701,3 +707,197 @@ class EstadoPedido(generics.GenericAPIView):
         conn.close()
         
         return Response({'message':'Aprobacion exitosa'})
+class AgenciaView(generics.GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        host = kwargs['host']
+        bd = kwargs['db']
+        user = kwargs['user']
+        password = kwargs['password']
+        data = {}
+        try:
+            conn = QuerysDb.conexion(host,bd,user,password)
+            cursor = conn.cursor()
+            sql = f"""
+                    SELECT TRA_CODIGO,TRA_NOMBRE,TRA_DIRECC FROM t_transporte
+            """
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            conn.commit()
+            conn.close()
+            data = []
+            for index,item in enumerate(result):
+                d = {'id':index,'codigo':item[0].strip(),'nombre':item[1].strip(),'direccion':item[2].strip()}
+                data.append(d)
+        except Exception as e:
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response({'message':data})
+class SucursalView(generics.GenericAPIView):
+    def get(self,rquest,*args,**kwargs):
+        host = kwargs['host']
+        bd = kwargs['db']
+        user = kwargs['user']
+        password = kwargs['password']
+        data = {}
+        try:
+            conn = QuerysDb.conexion(host,bd,user,password)
+            cursor = conn.cursor()
+            sql = f"""
+                SELECT 
+                    tie_codigo,
+                    tie_nombre,
+                    tie_direc,
+                    tie_telef
+                FROM t_sucursal 
+                WHERE tie_codaux=?
+            """
+            cursor.execute(sql,(kwargs['codigo'],))
+            result = cursor.fetchall()
+           
+            if len(result)==0:
+                data['error'] = 'No hay ubicaciones para este cliente'
+            else:
+                data = []
+                for index,value in enumerate(result):
+                    d = {'id':index,'codigo':value[0].strip(),'nombre':value[1].strip(),'direccion':value[2].strip(),'celular':value[3].strip()}
+                    data.append(d)
+       
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response(data)
+class UbigeoView(generics.GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        host = kwargs['host']
+        bd = kwargs['db']
+        user = kwargs['user']
+        password = kwargs['password']
+        conn = QuerysDb.conexion(host,bd,user,password)
+        data = {}
+        try:
+            sql = """
+                SELECT
+                    ubi_CODIGO,
+                    ubi_depart,
+                    ubi_provin,
+                    ubi_distri
+                FROM mk_ubigeo
+                """
+            cursor = conn.cursor()
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            data = []
+            for index,value in enumerate(result):
+                d = {'id':index,'ubigeo':value[0].strip(),'departamento':value[1].strip(),
+                     'provincia':value[2].strip(),'distrito':value[3].strip()} 
+                data.append(d)
+            
+        except Exception as e:
+            data['error'] = f'Ocurrio un erro : {str(e)}'
+        return Response(data)
+class LugarEntregaView(generics.GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        
+        data = {}
+        try:
+           
+            sql = """
+                SELECT 
+                    tie_nombre,
+                    tie_direc,
+                    tie_telef,
+                    tie_ubigeo,
+                    tie_tipdoc,
+                    tie_link,
+                    tie_docum 
+                FROM t_sucursal 
+                WHERE 
+                tie_codigo=? AND tie_codaux=?
+                """
+            res = self.querys(kwargs,sql,(kwargs['codigo'],kwargs['cliente']),'get')
+           
+            data = {'nombre':res[0].strip(),'direccion':res[1].strip(),'celular':res[2].strip(),
+                    'ubigeo':res[3].strip(),'tipo_doc':res[4],'link':res[5].strip(),'documento':res[6].strip(),'index':0 if res[4]==1 else(1 if res[4]==2 else (2 if res[4]==3 else 4))}
+        except Exception as e:
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response(data)
+    def post(self,request,*args,**kwargs):
+        data = request.data
+        
+        sql = """
+            SELECT TOP 1
+                'codigo'=LEFT(tie_codigo, 8) + '-' + RIGHT('0000000' + CAST(CAST(RIGHT(tie_codigo, 7) AS INT) + 1 AS VARCHAR(7)), 7)
+            FROM t_sucursal
+            WHERE
+                tie_codaux = ?
+                AND LEN(tie_codigo) = 16
+                AND tie_codigo LIKE ?
+            ORDER BY tie_codigo DESC;
+            """
+        codigo = self.querys(kwargs,sql,(kwargs['cliente'],kwargs['cliente']+'%'),'get')
+        if codigo is None:
+            codigo = f"{kwargs['cliente']}-{str(1).zfill(7)}"
+        else:
+            codigo = codigo[0]
+        if data['index']==4:
+            data['index'] = 0
+        params = (data['nombre'],data['direccion'],data['celular'],data['ubigeo'],data['index'],data['link'],data['documento'],codigo.strip(),kwargs['cliente'])
+        try:
+            sql = f"""
+                INSERT INTO t_sucursal(
+                    tie_nombre,
+                    tie_direc,
+                    tie_telef,
+                    tie_ubigeo,
+                    tie_tipdoc,
+                    tie_link,
+                    tie_docum,
+                    tie_codigo,
+                    tie_codaux)
+                VALUES({','.join('?' for i in params)})
+                """
+            self.querys(kwargs,sql,params,'post')
+            data['success'] = f" Se creo con exito lugar de entrega para {kwargs['cliente']}"
+        except Exception as e:
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response(data)
+    def put(self,request,*args,**kwargs):
+        try:
+            sql = """
+                    UPDATE t_sucursal
+                    SET
+                        tie_nombre=?,
+                        tie_direc=?,
+                        tie_telef=?,
+                        tie_ubigeo=?,
+                        tie_tipdoc=?,
+                        tie_link=?,
+                        tie_docum=? 
+                    WHERE 
+                        tie_codigo=? AND tie_codaux=?
+                """
+            data = request.data
+        
+            params = (data['nombre'],data['direccion'],data['celular'],data['ubigeo'],data['tipo_doc'],data['link'],data['documento'],kwargs['codigo'],kwargs['cliente'])
+            res = self.querys(kwargs,sql,params,'post')
+            if res==200:
+                data['success'] = f'Los cambios para {kwargs["codigo"]} fueron exitosos'
+        except Exception as e:
+            data['error'] = f"Ocurrio un error : {str(e)}"
+        return Response(data)
+    def querys(self,kwargs,sql,params=(),tipo='post'):
+        host = kwargs['host']
+        bd = kwargs['db']
+        user = kwargs['user']
+        password = kwargs['password']
+        conn = QuerysDb.conexion(host,bd,user,password)
+        cursor = conn.cursor()
+        data = 200
+        if tipo =='post':
+            cursor.execute(sql,params)
+        else:
+            cursor.execute(sql,params)
+            data = cursor.fetchone()
+        conn.commit()
+        conn.close()            
+        return data
