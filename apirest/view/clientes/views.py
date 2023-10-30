@@ -26,6 +26,10 @@ class ClienteCreateView(generics.GenericAPIView):
             FROM t_canal
             WHERE can_codigo = (SELECT can_codigo FROM t_categoria WHERE cat_codigo = ?)
         """
+        sql = "SELECT*FROM t_auxiliar WHERE MAA_CODIGO=? AND AUX_DOCUM=?"
+        result = Querys(kwargs).querys(sql,(maa_codigo,datos['doc']),'get',0)
+        if result is not None:
+            return Response({'error':'El usuario ya existe'})
         result= Querys(kwargs).querys(sql,(datos['codigo_familia'],datos['codigo_client']),'get',0)
         if result is None:
             can_codigo,lis_codigo  = '',''

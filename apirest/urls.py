@@ -2,7 +2,7 @@ from rest_framework import routers
 from django.urls import path,include
 
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
-                    EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView)
+                    EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView)
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR
 from apirest.view.stock.views import StockView,StockReview
@@ -78,6 +78,8 @@ urlpatterns = [
     path("fact/",Facturacion.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
     #VALIDACION DE DOCUMENTOS
-    path('searchdoc/<str:doc>/<str:tipo>/',SearchDNIRUC.as_view(),name='search_doc')
+    path('searchdoc/<str:doc>/<str:tipo>/',SearchDNIRUC.as_view(),name='search_doc'),
+    #VERSION DE LA APLICACION MOVIL ANDROID
+    path('check/version/app/',VersionAppView.as_view())
 
 ]

@@ -18,4 +18,12 @@ class UsuarioCredencial(models.Model):
         db_table = 'usuariocredencial'
         ordering = ['id']
 
+class VersionApp(models.Model):
+    nombre = models.CharField(max_length=50,verbose_name="Nombre de la version")
+    version = models.CharField(max_length=50,verbose_name="Version de la applicacion")
+    fecha = models.DateField(auto_created=False,verbose_name="Fecha de la ultima actualizacion")
+    class Meta:
+        verbose_name = "version"
+        verbose_name_plural = "Versiones"
+        db_table = 'versiones'
 

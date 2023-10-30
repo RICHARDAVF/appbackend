@@ -278,7 +278,7 @@ class Facturacion(generics.GenericAPIView):
             data['error'] = f"Hubo un error en la peticion:{str(e)}"
         return Response(data)
     def query(self,sql,params,opt='get'):
-        conn = QuerysDb.conexion('192.168.1.80','siiasmartfc','sa','Noi2011')
+        conn = QuerysDb.conexion('192.168.1.40','siiasmartfc','sa','Noi2011')
         cursor = conn.cursor()
         cursor.execute(sql,params)
         data = ''

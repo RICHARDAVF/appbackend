@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UsuarioCredencial
+from .models import UsuarioCredencial,VersionApp
 from rest_framework.authtoken.models import Token
 # Register your models here.
 
@@ -12,4 +12,8 @@ class AdminViewUsuario(admin.ModelAdmin):
 
         
 admin.site.register(UsuarioCredencial,AdminViewUsuario)
+
+class AdminViewVersionApp(admin.ModelAdmin):
+    list_display = ('id','nombre','version','fecha')
+admin.site.register(VersionApp,AdminViewVersionApp)
 
