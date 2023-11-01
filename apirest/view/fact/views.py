@@ -40,6 +40,7 @@ class Facturacion(generics.GenericAPIView):
             gui_serie = self.query(sql,(datos['num_pedido']))
             sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
             num_doc,serie = self.query(sql,('GR','T003'))
+          
             if gui_serie is  None:
                 gui_serie = num_doc
                 band = True
@@ -123,6 +124,7 @@ class Facturacion(generics.GenericAPIView):
                 self.query(sql,params,'post')
             else:
                 codigo_cliente=dates[2]
+            data = self.beforepost(datos,gui_serie,dir_alternativa)
             self.query(f"INSERT INTO corret{datetime.now().year}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
             sql = f"SELECT numero FROM corret{datetime.now().year} WHERE numero=(SELECT MAX(numero) FROM corret{datetime.now().year} WHERE usuario=000)"
             result= self.query(sql,())
@@ -269,10 +271,9 @@ class Facturacion(generics.GenericAPIView):
                     self.query(sql2,params,'post')
                     cont+=1
                 sql = "UPDATE t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND doc_serie=?"
-            
+               
                 self.query(sql,(int(num_doc)+1,'GR','T003'),'post')
-            
-            data = self.beforepost(datos,gui_serie,dir_alternativa)
+             
             #data['message'] = "Los datos se procesaron exitosamente"
         except Exception as e:
             data['error'] = f"Hubo un error en la peticion:{str(e)}"

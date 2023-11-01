@@ -36,7 +36,7 @@ urlpatterns = [
     path('fuente/<str:host>/<str:db>/<str:user>/<str:password>/',FuenteView.as_view()),
     #PEDIDOS
     path('pedidos/<str:host>/<str:db>/<str:user>/<str:password>/<int:all>/',PedidosView.as_view()),
-    path('pedidos/edit/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',EditPedidoView.as_view()),
+    path('pedidos/edit/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:action>/',EditPedidoView.as_view()),
     path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/',EstadoPedido.as_view()),
     path('pedidos/agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),

@@ -526,14 +526,14 @@ class ProducAddView(generics.GenericAPIView):
 class EditPedidoView(generics.GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = request.data
-        print(data)
+      
         cred = data['credencial']
         conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
         sql = "DELETE FROM cabepedido WHERE MOV_COMPRO=?"
-        self.querys(conn,sql,(data['codigo_pedido'],),'post')
+        # self.querys(conn,sql,(data['codigo_pedido'],),'post')
         conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
         sql = "DELETE FROM movipedido WHERE mov_compro=?"
-        self.querys(conn,sql,(data['codigo_pedido'],),'post') 
+        # self.querys(conn,sql,(data['codigo_pedido'],),'post') 
         total=0
         base_impo=0
         if int(data['gui_inclu'])==1:
@@ -552,7 +552,7 @@ class EditPedidoView(generics.GenericAPIView):
                     str(ope_codigo[0][0]).strip(),data['almacen'],data['cabeceras']['ruc'],data['obs'],18,igv,base_impo,\
                     data['gui_inclu'],'','',data['tipo_venta'],'F1',0,0,0,0,0,0,data['agencia'],'',data['sucursal'],'',data['direccion'],data['nombre'],data['total'],round(self.sumaSDesc(data['detalle']),2),\
                     round(float(data['total'])-self.sumaSDesc(data['detalle']),2),0)
-      
+        print(len(params))
         sql = """INSERT INTO cabepedido 
             (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
             rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
@@ -560,9 +560,18 @@ class EditPedidoView(generics.GenericAPIView):
             gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,agr_codigo,gui_tienda,
             edp_codigo,gui_tiedir,ped_tiedir,rou_submon,rou_dscto,ped_tipenv) VALUES"""+'('+ ','.join('?' for i in params)+')'
         
-        conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
-       
-        self.querys(conn,sql,params,'post')
+        sql = """SELECT MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
+            rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
+            gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,mov_cotiza,aux_nuevo,ped_tipven,doc_codigo,
+            gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,agr_codigo,gui_tienda,
+            edp_codigo,gui_tiedir,ped_tiedir,rou_submon,rou_dscto,ped_tipenv FROM cabepedido WHERE MOV_COMPRO=?"""
+        c = data['credencial']
+        print(c)
+        result = Querys({'host':c['bdhost'],'bd':c['bdname'],'user':c['bdname'],'passowrd':c['bdpassword']}).querys(sql,(data['codigo_pedido'],),'get',0)
+        print(result)
+        for i,j in zip(params,result):
+            print(i,j)
+        # self.querys(conn,sql,params,'post')
        
         sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
             ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
@@ -572,63 +581,61 @@ class EditPedidoView(generics.GenericAPIView):
         
         for item in data['detalle']:
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
-            params = ('53',str(data['fecha']).split('-')[1],data['codigo_pedido'],data['fecha'],item['codigo'],'','','S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
-                        data['codigo_usuario'],data['fecha'],'S',float(item['descuento']),data['gui_inclu'],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
+            params = ('53',datetime.now().month,data['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),item['codigo'],'','','S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
+                        data['codigo_usuario'],datetime.now().strftime('%Y-%m-%d'),'S',float(item['descuento']),data['gui_inclu'],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
             
             sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
         
-            res = self.querys(conn,sql,params,'post')
-        
+            # res = self.querys(conn,sql,params,'post')
+        res = 'SUCCESS'
         return Response({'message':f'EL pedido {data["codigo_pedido"]} fue editado exitosamente.'} if res =='SUCCESS' else res )
 
     def get(self,request,*args,**kwargs):
-        host = kwargs['host']
-        db = kwargs['db']
-        user = kwargs['user']
-        password = kwargs['password']
-        datos = {}
+        
+        data = {}
+        action = kwargs['action']
         try:
-            conn = QuerysDb.conexion(host,db,user,password)
-            sql = """
-                    SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,a.tal_codigo
-                    FROM movipedido AS a 
-                    INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
-                    WHERE a.mov_compro = ?
-                """
-    
-            data = self.querys(conn,sql,kwargs['codigo'],'get')
+            if action == 'c':
+                sql = """SELECT a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE
+                        FROM cabepedido AS a
+                        INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
+                        WHERE a.MOV_COMPRO = ?"""
+                result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+                data  = {'codigo':result[0].strip(),'ruc':result[1].strip(),'direccion':result[2].strip(),'nombre':result[3].strip()}
+            elif action =='a':
+
+                # conn = QuerysDb.conexion(host,db,user,password)
+                sql = """
+                        SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,a.tal_codigo
+                        FROM movipedido AS a 
+                        INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
+                        WHERE a.mov_compro = ?
+                    """
         
-            articulos =[]
-            for index,item in enumerate(data):
-                d={'id':index,'codigo':item[0],'cantidad':item[1],'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip(),'talla':item[6].strip()}
-                articulos.append(d)
-        
+                # data = self.querys(conn,sql,kwargs['codigo'],'get')
+                datos= Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',1)
+              
+                articulos =[]
+                for index,item in enumerate(datos):
+                    d={'id':index,'codigo':item[0],'cantidad':item[1],'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip(),'talla':item[6].strip()}
+                    articulos.append(d)
+                data = articulos
             
-            sql = """SELECT MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,ven_codigo,FECHAUSU,
-                ubi_codigo,pag_codigo,gui_direc,lis_codigo,ubi_codig2,gui_ruc,
-                gui_exp001,gui_inclu,ped_tipven,tra_codig2,gui_tienda,gui_tiedir,ped_tiedir,rou_submon
-                FROM cabepedido WHERE MOV_COMPRO=?"""
-        
-            conn = QuerysDb.conexion(host,db,user,password)
-            data = self.querys(conn,sql,kwargs['codigo'],'get')[0]  
-            conn = QuerysDb.conexion(host,db,user,password)
-            sql = "SELECT aux_razon from t_auxiliar WHERE aux_clave=?"
-            cliente = self.querys(conn,sql,data[2],'get')[0]
-            sql = "SELECT tra_nombre FROM t_transporte WHERE TRA_CODIGO=?"
-            try:
-                agencia_nombre = Querys(kwargs).querys(sql,(data[15],),'get',0)[0]
-            except :
-                agencia_nombre = ''
-            cabepedido = {'codigo_pedido':data[0],'fecha':data[1],'codigo_cliente':data[2],'moneda':data[3],'codigo_usuario':data[4],\
-                        'fecha_usuario':data[5],'local':data[6],'tipo_pago':data[7],'direccion':data[8],'lista_precio':data[9],\
-                        'almacen':data[10],"ruc":data[11],'obs':data[12],'gui_inclu':data[13],'cliente':cliente[0].strip(),'tipo_venta':data[14],
-                        'agencia_codigo':data[15],'agencia_nombre':agencia_nombre.strip(),'entrega_codigo':data[16],'entrega_nombre':data[17],
-                        'entrega_direccion':data[18],'monto':data[19]}
-            datos['articulos']=articulos
-            datos['cabepedido']=cabepedido
+            elif action == 'al':
+                sql = """SELECT MOV_COMPRO,MOV_MONEDA,gui_exp001,gui_inclu,ped_tipven,tra_codig2,gui_tienda,gui_tiedir,ped_tiedir
+                        FROM cabepedido WHERE MOV_COMPRO=?"""
+                result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+                sql = "SELECT tra_nombre FROM t_transporte WHERE TRA_CODIGO=?"
+                try:
+                    agencia_nombre = Querys(kwargs).querys(sql,(result[5],),'get',0)[0]
+                except :
+                    agencia_nombre = ''
+                data = {'codigo_pedido':result[0].strip(),'moneda':result[1].strip(),'obs':result[2].strip(),'gui_inclu':result[3],
+                         'tipo_venta':result[4],'agencia_codigo':result[5].strip(),'agencia_nombre':agencia_nombre.strip(),'entrega_codigo':result[6].strip(),
+                         'entrega_nombre':result[7].strip(),'entrega_direccion':result[8].strip()}
         except Exception as e:
-            datos['error'] = f"Ocurrio un error: {str(e)}"
-        return Response(datos)
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response(data)
     def querys(self,conn,sql,params,request):
         cursor = conn.cursor()
         cursor.execute(sql,params)
