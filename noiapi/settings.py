@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import django
 from django.core.management.utils import get_random_secret_key 
 import os
 from datetime import timedelta
+from urllib.parse import quote
+
+django.utils.http.urlquote = quote
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apirest',
+    'easy_pdf'
   
 ]
 
@@ -158,6 +164,9 @@ STATICFILES_DIRS = [
 ]
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+# settings.py
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS_ORIGIN_WHITELIST = [

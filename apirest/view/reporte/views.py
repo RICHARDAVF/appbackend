@@ -154,7 +154,6 @@ class PDFview1(generics.GenericAPIView):
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
         partes = {}  
-        
         for item in data['datos']:
             parte = item['parte']
             if parte in partes:

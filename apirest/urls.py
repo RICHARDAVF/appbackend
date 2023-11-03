@@ -15,6 +15,7 @@ from apirest.view.reporte.views import PDFView,PDFview1
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.fact.views import Facturacion,PDFFACTView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
+from apirest.view.pedido.views import PdfPedidoView
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -40,6 +41,7 @@ urlpatterns = [
     path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/',EstadoPedido.as_view()),
     path('pedidos/agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
+    path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',PdfPedidoView.as_view()),
    #LUGAR DE ENTREGA
     path('lugar/entrega/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:cliente>/',LugarEntregaView.as_view()),
 
