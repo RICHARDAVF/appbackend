@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apirest',
-    # 'easy_pdf'
+    'easy_pdf'
   
 ]
 

@@ -13,9 +13,10 @@ from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockVie
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
 from apirest.view.reporte.views import PDFView,PDFview1
 from apirest.view.apis.views import SearchDNIRUC
-from apirest.view.guias.views import Facturacion,PDFFACTView
+from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
 from apirest.view.pedido.views import PdfPedidoView
+
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -76,12 +77,13 @@ urlpatterns = [
     #REPORTE
     path('reporte1/',PDFView.as_view()),
     path('reporte2/',PDFview1.as_view()),
-    #FACTURACION ELECTRONICA
+    #GUI ELECTRONICA
     path("fact/",Facturacion.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
+    path('guia/anulacion/<str:serie>/<str:numero>/',AnulacionGuiaView.as_view(),name='anulacion'),
     #VALIDACION DE DOCUMENTOS
     path('searchdoc/<str:doc>/<str:tipo>/',SearchDNIRUC.as_view(),name='search_doc'),
     #VERSION DE LA APLICACION MOVIL ANDROID
-    path('check/version/app/',VersionAppView.as_view())
-
+    path('check/version/app/',VersionAppView.as_view()),
+    #PDF PRUEBAS
 ]

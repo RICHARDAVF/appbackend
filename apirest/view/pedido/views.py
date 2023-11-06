@@ -3,26 +3,11 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus.flowables import PageBreak
-
 import base64
 import io
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from apirest.querys import Querys
-from numpy import array
-class MyCanvas:
-    def __init__(self, canvas, doc):
-        self.canvas = canvas
-        self.doc = doc
-
-    def afterDrawPage(self, canvas, doc):
-        canvas.saveState()
-        # Agregar contenido personalizado al canvas, como líneas, texto, formas, etc.
-        canvas.setFillColor(colors.red)
-        canvas.setFont("Helvetica", 12)
-        canvas.drawString(100, 50, "Este es un canvas personalizado")
-
-        canvas.restoreState()
 
 def agrupar(datos):
     datos_agrupados = {}
@@ -152,7 +137,6 @@ class PdfPedidoView(GenericAPIView):
                 data.append(lista)
            
             data.append(['','TOTAL:',total]+['']*(len(tallas_header)+2))
-            # data.append()
             w,h = A4
             story.append(Spacer(0,20))
             col_widths = [w*0.15,w*.25,w*.06]+[w*0.3/len(tallas_header)]*len(tallas_header)+[w*.1,w*.1]

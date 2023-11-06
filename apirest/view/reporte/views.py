@@ -10,10 +10,11 @@ import io
 from datetime import datetime
 from PIL import Image
 from itertools import groupby
-from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle,PageTemplate
+from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
 from reportlab.platypus import Image as img
+
+
 def decode_and_save_image(base64_img, filename):
     try:
         image_data = base64.b64decode(base64_img)

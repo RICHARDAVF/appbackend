@@ -5,6 +5,7 @@ import requests
 import os
 import json
 from datetime import date,datetime
+from apirest.querys import Querys
 from apirest.views import QuerysDb
 from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
@@ -389,7 +390,7 @@ class PDFFACTView(generics.GenericAPIView):
             return Response({'pdf':base})
         return Response(json.loads(response.text))
     def query(self,sql,params,opt='get'):
-        conn = QuerysDb.conexion('192.168.1.80','siiasmartfc','sa','Noi2011')
+        conn = QuerysDb.conexion('192.168.1.40','siiasmartfc','sa','Noi2011')
         cursor = conn.cursor()
         cursor.execute(sql,params)
         data = ''
@@ -399,9 +400,43 @@ class PDFFACTView(generics.GenericAPIView):
         conn.close()
         return data
 class AnulacionGuiaView(generics.GenericAPIView):
-    def get(self,request,*args,**kwagrs):
-        sql = f"""
-                UPDATE GUIC{datetime.now().year} set gui_elimini=0 WHERE gui_serie = ? 
-            """
+
+    def get(self,request,*args,**kwargs):
+
+        data = {}
+        try:
+            sql = f"SELECT MOV_COMPRO FROM GUIC{datetime.now().year} WHERE gui_serie=? AND gui_docum=?"
+
+            numero_pedido = self.query(sql,(kwargs['serie'],kwargs['numero']),'get')
+
+            sql = f"""
+                    UPDATE GUIC{datetime.now().year} set elimini=1 WHERE MOV_COMPRO = ? 
+                """
+            res = self.query(sql,(numero_pedido[0]),'post')
+            sql = f"""
+                    UPDATE GUID{datetime.now().year} set elimini=1 WHERE mov_compro = ? 
+                """
+            res = self.query(sql,(numero_pedido[0]),'post')
+            
+            sql = f"""
+                    UPDATE MOVM{datetime.now().year} set elimini=1 WHERE MOM_D_INT = ? 
+                """
+            res = self.query(sql,(numero_pedido[0]),'post')
+            if res ==200:
+                data['sucess'] = "La anulacion fue exitosa" 
+            
+        except Exception as e:
+            data['error'] = f"Ocurrio un error : {str(e)}"
         
-        return Response()
+        
+        return Response(data)
+    def query(self,sql,params,opt='get'):
+        conn = QuerysDb.conexion('192.168.1.40','siiasmartfc','sa','Noi2011')
+        cursor = conn.cursor()
+        cursor.execute(sql,params)
+        data  = 200
+        if opt =='get':
+            data = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        return data
