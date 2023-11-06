@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apirest',
-    'easy_pdf'
+    # 'easy_pdf'
   
 ]
 
@@ -89,12 +89,12 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'mssql',
@@ -108,19 +108,19 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 #         }
 #     }
 # }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'app',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',  
-        'PORT': '',    
-        'OPTIONS': {
-            'sql_mode': 'STRICT_ALL_TABLES',
-        },       
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'app',
+#         'USER': 'root',
+#         'PASSWORD': '',
+#         'HOST': 'localhost',  
+#         'PORT': '',    
+#         'OPTIONS': {
+#             'sql_mode': 'STRICT_ALL_TABLES',
+#         },       
+#     }
+# }
 # SESSION_COOKIE_AGE = 0
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

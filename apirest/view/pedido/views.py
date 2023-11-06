@@ -1,15 +1,29 @@
-from django.http import FileResponse
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus.flowables import PageBreak
-from datetime import datetime
-from django.http import HttpResponse
+
+import base64
 import io
 from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
 from apirest.querys import Querys
 from numpy import array
+class MyCanvas:
+    def __init__(self, canvas, doc):
+        self.canvas = canvas
+        self.doc = doc
+
+    def afterDrawPage(self, canvas, doc):
+        canvas.saveState()
+        # Agregar contenido personalizado al canvas, como líneas, texto, formas, etc.
+        canvas.setFillColor(colors.red)
+        canvas.setFont("Helvetica", 12)
+        canvas.drawString(100, 50, "Este es un canvas personalizado")
+
+        canvas.restoreState()
+
 def agrupar(datos):
     datos_agrupados = {}
     for item in datos:
@@ -70,9 +84,10 @@ class PdfPedidoView(GenericAPIView):
         return partes
     def get(self,request,*args,**kwargs):
         partes = self.order()
-       
+
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
+
         styles = getSampleStyleSheet()
         custom_style = ParagraphStyle(name='Negrita', parent=styles['Normal'])
         custom_style.fontName = 'Helvetica-Bold'  
@@ -80,34 +95,57 @@ class PdfPedidoView(GenericAPIView):
        
         story = []  
         style_normal = styles["Normal"]
+        style_normal.alignment = 2
+        style_normal.fontName = "Helvetica-Bold"
+        style_normal.wordWrap = False
         style_heading = styles["Heading1"]
         sql = """
-                SELECT*FROM cabepedido WHERE MOV_COMPRO =?
+                SELECT 
+                    a.MOV_FECHA,
+                    b.AUX_NOMBRE,
+                    a.gui_direc,
+                    a.gui_ruc,
+                    'vendedor'=(SELECT USU_NOMBRE FROM t_usuario WHERE USU_CODIGO=a.USUARIO ),
+					a.gui_exp001,
+					a.rou_dscto,
+					a.ROU_IGV,
+					a.ROU_BRUTO,
+					a.rou_submon,
+					a.ROU_TVENTA,
+                    a.MOV_MONEDA
+                FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE WHERE MOV_COMPRO=?
         """
+        dates = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+        
         story.append(Paragraph("DEMO DENINM ART", style_heading))
         story.append(Spacer(1, 12))
-        fecha = Paragraph(f'EMISION: {datetime.now().strftime("%d-%m-%Y")}',custom_style)
-        fecha.vAlign = 'LEFT'
+        numero_pedido = Paragraph(f"NUMERO PEDIDO: {self.kwargs['codigo']}",custom_style)
+        story.append(numero_pedido)
+        fecha = Paragraph(f"EMISION: {dates[0].strftime('%d/%m/%Y')}",custom_style)
         story.append(fecha)
-        cliente = Paragraph(f"CLIENTE: RICHARD AVILES FERRO",custom_style)
+        cliente = Paragraph(f"CLIENTE: {dates[1].strip()}",custom_style)
         story.append(cliente)
-        direccion = Paragraph(f"DIRECCION: LIMA-LIMA-PERU",custom_style)
+        direccion = Paragraph(f"DIRECCION: {dates[2].strip()}",custom_style)
         story.append(direccion)
-        documento = Paragraph(f"DOCUMENTO: 10273986127838",custom_style)
+        documento = Paragraph(f"DOCUMENTO: {dates[3].strip()}",custom_style)
         story.append(documento)
-        vendedor = Paragraph(f"VENDEDOR: ADMINISTRACION",custom_style)
+        vendedor = Paragraph(f"VENDEDOR: {dates[4].strip()}",custom_style)
         story.append(vendedor)
         for parte in partes:
             result,tallas_header = self.agruparTallas(partes[parte])
             cabeceras = ["CODIGO", "ARTICULO","CANT."]+[i for i in tallas_header]+['P. UNIT','TOTAL']
             data = [cabeceras,
                     ]
+            total = 0
             for item in result.values():
 
                 numeros = [elemento for elemento in item['cantidad'] if isinstance(elemento, (int, float))]
-
-                lista = [item['codigo'],item['nombre'],sum(numeros)]+item['cantidad']+[round(item['precio'],2),sum(item['total'])]
+                total+=sum(numeros)
+                lista = [item['codigo'],Paragraph(item['nombre']),sum(numeros)]+item['cantidad']+[round(item['precio'],2),sum(item['total'])]
                 data.append(lista)
+           
+            data.append(['','TOTAL:',total]+['']*(len(tallas_header)+2))
+            # data.append()
             w,h = A4
             story.append(Spacer(0,20))
             col_widths = [w*0.15,w*.25,w*.06]+[w*0.3/len(tallas_header)]*len(tallas_header)+[w*.1,w*.1]
@@ -121,15 +159,30 @@ class PdfPedidoView(GenericAPIView):
                                    ]))
 
             story.append(table)
+        obs = Paragraph(f"Observacion: {dates[5].strip()}")
+    
+        story.append(obs)
+        moneda = 'S/ ' if 'S' == dates[11].strip() else '$'
+        data = [
+            ['CARGO','MONEDA',"MONTO"],
+            ['SUBTOTAL',moneda,round(dates[9], 2)],
+            ['DESCUENTO',moneda,round(dates[6], 2)],
+            ['BASE IMPONIBLE',moneda,round(dates[8], 2)],
+            ['IGV',moneda,round(dates[7], 2)],
+            ['TOTAL VENTA',moneda,round(dates[10], 2)],
+
+            ]
+
+        table= Table(data)
+        table.hAlign = 'RIGHT'
+        table.setStyle(TableStyle([
+                                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                                    ('ALIGN',(0,0),(-1,-1),'RIGHT'),
+                                   ('BACKGROUND', (0, 1), (-1, -1), colors.white)
+                                   ]))
+        story.append(table)
         story.append(PageBreak())
 
-   
         doc.build(story)
-
-
-        buffer.seek(0)
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'inline; filename="mi_archivo.pdf"'
-        response.write(buffer.read())
-
-        return response
+        pdf = buffer.getvalue()
+        return Response({"pdf":base64.b64encode(pdf).decode('utf-8')})
