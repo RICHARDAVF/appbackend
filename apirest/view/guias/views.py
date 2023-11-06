@@ -6,7 +6,7 @@ import os
 import json
 from datetime import date,datetime
 from apirest.views import QuerysDb
-from apirest.view.fact.factappi import RequestAPI
+from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 import base64
@@ -398,3 +398,10 @@ class PDFFACTView(generics.GenericAPIView):
         conn.commit()
         conn.close()
         return data
+class AnulacionGuiaView(generics.GenericAPIView):
+    def get(self,request,*args,**kwagrs):
+        sql = f"""
+                UPDATE GUIC{datetime.now().year} set gui_elimini=0 WHERE gui_serie = ? 
+            """
+        
+        return Response()

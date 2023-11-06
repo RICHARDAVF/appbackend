@@ -45,13 +45,19 @@ class PdfPedidoView(GenericAPIView):
         
         sql = """SELECT 
                     a.ART_CODIGO,
-                    a.MOM_CANT,
+                    'MOM_CANT'=sum(a.MOM_CANT),
                     a.tal_codigo,
                     a.MOM_PUNIT,
                     b.ART_NOMBRE,
                     b.art_partes,
-                    a.mom_valor
-                FROM movipedido AS a INNER JOIN t_articulo AS b ON a.ART_CODIGO=b.art_CODIGO WHERE MOV_COMPRO=? order by b.ART_NOMBRE"""
+                    'mom_valor'=sum(a.mom_valor)
+            FROM movipedido AS a INNER JOIN t_articulo AS b ON a.ART_CODIGO=b.art_CODIGO WHERE MOV_COMPRO=?
+            group by a.ART_CODIGO,a.tal_codigo,
+                                a.MOM_PUNIT,
+                                b.ART_NOMBRE,
+                                b.art_partes
+            order by b.ART_NOMBRE
+            """
         result = Querys(self.kwargs).querys(sql,(self.kwargs['codigo'],),'get',1)
         datos = []
         for item in result:
@@ -112,7 +118,8 @@ class PdfPedidoView(GenericAPIView):
 					a.ROU_BRUTO,
 					a.rou_submon,
 					a.ROU_TVENTA,
-                    a.MOV_MONEDA
+                    a.MOV_MONEDA,
+                    a.ROU_PIGV
                 FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE WHERE MOV_COMPRO=?
         """
         dates = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
@@ -168,7 +175,7 @@ class PdfPedidoView(GenericAPIView):
             ['SUBTOTAL',moneda,round(dates[9], 2)],
             ['DESCUENTO',moneda,round(dates[6], 2)],
             ['BASE IMPONIBLE',moneda,round(dates[8], 2)],
-            ['IGV',moneda,round(dates[7], 2)],
+            [f'IGV {dates[12]:.0f}%',moneda,round(dates[7], 2)],
             ['TOTAL VENTA',moneda,round(dates[10], 2)],
 
             ]

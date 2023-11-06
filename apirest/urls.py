@@ -13,7 +13,7 @@ from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockVie
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
 from apirest.view.reporte.views import PDFView,PDFview1
 from apirest.view.apis.views import SearchDNIRUC
-from apirest.view.fact.views import Facturacion,PDFFACTView
+from apirest.view.guias.views import Facturacion,PDFFACTView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
 from apirest.view.pedido.views import PdfPedidoView
 router = routers.DefaultRouter()
