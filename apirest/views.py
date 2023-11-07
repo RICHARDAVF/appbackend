@@ -343,7 +343,7 @@ class ProductoView(generics.GenericAPIView):
                 WHERE
                     a.elimini = 0
                     AND b.art_mansto = 0
-                    AND a.ALM_CODIGO = ?
+                    {'AND a.ALM_CODIGO = ?' if alm!='x' else ''}
                     AND a.UBI_COD1 = ?
                 GROUP BY
                     b.art_codigo,
@@ -361,6 +361,8 @@ class ProductoView(generics.GenericAPIView):
                     c.ume_nombre
             """
         params = (alm,local)
+        if alm=='x':
+            params = (local,)
         conn = QuerysDb.conexion(host,db,user,password)
         if conn is not None:
             product = array(self.querys(conn,sql,params))
@@ -421,7 +423,7 @@ class ProducAddView(generics.GenericAPIView):
         return self.querys(conn,sql,params,'get')
     def post(self,request,*args,**kwargs):
         datas = request.data
-
+   
         cred = datas['opt']['credencial']
         try:
             sql = "SELECT emp_inclu from t_empresa"
@@ -589,7 +591,7 @@ class EditPedidoView(generics.GenericAPIView):
                 data['cliente']  = {'codigo':result[0].strip(),'ruc':result[1].strip(),'direccion':result[2].strip(),
                          'nombre':result[3].strip(),'tipo_pago':result[6]}
                 data['res'] = {'almacen':result[4],'ubicacion':result[5]}
-                print(data)
+             
             elif action =='a':
 
               
@@ -713,7 +715,7 @@ class EstadoPedido(generics.GenericAPIView):
             estados = [{"id":index,"codigo_pedido":value[0],"fecha":value[1].strftime("%Y-%m-%d"),"cliente":value[2].strip(),\
                         "subtotal":value[3],"igv":value[4],"total":value[5],"status1":value[6],"status2":value[7],\
                             "codigo":value[8].strip(),'moneda':value[9].strip(),'obs':value[10].strip()}for index,value in enumerate(datos)]
-            print(estados)
+           
             return Response({"states":estados})
         except Exception as e:
             return Response({'message':str(e)})

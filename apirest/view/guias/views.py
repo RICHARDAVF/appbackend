@@ -5,7 +5,6 @@ import requests
 import os
 import json
 from datetime import date,datetime
-from apirest.querys import Querys
 from apirest.views import QuerysDb
 from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
@@ -412,16 +411,16 @@ class AnulacionGuiaView(generics.GenericAPIView):
             sql = f"""
                     UPDATE GUIC{datetime.now().year} set elimini=1 WHERE MOV_COMPRO = ? 
                 """
-            res = self.query(sql,(numero_pedido[0]),'post')
+            res = self.query(sql,(numero_pedido[0],),'post')
             sql = f"""
                     UPDATE GUID{datetime.now().year} set elimini=1 WHERE mov_compro = ? 
                 """
-            res = self.query(sql,(numero_pedido[0]),'post')
+            res = self.query(sql,(numero_pedido[0],),'post')
             
             sql = f"""
                     UPDATE MOVM{datetime.now().year} set elimini=1 WHERE MOM_D_INT = ? 
                 """
-            res = self.query(sql,(numero_pedido[0]),'post')
+            res = self.query(sql,(numero_pedido[0],),'post')
             if res ==200:
                 data['sucess'] = "La anulacion fue exitosa" 
             
