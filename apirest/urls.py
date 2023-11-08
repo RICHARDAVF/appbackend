@@ -16,6 +16,7 @@ from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.fact.views import Facturacion,PDFFACTView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
 from apirest.view.pedido.views import PdfPedidoView
+from apirest.view.apps.views import DownloadAppView
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -82,6 +83,7 @@ urlpatterns = [
     #VALIDACION DE DOCUMENTOS
     path('searchdoc/<str:doc>/<str:tipo>/',SearchDNIRUC.as_view(),name='search_doc'),
     #VERSION DE LA APLICACION MOVIL ANDROID
-    path('check/version/app/',VersionAppView.as_view())
+    path('check/version/app/',VersionAppView.as_view()),
+    path('download/app/',DownloadAppView.as_view())
 
 ]
