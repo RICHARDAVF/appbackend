@@ -3,26 +3,11 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus.flowables import PageBreak
-
 import base64
 import io
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from apirest.querys import Querys
-from numpy import array
-class MyCanvas:
-    def __init__(self, canvas, doc):
-        self.canvas = canvas
-        self.doc = doc
-
-    def afterDrawPage(self, canvas, doc):
-        canvas.saveState()
-        # Agregar contenido personalizado al canvas, como líneas, texto, formas, etc.
-        canvas.setFillColor(colors.red)
-        canvas.setFont("Helvetica", 12)
-        canvas.drawString(100, 50, "Este es un canvas personalizado")
-
-        canvas.restoreState()
 
 def agrupar(datos):
     datos_agrupados = {}
@@ -45,13 +30,19 @@ class PdfPedidoView(GenericAPIView):
         
         sql = """SELECT 
                     a.ART_CODIGO,
-                    a.MOM_CANT,
+                    'MOM_CANT'=sum(a.MOM_CANT),
                     a.tal_codigo,
                     a.MOM_PUNIT,
                     b.ART_NOMBRE,
                     b.art_partes,
-                    a.mom_valor
-                FROM movipedido AS a INNER JOIN t_articulo AS b ON a.ART_CODIGO=b.art_CODIGO WHERE MOV_COMPRO=? order by b.ART_NOMBRE"""
+                    'mom_valor'=sum(a.mom_valor)
+            FROM movipedido AS a INNER JOIN t_articulo AS b ON a.ART_CODIGO=b.art_CODIGO WHERE MOV_COMPRO=?
+            group by a.ART_CODIGO,a.tal_codigo,
+                                a.MOM_PUNIT,
+                                b.ART_NOMBRE,
+                                b.art_partes
+            order by b.ART_NOMBRE
+            """
         result = Querys(self.kwargs).querys(sql,(self.kwargs['codigo'],),'get',1)
         datos = []
         for item in result:
@@ -112,7 +103,8 @@ class PdfPedidoView(GenericAPIView):
 					a.ROU_BRUTO,
 					a.rou_submon,
 					a.ROU_TVENTA,
-                    a.MOV_MONEDA
+                    a.MOV_MONEDA,
+                    a.ROU_PIGV
                 FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE WHERE MOV_COMPRO=?
         """
         dates = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
@@ -145,7 +137,6 @@ class PdfPedidoView(GenericAPIView):
                 data.append(lista)
            
             data.append(['','TOTAL:',total]+['']*(len(tallas_header)+2))
-            # data.append()
             w,h = A4
             story.append(Spacer(0,20))
             col_widths = [w*0.15,w*.25,w*.06]+[w*0.3/len(tallas_header)]*len(tallas_header)+[w*.1,w*.1]
@@ -168,7 +159,7 @@ class PdfPedidoView(GenericAPIView):
             ['SUBTOTAL',moneda,round(dates[9], 2)],
             ['DESCUENTO',moneda,round(dates[6], 2)],
             ['BASE IMPONIBLE',moneda,round(dates[8], 2)],
-            ['IGV',moneda,round(dates[7], 2)],
+            [f'IGV {dates[12]:.0f}%',moneda,round(dates[7], 2)],
             ['TOTAL VENTA',moneda,round(dates[10], 2)],
 
             ]
