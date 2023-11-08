@@ -10,10 +10,11 @@ import io
 from datetime import datetime
 from PIL import Image
 from itertools import groupby
-from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle,PageTemplate
+from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle,Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
 from reportlab.platypus import Image as img
+
+
 def decode_and_save_image(base64_img, filename):
     try:
         image_data = base64.b64decode(base64_img)
@@ -181,7 +182,7 @@ class PDFview1(generics.GenericAPIView):
             normal_style = styles["Normal"]
             table_data = []
             datos = list(agrupar(partes[parte]).values())
-            tallas = list(set([str(talla).replace('SS','S').replace('LL','L').replace('MM','M') for i in datos for talla in i['talla']]))
+            tallas = sorted(list(set([str(talla).replace('SS','S').replace('LL','L').replace('MM','M') for i in datos for talla in i['talla']])))
             if "XL" in tallas:
                 tallas = sorted(tallas, key=lambda x: talla_orden.get(x, 99))
             cabeceras = [Paragraph("Codigo", normal_style),
@@ -191,6 +192,7 @@ class PDFview1(generics.GenericAPIView):
             for tal in tallas:
                 cabeceras.insert(-1,tal)
             table_data.append(cabeceras)
+            total = 0
             for item in datos:
                 itm = tuple(item.values())
                 tal = [i.replace("MM","M").replace("SS",'S').replace("LL",'L') for i in  item['talla']]
@@ -204,12 +206,16 @@ class PDFview1(generics.GenericAPIView):
                
                 for i,j in zip(index,stk):
                     lineas[i+2] = Paragraph(str(j),normal_style)
-                lineas.append(Paragraph(str(sum([int(i) for i in stk])),normal_style))
+                t = sum([int(i) for i in stk])
+                lineas.append(Paragraph(str(t),normal_style))
                 table_data.append(lineas)
-            
+                total+=t
+            sum_stock = ['']*len(cabeceras)
+            sum_stock[-1] = Paragraph(str(total),normal_style)
+            sum_stock[-2] = 'TOTAL'
+            table_data.append(sum_stock)
             w,h = A4
-            cant_datos = len(cabeceras)
-            col_width = [w*0.11,w*0.3]+[w*0.62/cant_datos for i in cabeceras[3:]]+[w*0.07]
+            col_width = [w*0.11,w*0.32]+[w*0.5/len(tallas) for i in tallas]+[w*0.07]
             table = Table(table_data,colWidths=col_width)    
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), (0.7, 0.7, 0.7)),
@@ -217,12 +223,12 @@ class PDFview1(generics.GenericAPIView):
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), (0.9, 0.9, 0.9)),
-                ('GRID', (0, 0), (-1, -1), 1, (0.7, 0.7, 0.7))
+                ('BACKGROUND', (0, 1), (-1, -1), (1, 1, 1))
             ]))
             story.append(table)
+            story.append(Spacer(1,12))
        
-            story.append(PageBreak())
+        story.append(PageBreak())
         doc.build(story)
         pdf_data = buffer.getvalue()
         pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')

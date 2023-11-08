@@ -263,7 +263,7 @@ class StockReview(generics.GenericAPIView):
         params = (codigo,almacen,ubicacion)
         if talla!='x':
             params = (codigo,almacen,ubicacion,talla)
-        print(params)
+
         sql = f"""
                 SELECT 'mom_cant' = ISNULL(
                     SUM(
@@ -281,7 +281,7 @@ class StockReview(generics.GenericAPIView):
                     {'AND tal_codigo=?'if talla!='x' else ''}
                   
                 """
-        print(sql)
+   
         conn = QuerysDb.conexion(host,db,user,password)
         data = self.querys(conn,sql,params)
         respuesta['stock_real'] = int(data[0])
