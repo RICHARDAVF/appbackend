@@ -398,7 +398,7 @@ class ProductoView(generics.GenericAPIView):
         return datos 
 class ClienteView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
-        sql = """SELECT ltrim(rtrim(aux_razon)),aux_clave,aux_docum,rtrim(ltrim(aux_direcc)),rtrim(ltrim(aux_telef)),aux_email 
+        sql = """SELECT aux_razon,aux_clave,aux_docum,aux_direcc,aux_telef,aux_email 
         FROM t_auxiliar WHERE substring(aux_clave,1,1)=? ORDER BY  aux_razon ASC"""
         params = 'C'
         host = kwargs['host']
@@ -413,7 +413,7 @@ class ClienteView(generics.GenericAPIView):
             product = cursor.fetchall()
             serialize_client = []
             for index,row in enumerate(product):
-                serialize_client.append({'id':index+1,'nombre':row[0],'codigo':row[1],'ruc':row[2],'direccion':row[3],'telefono':row[4],'email':str(row[5]).strip()})      
+                serialize_client.append({'id':index+1,'nombre':row[0].strip(),'codigo':row[1].strip(),'ruc':row[2].strip(),'direccion':row[3].strip(),'telefono':row[4].strip(),'email':str(row[5]).strip()})      
             return Response(serialize_client,status=status.HTTP_200_OK)
         return Response({'message':'Error en la base de datos'})       
 class ProducAddView(generics.GenericAPIView):
