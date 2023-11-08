@@ -723,12 +723,16 @@ class EstadoPedido(generics.GenericAPIView):
         credencial = data['credencial']
         conn = QuerysDb.conexion(credencial['bdhost'],credencial['bdname'],credencial['bduser'],credencial['bdpassword'])
         cursor = conn.cursor()
-        if int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==1:
-            sql = """UPDATE cabepedido set ped_status=2,ped_statu2=2 WHERE MOV_COMPRO=?"""
-        elif int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==0:
-            sql = "UPDATE cabepedido SET ped_status=2 WHERE MOV_COMPRO=?"
-        elif int(data['user']['aprobacion1'])==0 and int(data['user']['aprobacion2']==1):
+        if data['aprobacion']==1:
+            if int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==1:
+                sql = """UPDATE cabepedido set ped_status=2,ped_statu2=2 WHERE MOV_COMPRO=?"""
+            elif int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==0:
+                sql = "UPDATE cabepedido SET ped_status=2 WHERE MOV_COMPRO=?"
+            elif int(data['user']['aprobacion1'])==0 and int(data['user']['aprobacion2']==1):
+                sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
+        else:
             sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
+
         cursor.execute(sql,data['codigo_pedido'])
         conn.commit()
         conn.close()
