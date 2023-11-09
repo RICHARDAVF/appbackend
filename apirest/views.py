@@ -647,13 +647,9 @@ class EditPedidoView(generics.GenericAPIView):
           
         return total
 class PedidosView(generics.GenericAPIView):
-    def get(self,*args,**kwargs):
-        host = kwargs['host']
-        db = kwargs['db']
-        user = kwargs['user']
-        passwrod = kwargs['password']
+    def get(self,request,*args,**kwargs):
         all_items = kwargs['all']
-        conn = QuerysDb.conexion(host,db,user,passwrod)
+
         sql =f"""
         SELECT a.MOV_COMPRO, a.MOV_FECHA,
         ped_status = CASE 
@@ -672,7 +668,7 @@ class PedidosView(generics.GenericAPIView):
 		ORDER BY MOV_FECHA DESC, MOV_COMPRO DESC
 
         """
-        datos = self.querys(conn,sql,())
+        datos = Querys(kwargs).querys(sql,(),'get',1)
         estados = []
         for index,value in enumerate(datos):
             estados.append({'id':index,"codigo_pedido":value[0],"fecha":value[1].strftime('%Y-%m-%d'),'status':value[2],"cliente":value[3].strip(),\
@@ -688,7 +684,7 @@ class PedidosView(generics.GenericAPIView):
         conn.close()
         return datos
 class EstadoPedido(generics.GenericAPIView):
-    def get(self,*args,**kwargs):
+    def get(self,request,*args,**kwargs):
         host = kwargs['host']
         db = kwargs['db']
         user = kwargs['user']
@@ -816,9 +812,10 @@ class UbigeoView(generics.GenericAPIView):
                     ubi_distri
                 FROM mk_ubigeo
                 """
-            cursor = conn.cursor()
-            cursor.execute(sql)
-            result = cursor.fetchall()
+            result = Querys(kwargs).querys(sql,(),'get',1)
+            # cursor = conn.cursor()
+            # cursor.execute(sql)
+            # result = cursor.fetchall()
             data = []
             for index,value in enumerate(result):
                 d = {'id':index,'ubigeo':value[0].strip(),'departamento':value[1].strip().upper(),

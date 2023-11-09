@@ -40,7 +40,7 @@ urlpatterns = [
     path('pedidos/<str:host>/<str:db>/<str:user>/<str:password>/<int:all>/',PedidosView.as_view()),
     path('pedidos/edit/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:action>/',EditPedidoView.as_view()),
     path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/',EstadoPedido.as_view()),
-    path('pedidos/agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
+    path('agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',PdfPedidoView.as_view()),
    #LUGAR DE ENTREGA
