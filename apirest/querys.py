@@ -8,6 +8,7 @@ class Querys:
     def __init__(self,kwargs):
         self.kwargs = kwargs
     def conexion(self):
+       
         return pyodbc.connect('DRIVER={SQL Server};SERVER=' +
                                self.kwargs['host']+';DATABASE='+self.kwargs['db']+';UID='+self.kwargs['user']+';PWD=' + self.kwargs['password'])
     def querys(self,sql,params,method,opt=1):
