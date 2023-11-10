@@ -102,11 +102,13 @@ class UserView(generics.GenericAPIView):
                         a = {'value':row[0],'label':row[1]}
                         alms.append(a)
                     datos['alms']=alms
- 
-                
-                sql2 = """SELECT ubi_codigo,ubi_nombre,ubi_modelo,ubi_manpun,ubi_punsol,agr_codigo from t_ubicacion where modifica=1 order by ubi_codigo"""
+                params = ()
+                sql = """SELECT ubi_codigo,ubi_nombre,ubi_modelo,ubi_manpun,ubi_punsol,agr_codigo from t_ubicacion where modifica=1 order by ubi_codigo"""
+                if datos['user']['ubicacion']!='':
+                    sql  = "select ubi_codigo,ubi_nombre,ubi_modelo,ubi_manpun,ubi_punsol,agr_codigo from t_ubicacion where ubi_codigo=? or ubi_mosiem=1 order by ubi_mosiem,ubi_codigo"
+                    params = (datos['user']['ubicacion'],)
                 conn = QuerysDb.conexion(user.bdhost,user.bdname,user.bduser,user.bdpassword)
-                ubic = self.querys(conn,sql2,())
+                ubic = self.querys(conn,sql,params)
                 if ubic is not None:
                     ubicacion = []
                     for row in ubic:
@@ -464,7 +466,7 @@ class ProducAddView(generics.GenericAPIView):
                     total,1,datas['opt']['local'],datas['opt']['tipo'],datas['cabeceras']['direccion'],datas['opt']['precio'],params,\
                     str(data[0][0]).strip(),datas['opt']['almacen'],datas['cabeceras']['ruc'],datas['opt']['obs'],18,igv,base_impo,\
                     gui_inclu[0],'','',datas['tipo_venta'],'F1',0,0,0,0,0,0,datas['agencia'],'',datas['sucursal'],'',datas['nombre'],datas['direccion'],round(self.sumaSDesc(datas['detalle']),2),\
-                    abs(round(total1-self.sumaSDesc(datas['detalle']),2)),0)
+                    abs(round(total1-self.sumaSDesc(datas['detalle']),2)),datas['tipo_envio'])
             sql = """INSERT INTO cabepedido (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
             rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
             gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,mov_cotiza,aux_nuevo,ped_tipven,doc_codigo,
@@ -548,7 +550,7 @@ class EditPedidoView(generics.GenericAPIView):
                     total,1,data['local'],data['tipo'],data['cabeceras']['direccion'],data['precio'],data['codigo_usuario'],\
                     str(ope_codigo[0][0]).strip(),data['almacen'],data['cabeceras']['ruc'],data['obs'],18,igv,base_impo,\
                     data['gui_inclu'],data['tipo_venta'],'F1',0,0,0,0,0,0,data['agencia'],data['sucursal'],data['direccion'],data['nombre'],round(self.sumaSDesc(data['detalle']),2),\
-                    round(float(data['total'])-self.sumaSDesc(data['detalle']),2),0)
+                    round(float(data['total'])-self.sumaSDesc(data['detalle']),2),data['tipo_envio'])
         sql = """INSERT INTO cabepedido 
             (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
             rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
@@ -582,14 +584,14 @@ class EditPedidoView(generics.GenericAPIView):
         action = kwargs['action']
         try:
             if action == 'c':
-                sql = """SELECT a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,a.ubi_codig2,a.ubi_codigo,a.pag_codigo
+                sql = """SELECT a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,a.ubi_codig2,a.ubi_codigo,a.pag_codigo,a.ped_tipenv,a.ped_tipven
                         FROM cabepedido AS a
                         INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
                         WHERE a.MOV_COMPRO = ?"""
                 result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
                
                 data['cliente']  = {'codigo':result[0].strip(),'ruc':result[1].strip(),'direccion':result[2].strip(),
-                         'nombre':result[3].strip(),'tipo_pago':result[6]}
+                         'nombre':result[3].strip(),'tipo_pago':result[6],'tipo_envio':result[7],'tipo_venta':result[8]}
                 data['res'] = {'almacen':result[4],'ubicacion':result[5]}
              
             elif action =='a':
