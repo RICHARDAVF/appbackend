@@ -649,13 +649,9 @@ class EditPedidoView(generics.GenericAPIView):
           
         return total
 class PedidosView(generics.GenericAPIView):
-    def get(self,*args,**kwargs):
-        host = kwargs['host']
-        db = kwargs['db']
-        user = kwargs['user']
-        passwrod = kwargs['password']
+    def get(self,request,*args,**kwargs):
         all_items = kwargs['all']
-        conn = QuerysDb.conexion(host,db,user,passwrod)
+
         sql =f"""
         SELECT a.MOV_COMPRO, a.MOV_FECHA,
         ped_status = CASE 
@@ -674,7 +670,7 @@ class PedidosView(generics.GenericAPIView):
 		ORDER BY MOV_FECHA DESC, MOV_COMPRO DESC
 
         """
-        datos = self.querys(conn,sql,())
+        datos = Querys(kwargs).querys(sql,(),'get',1)
         estados = []
         for index,value in enumerate(datos):
             estados.append({'id':index,"codigo_pedido":value[0],"fecha":value[1].strftime('%Y-%m-%d'),'status':value[2],"cliente":value[3].strip(),\
@@ -690,7 +686,7 @@ class PedidosView(generics.GenericAPIView):
         conn.close()
         return datos
 class EstadoPedido(generics.GenericAPIView):
-    def get(self,*args,**kwargs):
+    def get(self,request,*args,**kwargs):
         host = kwargs['host']
         db = kwargs['db']
         user = kwargs['user']
@@ -727,12 +723,16 @@ class EstadoPedido(generics.GenericAPIView):
         credencial = data['credencial']
         conn = QuerysDb.conexion(credencial['bdhost'],credencial['bdname'],credencial['bduser'],credencial['bdpassword'])
         cursor = conn.cursor()
-        if int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==1:
-            sql = """UPDATE cabepedido set ped_status=2,ped_statu2=2 WHERE MOV_COMPRO=?"""
-        elif int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==0:
-            sql = "UPDATE cabepedido SET ped_status=2 WHERE MOV_COMPRO=?"
-        elif int(data['user']['aprobacion1'])==0 and int(data['user']['aprobacion2']==1):
+        if data['aprobacion']==1:
+            if int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==1:
+                sql = """UPDATE cabepedido set ped_status=2,ped_statu2=2 WHERE MOV_COMPRO=?"""
+            elif int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==0:
+                sql = "UPDATE cabepedido SET ped_status=2 WHERE MOV_COMPRO=?"
+            elif int(data['user']['aprobacion1'])==0 and int(data['user']['aprobacion2']==1):
+                sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
+        else:
             sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
+
         cursor.execute(sql,data['codigo_pedido'])
         conn.commit()
         conn.close()
@@ -814,9 +814,10 @@ class UbigeoView(generics.GenericAPIView):
                     ubi_distri
                 FROM mk_ubigeo
                 """
-            cursor = conn.cursor()
-            cursor.execute(sql)
-            result = cursor.fetchall()
+            result = Querys(kwargs).querys(sql,(),'get',1)
+            # cursor = conn.cursor()
+            # cursor.execute(sql)
+            # result = cursor.fetchall()
             data = []
             for index,value in enumerate(result):
                 d = {'id':index,'ubigeo':value[0].strip(),'departamento':value[1].strip().upper(),
