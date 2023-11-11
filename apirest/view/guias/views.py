@@ -24,6 +24,8 @@ class Facturacion(generics.GenericAPIView):
         data = {}
         try:
             datos = request.data
+            if len(datos['num_pedido'].strip())==0:
+                return Response({"Error":'Ocurrio un error en numero de pedido'})
             for item in datos['items']:
                 if not self.validfecha(item['fecha_vencimiento']):
                     return Response({'error':"Formato de la fecha es incorrecto"})
