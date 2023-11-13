@@ -279,7 +279,6 @@ class StockReview(generics.GenericAPIView):
                     AND ALM_CODIGO = ?
                     AND UBI_COD1 = ? 
                     {'AND tal_codigo=?'if talla!='x' else ''}
-                  
                 """
    
         conn = QuerysDb.conexion(host,db,user,password)

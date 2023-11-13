@@ -78,7 +78,7 @@ urlpatterns = [
     #REPORTE
     path('reporte1/',PDFView.as_view()),
     path('reporte2/',PDFview1.as_view()),
-    #GUI ELECTRONICA
+    #GUIA ELECTRONICA DE VENTA Y TRASLADO
     path("fact/",Facturacion.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
     path('guia/anulacion/<str:serie>/<str:numero>/',AnulacionGuiaView.as_view(),name='anulacion'),
