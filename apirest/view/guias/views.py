@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics,status
 from rest_framework.response import Response
 from dotenv import load_dotenv
 import requests
@@ -12,25 +12,52 @@ from rest_framework.permissions import IsAuthenticated
 import base64
 load_dotenv()
 class Facturacion(generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
     def validfecha(self,fecha):
         try:
             datetime.strptime(fecha, '%Y-%m-%d')
             return True
         except ValueError:
             return False
+    def guia_traslado(self,datos):
+        return len(datos['num_pedido'].strip())!=8 or datos['num_pedido'][0]!='T'
+    def guia_venta(self,datos):
+        return len(datos['num_pedido'].strip())== 0 or datos['num_pedido'][0]=='T'
+    # def valid_importe(self,datos):
+    #     if datos['codigo_operacion'] =='18':
+    #         for item in datos['items']:
+    #             if item['precio']!=0:
+    #                 return False
+    #     return True
     def post(self,request,*args,**kwargs):
         data = {}
         try:
             datos = request.data
-            if len(datos['num_pedido'].strip())==0:
-                return Response({"Error":'Ocurrio un error en numero de pedido'})
+            if len(datos['codigo_operacion'].strip()) == 0 or not datos['codigo_operacion'] in ['05','06']:
+                data['error'] = 'Codigo de operacion no permitido'
+                data['status'] = 400
+                return Response(data,status=status.HTTP_200_OK)
+            elif datos['codigo_operacion']=='05' and  self.guia_venta(datos):
+                data['error'] =  "Ocurrio un error con el numero de pedido"
+                data['status'] = 400
+                return Response(data,status=status.HTTP_200_OK)
+            elif datos['codigo_operacion']=='06' and  self.guia_traslado(datos):
+                data['error'] = "Ocurrio un error con el correlativo de la guia de traslado"
+                data['status'] = 400
+                return Response(data,status=status.HTTP_200_OK)
             for item in datos['items']:
                 if not self.validfecha(item['fecha_vencimiento']):
-                    return Response({'error':"Formato de la fecha es incorrecto"})
+                    return Response({'error':"formato de la fecha es de vencimiento es  incorrecto (YYYY-MM-DD)"})
+            # if not self.valid_importe(datos):
+            #     data['error'] = "Error en el importe para una guia de traslado"
+            #     data['status'] = 400
+            #     return Response(data,status=status.HTTP_200_OK)
             tipodoc = "ruc" if datos['tipodoc']==6 else "dni"
-           
+            if len(datos['doc'])==0:
+                data['error'] = "Error en el numero de documento"
+                data['status'] = 400
+                return Response(data,status=status.HTTP_200_OK)
             url = f"https://my.apidevs.pro/api/dni/{datos['doc']}" if datos['tipodoc']==1 else f"https://apiperu.dev/api/{tipodoc}/{datos['doc']}"
        
             response = requests.get(url,headers={
@@ -42,7 +69,6 @@ class Facturacion(generics.GenericAPIView):
             gui_serie = self.query(sql,(datos['num_pedido']))
             sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
             num_doc,serie = self.query(sql,('GR','T003'))
-          
             if gui_serie is  None:
                 gui_serie = num_doc
                 band = True
@@ -53,17 +79,17 @@ class Facturacion(generics.GenericAPIView):
                 return Response(data)
             if len(datos['direccion_llegada'])<=10:
                 data['direccion'] = "No ingreso una direccion de entrega correcta"
-                return Response(data)
+                return Response(data,status=status.HTTP_400_BAD_REQUEST)
             sql= "SELECT *FROM t_auxiliar WHERE AUX_DOCUM=? AND SUBSTRING(MAA_CODIGO,1,1)='C'"
             dates = self.query(sql,(datos['doc'],))
-           
             codigo_cliente = ''
             dir_alternativa = ''
             if dates is None and res['success']:
-                sql = f"""SELECT MAA_CODIGO, AUX_CODIGO,AUX_DIRECC,DIS_CODIGO,PRO_CODIGO,
+                sql = f"""SELECT MAA_CODIGO, AUX_CODIGO,AUX_DIRECC,DIS_CODIGO,PRO_CODIGO
                                     FROM t_auxiliar
                                     WHERE AUX_CODIGO = (SELECT MAX(AUX_CODIGO) FROM t_auxiliar WHERE MAA_CODIGO='CT' ) AND  MAA_CODIGO='CT'"""
                 result= self.query(sql,())
+  
                 if result is None:
                     maa,codigo='CT','1'
                 else:
@@ -127,6 +153,7 @@ class Facturacion(generics.GenericAPIView):
             else:
                 codigo_cliente=dates[2]
             data = self.beforepost(datos,gui_serie,dir_alternativa)
+            #USUARIOS DE PRUEBA
             self.query(f"INSERT INTO corret{datetime.now().year}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
             sql = f"SELECT numero FROM corret{datetime.now().year} WHERE numero=(SELECT MAX(numero) FROM corret{datetime.now().year} WHERE usuario=000)"
             result= self.query(sql,())
@@ -138,14 +165,14 @@ class Facturacion(generics.GenericAPIView):
                 tc = response.json()
                 tipo_c = tc['compra']
             else:
-                return Response({'error':'Errores en la conexion'})
+                return Response({'error':'Errores en la conexion para tipo de cambio'})
             
 
             if  band:
                 for item in datos['items']:
                    
                     if self.valid(item['codigo']) is None:
-                        return Response({"Error":f"El codigo {item['codigo']} no existe en la de datos"})
+                        return Response({"error":f"El codigo {item['codigo']} no existe en la base  de datos"})
                
                 params = (str(result[0]).zfill(11),date.today().strftime('%Y-%m-%d'),codigo_cliente,
                             "01",
@@ -155,14 +182,14 @@ class Facturacion(generics.GenericAPIView):
                             date.today().strftime('%Y-%m-%d'),
                             1,
                             3,
-                            1,
+                            1 if datos['codigo_operacion']=='05' else 6,
                             '24',
                             datos['direccion_llegada'],
                             datos['total'],
                             '01',
                             '001',
                             datos['doc'],
-                            '05',
+                            datos['codigo_operacion'],
                             '01',
                             1,
                             datos['moneda'],
@@ -208,7 +235,7 @@ class Facturacion(generics.GenericAPIView):
                         date.today().strftime('%Y-%m-%d'),
                         cod.strip(),
                         'S',
-                        '05',
+                        datos['codigo_operacion'],
                         '24',
                         '24',
                         item['cantidad'],
@@ -241,7 +268,7 @@ class Facturacion(generics.GenericAPIView):
                         date.today().strftime('%Y-%m-%d'),
                         cod.strip(),
                         'S',
-                        '05',
+                        datos['codigo_operacion'],
                         '24',
                         '24',
                         item['cantidad'],
@@ -332,7 +359,7 @@ class Facturacion(generics.GenericAPIView):
                 "numero": int(num_doc),
                 "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 "tipoDocumentoGuia": "09",
-                "motivoTraslado": "01",
+                "motivoTraslado": "01" if datos['codigo_operacion']=='05' else "04",
                 "pesoBrutoTotal": f"{peso}",
                 "unidadPesoBruto": "KGM",
                 "modalidadTraslado": "01",
@@ -351,16 +378,14 @@ class Facturacion(generics.GenericAPIView):
                     "tipoDocumentoTransportista": "6",
                     "denominacionTransportista": nombre.strip(),
                     "ordenCompra": datos['num_pedido'],
-                    "descripcionMotivoTraslado": "VENTAS",
+                    "descripcionMotivoTraslado": "VENTAS" if datos['num_pedido'] =='05' else 'TRASLADO',
                     "dirAlternativa": direc,
                     "observaciones":datos['observacion']
                 },
                 "items": articulos
             }
         sql = "SELECT TOP 1 par_url,par_acekey,par_seckey FROM fe_parametro"
-        #PARA  GUARDAR EL ARCHIVO JSON  
-        # with open("prueba.json","w") as file:
-        #    json.dump(data,file,indent=4)
+
         url,access_key,secret_key = self.query(sql,())
         token,timestap = RequestAPI(access_key.strip(),secret_key.strip()).encryptdates()
         
@@ -385,9 +410,7 @@ class PDFFACTView(generics.GenericAPIView):
             },)
         if response.status_code==200:
             base = base64.b64encode(response.content).decode('utf-8')
-            # pdf_bytes = base64.b64decode(base)
-            # with open('output.pdf', 'wb') as pdf_file:
-            #     pdf_file.write(pdf_bytes)
+
             return Response({'pdf':base})
         return Response(json.loads(response.text))
     def query(self,sql,params,opt='get'):
@@ -401,7 +424,8 @@ class PDFFACTView(generics.GenericAPIView):
         conn.close()
         return data
 class AnulacionGuiaView(generics.GenericAPIView):
-
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self,request,*args,**kwargs):
 
         data = {}
@@ -424,7 +448,7 @@ class AnulacionGuiaView(generics.GenericAPIView):
                 """
             res = self.query(sql,(numero_pedido[0],),'post')
             if res ==200:
-                data['sucess'] = "La anulacion fue exitosa" 
+                data['success'] = "La anulacion fue exitosa" 
             
         except Exception as e:
             data['error'] = f"Ocurrio un error : {str(e)}"
