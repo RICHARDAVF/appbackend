@@ -34,6 +34,10 @@ class Facturacion(generics.GenericAPIView):
         data = {}
         try:
             datos = request.data
+            if datos['tipodoc'] not in [1,6]:
+                data['error'] = "Tipo de documento no permitido"
+                data['status'] = 400
+                return Response(data,status=status.HTTP_200_OK) 
             if len(datos['codigo_operacion'].strip()) == 0 or not datos['codigo_operacion'] in ['05','06']:
                 data['error'] = 'Codigo de operacion no permitido'
                 data['status'] = 400
