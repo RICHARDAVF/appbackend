@@ -12,8 +12,8 @@ from rest_framework.permissions import IsAuthenticated
 import base64
 load_dotenv()
 class Facturacion(generics.GenericAPIView):
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def validfecha(self,fecha):
         try:
             datetime.strptime(fecha, '%Y-%m-%d')
@@ -78,6 +78,11 @@ class Facturacion(generics.GenericAPIView):
                 band = True
             else:
                 gui_serie = gui_serie[1]
+                 
+            for item in datos['items']:
+                
+                if self.valid(item['codigo']) is None:
+                    return Response({"error":f"El codigo {item['codigo']} no existe en la base  de datos"})
             if not res['success']:
                 data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
                 return Response(data)
