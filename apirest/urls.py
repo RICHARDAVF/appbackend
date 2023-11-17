@@ -2,7 +2,7 @@ from rest_framework import routers
 from django.urls import path,include
 
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
-                    EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView)
+                    EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView,TipoPago)
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR
 from apirest.view.stock.views import StockView,StockReview
@@ -17,12 +17,15 @@ from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
 from apirest.view.pedido.views import PdfPedidoView
 from apirest.view.apps.views import DownloadAppView
+from apirest.view.permisos.views import PermisosView
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
    
     #LOGIN
     path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view()),
+    #PERMISOS
+    path('permisos/<str:host>/<str:db>/<str:user>/<str:password>/<str:usuario>/',PermisosView.as_view()),
     #PRODUCTOS
     path('product/<str:host>/<str:db>/<str:user>/<str:password>/<int:p>/<str:m>/<str:u>/<str:l>/<int:tallas>/<int:lote>/',ProductoView.as_view()),
     path('product/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ProductSeleView.as_view()),
@@ -31,7 +34,9 @@ urlpatterns = [
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
     path('client/new/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteCreateView.as_view()),
     path('client/type/<str:host>/<str:db>/<str:user>/<str:password>/',TypeClienteView.as_view()),
-    
+    #TIPO DE PAGO
+    path('tipo/pago/<str:host>/<str:db>/<str:user>/<str:password>/',TipoPago.as_view()),
+
     #FAMILIA
     path('familia/<str:host>/<str:db>/<str:user>/<str:password>/',FamiliaView.as_view()),
     #FUENTE
