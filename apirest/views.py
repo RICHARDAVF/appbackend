@@ -125,18 +125,6 @@ class UserView(generics.GenericAPIView):
                         a = {'value':row[0],'label':row[1]}
                         d.append(a)
                     datos['precios'] = d
-
-                sql4 = """SELECT PAG_CODIGO,PAG_NOMBRE,pag_nvallc FROM t_maepago WHERE pag_activo='1' AND PAG_NOMBRE<>'' ORDER BY PAG_CODIGO"""
-                params = ()
-                conn = QuerysDb.conexion(user.bdhost,user.bdname,user.bduser,user.bdpassword)
-                tipo_pago = self.querys(conn,sql4,params)
-                
-                if tipo_pago is not None:
-                    types_paymonts = []
-                    for row in tipo_pago:
-                        a = {'value':str(row[0]).strip(),'label':str(row[1]).strip()}
-                        types_paymonts.append(a)
-                datos['tipo_pago'] = types_paymonts
                 serializer = self.serializer_class(user)
                 datos['creden'] = serializer.data
                 return Response(datos,status=status.HTTP_200_OK)
@@ -475,7 +463,6 @@ class ProducAddView(generics.GenericAPIView):
            
             conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
             res = self.querys(conn,sql,params,'post')
-           
             sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
                 mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
@@ -584,14 +571,15 @@ class EditPedidoView(generics.GenericAPIView):
         action = kwargs['action']
         try:
             if action == 'c':
-                sql = """SELECT a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,a.ubi_codig2,a.ubi_codigo,a.pag_codigo,a.ped_tipenv,a.ped_tipven
+                sql = """SELECT a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,a.ubi_codig2,
+                    a.ubi_codigo,a.pag_codigo,a.ped_tipenv,a.ped_tipven,a.pag_codigo
                         FROM cabepedido AS a
                         INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
                         WHERE a.MOV_COMPRO = ?"""
                 result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
                
                 data['cliente']  = {'codigo':result[0].strip(),'ruc':result[1].strip(),'direccion':result[2].strip(),
-                         'nombre':result[3].strip(),'tipo_pago':result[6],'tipo_envio':result[7],'tipo_venta':result[8]}
+                         'nombre':result[3].strip(),'tipo_pago':result[6],'tipo_envio':result[7],'tipo_venta':result[8],'tipo_pago':result[9].strp()}
                 data['res'] = {'almacen':result[4],'ubicacion':result[5]}
              
             elif action =='a':
@@ -799,11 +787,6 @@ class SucursalView(generics.GenericAPIView):
         return Response(data)
 class UbigeoView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
-        host = kwargs['host']
-        bd = kwargs['db']
-        user = kwargs['user']
-        password = kwargs['password']
-        conn = QuerysDb.conexion(host,bd,user,password)
         data = {}
         try:
             sql = """
@@ -815,9 +798,6 @@ class UbigeoView(generics.GenericAPIView):
                 FROM mk_ubigeo
                 """
             result = Querys(kwargs).querys(sql,(),'get',1)
-            # cursor = conn.cursor()
-            # cursor.execute(sql)
-            # result = cursor.fetchall()
             data = []
             for index,value in enumerate(result):
                 d = {'id':index,'ubigeo':value[0].strip(),'departamento':value[1].strip().upper(),
@@ -933,3 +913,19 @@ class LugarEntregaView(generics.GenericAPIView):
         conn.commit()
         conn.close()            
         return data
+class TipoPago(generics.GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+            sql = """SELECT PAG_CODIGO,PAG_NOMBRE,pag_nvallc FROM t_maepago WHERE pag_activo='1' AND PAG_NOMBRE<>'' ORDER BY PAG_CODIGO"""
+
+            tipo_pago = Querys(kwargs).querys(sql,(),'get')
+            types_paymonts = []
+            if tipo_pago is not None:
+                for row in tipo_pago:
+                    a = {'value':str(row[0]).strip(),'label':str(row[1]).strip()}
+                    types_paymonts.append(a)
+            data['tipo_pago'] = types_paymonts
+        except Exception as e:
+            data['error'] = 'Ocurrio un error'
+        return Response(data)

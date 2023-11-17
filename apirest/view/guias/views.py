@@ -34,7 +34,7 @@ class Facturacion(generics.GenericAPIView):
         data = {}
         try:
             datos = request.data
-            if datos['tipodoc'] not in [1,6]:
+            if datos['tipodoc'] not in [1,4,6]:
                 data['error'] = "Tipo de documento no permitido"
                 data['status'] = 400
                 return Response(data,status=status.HTTP_200_OK) 
@@ -57,17 +57,21 @@ class Facturacion(generics.GenericAPIView):
             #     data['error'] = "Error en el importe para una guia de traslado"
             #     data['status'] = 400
             #     return Response(data,status=status.HTTP_200_OK)
-            tipodoc = "ruc" if datos['tipodoc']==6 else "dni"
+            tipodoc = "ruc" if datos['tipodoc']==6 else ("dni" if datos['tipodoc']==1 else 'CE')
             if len(datos['doc'])==0:
                 data['error'] = "Error en el numero de documento"
                 data['status'] = 400
                 return Response(data,status=status.HTTP_200_OK)
-            url = f"https://my.apidevs.pro/api/dni/{datos['doc']}" if datos['tipodoc']==1 else f"https://apiperu.dev/api/{tipodoc}/{datos['doc']}"
-       
-            response = requests.get(url,headers={
-                "Authorization":f"Bearer {os.getenv(f'TOKEN_{tipodoc.upper()}')}"
-            })
-            res=json.loads(response.text)
+            if tipodoc!='CE':
+                url = f"https://my.apidevs.pro/api/dni/{datos['doc']}" if datos['tipodoc']==1 else f"https://apiperu.dev/api/{tipodoc}/{datos['doc']}"
+        
+                response = requests.get(url,headers={
+                    "Authorization":f"Bearer {os.getenv(f'TOKEN_{tipodoc.upper()}')}"
+                })
+                res=json.loads(response.text)
+                if not res['success']:
+                    data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
+                    return Response(data)
             sql = f"SELECT gui_serie,gui_docum FROM GUIC{datetime.now().year} WHERE gui_ordenc=?"
             band = False
             gui_serie = self.query(sql,(datos['num_pedido']))
@@ -80,38 +84,42 @@ class Facturacion(generics.GenericAPIView):
                 gui_serie = gui_serie[1]
                  
             for item in datos['items']:
-                
                 if self.valid(item['codigo']) is None:
                     return Response({"error":f"El codigo {item['codigo']} no existe en la base  de datos"})
-            if not res['success']:
-                data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
-                return Response(data)
+            
             if len(datos['direccion_llegada'])<=10:
-                data['direccion'] = "No ingreso una direccion de entrega correcta"
-                return Response(data,status=status.HTTP_400_BAD_REQUEST)
-            sql= "SELECT *FROM t_auxiliar WHERE AUX_DOCUM=? AND SUBSTRING(MAA_CODIGO,1,1)='C'"
+                data['error'] = "No ingreso una direccion de entrega correcta (minimo 10 caracteres)"
+                data['status'] = 400
+                return Response(data,status=status.HTTP_200_OK)
+            sql= "SELECT AUX_CLAVE,AUX_DIRECC,DIS_CODIGO,PRO_CODIGO FROM t_auxiliar WHERE AUX_DOCUM=? AND SUBSTRING(MAA_CODIGO,1,1)='C'"
             dates = self.query(sql,(datos['doc'],))
             codigo_cliente = ''
             dir_alternativa = ''
-            if dates is None and res['success']:
+            if dates is None :
                 sql = f"""SELECT MAA_CODIGO, AUX_CODIGO,AUX_DIRECC,DIS_CODIGO,PRO_CODIGO
                                     FROM t_auxiliar
-                                    WHERE AUX_CODIGO = (SELECT MAX(AUX_CODIGO) FROM t_auxiliar WHERE MAA_CODIGO='CT' ) AND  MAA_CODIGO='CT'"""
-                result= self.query(sql,())
+                                    WHERE AUX_CODIGO = (SELECT MAX(AUX_CODIGO) FROM t_auxiliar WHERE MAA_CODIGO=? ) AND  MAA_CODIGO=?"""
+                tipo = 'CE' if datos['tipodoc'] ==4 else 'CT'
+                result= self.query(sql,(tipo,tipo))
   
                 if result is None:
-                    maa,codigo='CT','1'
+                    maa = 'CE' if  tipodoc=='CE' else 'CT'
+                    codigo='1'
                 else:
                     maa,codigo,direccion,distrito,provincia=result
                     codigo = int(codigo)+1
                     dir_alternativa = f"{direccion.strip()}-{distrito.strip()}-{provincia.strip()}"
                 tipope = 1
                 tipedoc=2
-                if datos['doc'][:2]=='20':
+                if datos['doc'][:2]=='20' and len(datos['doc'])==11:
                     tipope=2
                     tipedoc=1
+                elif tipodoc == 'CE':
+                    tipedoc = 4
                 if tipodoc=='dni':
-                    params=(maa.strip(),str(codigo).zfill(6),f"{maa.strip()}{str(codigo).zfill(6)}",
+                    params=(maa.strip(),
+                            str(codigo).zfill(6),
+                            f"{maa.strip()}{str(codigo).zfill(6)}",
                             res['data']['nombre_completo'],
                             res['data']['nombre_completo'],
                             '001',
@@ -128,8 +136,33 @@ class Facturacion(generics.GenericAPIView):
                             '',
                             '',
                             tipedoc,
-                            date.today().strftime('%Y-%m-%d')
+                            date.today().strftime('%Y-%m-%d'),
+                            ''
+                        
                             )
+                elif tipodoc == 'CE':
+                    params = (maa.strip(),
+                              str(codigo).zfill(6),
+                              f"{maa.strip()}{str(codigo).zfill(6)}",
+                               datos['razon_social'],
+                               datos['razon_social'],
+                               '001',
+                               'CLIENTE EXTRANJERO',
+                               datos['direccion_llegada'],
+                               '',
+                               '',
+                               '',
+                               tipope,
+                               datos['doc'],
+                               datos['ubigeo_llegada'],
+                                '121301',
+                                '121302',
+                                '',
+                                '',
+                                tipedoc,
+                                date.today().strftime('%Y-%m-%d'),
+                                datos['doc']
+                               )
                 else:
                     params=(maa.strip(),str(codigo).zfill(6),f"{maa.strip()}{str(codigo).zfill(6)}",
                             res['data']['nombre_o_razon_social'],
@@ -148,19 +181,27 @@ class Facturacion(generics.GenericAPIView):
                             res['data']['condicion'],
                             res['data']['estado'],
                             tipedoc,
-                            date.today().strftime('%Y-%m-%d')
+                            date.today().strftime('%Y-%m-%d'),
+                            ''
                             )
-                    dir_alternativa = f"{ res['data']['direccion']}-{res['data']['distrito']}-{res['data']['provincia']}"
+                if datos['tipodoc']!=4:
+                    dir_alternativa = f"{ res['data']['direccion']} {res['data']['distrito']} {res['data']['provincia']}"
+                
+                else:
+                    dir_alternativa = datos['direccion_llegada']
+                   
+                        
                 codigo_cliente = params[2]
                 sql = f""" 
                     INSERT INTO 
                         t_auxiliar(MAA_CODIGO,AUX_CODIGO,AUX_CLAVE,AUX_NOMBRE,AUX_RAZON,VEN_CODIGO,MAA_NOMBRE,AUX_DIRECC,
-                        DEP_CODIGO,PRO_CODIGO,DIS_CODIGO,AUX_TIPOPE,AUX_DOCUM,AUX_EDI,aux_cuenta,aux_cuentd,aux_condic,aux_estado,aux_tipdoc,aux_fecoru) 
+                        DEP_CODIGO,PRO_CODIGO,DIS_CODIGO,AUX_TIPOPE,AUX_DOCUM,AUX_EDI,aux_cuenta,aux_cuentd,aux_condic,aux_estado,aux_tipdoc,aux_fecoru,aux_docadi) 
                         VALUES({','.join('?' for i in range(len(params)))})
                 """
                 self.query(sql,params,'post')
             else:
-                codigo_cliente=dates[2]
+                codigo_cliente=dates[0]
+                dir_alternativa = f"{dates[1].strip()} {dates[2].strip()} {dates[3].strip()}"
             data = self.beforepost(datos,gui_serie,dir_alternativa)
             #USUARIOS DE PRUEBA
             self.query(f"INSERT INTO corret{datetime.now().year}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
@@ -363,7 +404,7 @@ class Facturacion(generics.GenericAPIView):
         ubi_nombre,dir_partida,ubigeo_partida = dates
         sql = "SELECT tra_nombre,TRA_RUC FROM T_transporte WHERE TRA_CODIGO=001"
         nombre,ruc = self.query(sql,())
-        
+
         data = {"serie": "T003",
                 "numero": int(num_doc),
                 "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -403,6 +444,7 @@ class Facturacion(generics.GenericAPIView):
             },
             json=data
         )
+     
         return response.json()
         
         
