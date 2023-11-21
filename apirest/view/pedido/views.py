@@ -96,7 +96,7 @@ class PdfPedidoView(GenericAPIView):
                     b.AUX_NOMBRE,
                     a.gui_direc,
                     a.gui_ruc,
-                    'vendedor'=(SELECT USU_NOMBRE FROM t_usuario WHERE ven_codigo=a.USUARIO ),
+                    'vendedor'=(SELECT USU_NOMBRE FROM t_usuario WHERE usu_codigo=a.USUARIO ),
 					a.gui_exp001,
 					a.rou_dscto,
 					a.ROU_IGV,
