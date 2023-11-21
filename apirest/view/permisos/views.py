@@ -19,7 +19,7 @@ class PermisosView(generics.GenericAPIView):
                                              'eliminar':perm[5]==1}
             sql = f"""
                 SELECT opc_codigo,acceso,crear,modificar,anular,eliminar
-                FROM t_niveles WHERE almacen=(SELECT top 1 alm_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}) AND usu_codigo=? AND opc_codigo IN ('171','167')
+                FROM t_niveles WHERE almacen=(SELECT top 1 alm_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}) AND usu_codigo=? AND opc_codigo IN ('171','167','299')
             """
             alm = Querys(kwargs).querys(sql,(kwargs['usuario'],),'get',1)
             for perm in alm:
