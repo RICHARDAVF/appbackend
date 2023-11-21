@@ -12,6 +12,7 @@ class UsuarioCredencial(models.Model):
     tallas = models.BooleanField(verbose_name='Meneja Tallas', default=False)
     lote = models.BooleanField(verbose_name='Meneja Lote', default=False)
     status = models.BooleanField(verbose_name="Estado",default=False)
+    codigo = models.CharField(max_length=10,verbose_name="Codigo cliente",null=True,blank=True)
     class Meta :
         verbose_name = 'UsuarioCredencial'
         verbose_name_plural = 'UsuarioCredencials'

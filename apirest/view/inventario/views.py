@@ -1,4 +1,5 @@
 from rest_framework import generics
+from apirest.querys import Querys
 from apirest.views import QuerysDb
 from rest_framework.response import Response
 from datetime import datetime
@@ -8,46 +9,49 @@ class InventarioView(generics.GenericAPIView):
         db = kwargs['db']
         user = kwargs['user']
         password = kwargs['password']
-        conn = QuerysDb.conexion(host,db,user,password)
-        datos={}
-        sql = """
-            SELECT 
-                a.ALM_CODIGO,
-                a.ALM_NOMBRE
-            FROM t_almacen AS a
-            INNER JOIN t_parrametro AS b
-            ON a.ALM_CODIGO=b.alm_codigo
-            WHERE
-                par_anyo=YEAR(GETDATE()) 
-            ORDER BY a.alm_nombre
-            """
-        almacen = self.querys(conn,sql,(),'get')
-        alms = []
-        for index,value in enumerate(almacen):
-            d = {'id':index,'value':value[0].strip(),'label':value[1].strip()}
-            alms.append(d)
-        datos['almacen'] = alms
-        conn = QuerysDb.conexion(host,db,user,password)
-        sql = """
-            SELECT ubi_codigo,ubi_nombre FROM t_ubicacion ORDER BY ubi_codigo
-            """
-        ubicacion = self.querys(conn,sql,(),'get')
-        ubis = []
-        for index,value in enumerate(ubicacion):
-            d = {'id':index,'value':value[0].strip(),'label':value[1].strip()}
-            ubis.append(d)
-        datos['ubicacion']=ubis
-        sql = """
-            SELECT ope_codigo,OPE_NOMBRE FROM t_operacion ORDER BY OPE_NOMBRE
-            """
-        conn = QuerysDb.conexion(host,db,user,password)
-        operacion = self.querys(conn,sql,(),'get')
-        opes = []
-        for index,value in enumerate(operacion):
-            d = {'id':index,'value':value[0].strip(),'label':value[1].strip()}
-            opes.append(d)
-        datos['operacion']=opes
-        return Response({'message':datos})
+        try:
+            conn = QuerysDb.conexion(host,db,user,password)
+            data={}
+            sql = """
+                SELECT 
+                    a.ALM_CODIGO,
+                    a.ALM_NOMBRE
+                FROM t_almacen AS a
+                INNER JOIN t_parrametro AS b
+                ON a.ALM_CODIGO=b.alm_codigo
+                WHERE
+                    par_anyo=YEAR(GETDATE()) 
+                ORDER BY a.alm_nombre
+                """
+            almacen = self.querys(conn,sql,(),'get')
+            alms = []
+            for index,value in enumerate(almacen):
+                d = {'id':index,'value':value[0].strip(),'label':value[1].strip()}
+                alms.append(d)
+            data['almacenes'] = alms
+            conn = QuerysDb.conexion(host,db,user,password)
+            sql = """
+                SELECT ubi_codigo,ubi_nombre FROM t_ubicacion ORDER BY ubi_codigo
+                """
+            ubicacion = self.querys(conn,sql,(),'get')
+            ubis = []
+            for index,value in enumerate(ubicacion):
+                d = {'id':index,'value':value[0].strip(),'label':value[1].strip()}
+                ubis.append(d)
+            data['ubicaciones']=ubis
+            sql = """
+                SELECT ope_codigo,OPE_NOMBRE FROM t_operacion ORDER BY OPE_NOMBRE
+                """
+            conn = QuerysDb.conexion(host,db,user,password)
+            operacion = self.querys(conn,sql,(),'get')
+            opes = []
+            for index,value in enumerate(operacion):
+                d = {'id':index,'value':value[0].strip(),'label':value[1].strip()}
+                opes.append(d)
+            data['operaciones']=opes
+        except Exception as e:
+            data['error'] = f"Ocurrio un error : {str(e)}"
+        return Response(data)
     def post(self,request,*args,**kwargs):
         host = kwargs['host']
         db = kwargs['db']
@@ -84,37 +88,60 @@ class InventarioView(generics.GenericAPIView):
 
 class ValidateView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
+        data = {}
         host = kwargs['host']
         db = kwargs['db']
         user = kwargs['user']
         password = kwargs['password']
         codigo = kwargs['codigo']
-        serie = kwargs['serie']
         conn = QuerysDb.conexion(host,db,user,password)
         cursor = conn.cursor()
         sql = "SELECT usu_doctom FROM t_usuario WHERE USU_CODIGO=?"
         cursor.execute(sql,(codigo,))
         data = cursor.fetchone()
-       
-        respuesta = {}
-        # if len(data[0].strip())==0:
-        #     respuesta['error']='El usuario no tiene asignado un correlativo'
-        #     conn.commit()
-        #     conn.close()
-        #     return Response({'message':respuesta})
-        # sql = "SELECT ART_CODIGO FROM t_articulo WHERE ART_CODIGO=?"
-        # cursor.execute(sql,(serie,))
-        # data = cursor.fetchone()
-        # if data is None:
-        #     respuesta['error'] = "El codigo no existe"
-        #     conn.commit()
-        #     conn.close()
-        #     return Response({'message':respuesta})
+        if len(data[0].strip())==0:
+            data['error']='El usuario no tiene asignado un correlativo'
+            conn.commit()
+            conn.close()
+            return Response(data)
         return Response({'message':'SUCCESS'})
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        try:
+            sql = "SELECT  'longitud' = cre_long1+cre_long2+cre_long3+cre_long4+cre_long5+cre_long7+cre_long8 FROM t_creacodigo WHERE alm_codigo=?"
+            result = Querys(kwargs).querys(sql,(datos['almacen'],),'get',0)
+
+            if result is None:
+                data['error'] = "El codigo no existe en la base de datos"
+                return Response(data)
+            longitud = result[0]
+            codigo = datos['codigo'][:int(longitud)]
+
+            color = datos['codigo'][int(longitud):int(longitud)+2]
+         
+            sql = "SELECT art_codigo FROM t_articulo WHERE art_codigo = ?"
+            result = Querys(kwargs).querys(sql,(codigo,),'get',0)
+            if result is None:
+                data['error'] = "No existe articulo con este codigo"
+                return Response(data)
+            if len(datos['codigo'])>11:
+                sql = "SELECT col_codigo FROM t_colores WHERE col_codigo = ?"
+                result = Querys(kwargs).querys(sql,(color,),'get',0)
+                if result is None:
+                    data['error'] = "No existe el color"
+        except Exception as e:
+            data['error'] = f'Ocurrio un error : {str(e)}'
+        return Response(data)
 class QRscanView(generics.GenericAPIView):
-    def get(self,request,*args,**kwargs):
-        "Procesamiento de losdatos obtenidos con el lector QR"
-        "Procesamiento de losa datp obtenidos al scanera el lector de barras"
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+
+        try:
+            pass
+        except Exception as e:
+            data['error'] = f"Ocurrio un error :{str(e)}"
         return Response({"message"})
 class ProcessLote:
     def __init__(self,data):

@@ -88,7 +88,8 @@ class UserView(generics.GenericAPIView):
                     datos['message']='Usuario o Contraseña incorrecta'
                     return Response(datos,status=status.HTTP_200_OK)
                
-                d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],"usuario":data[0][4].strip(),'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],'aprobacion1':data[0][13],\
+                d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],
+                     "usuario":data[0][12].strip(),'aprobacion1':data[0][13],
                      'aprobacion2':data[0][14],'almacen':data[0][-1]}
                       
                 datos['user'] = d
@@ -450,7 +451,7 @@ class ProducAddView(generics.GenericAPIView):
             fecha = datetime.now().strftime('%Y-%m-%d')
 
             
-            params = (cor,fecha,datas['cabeceras']['codigo'],'S', datas['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
+            params = (cor,fecha,datas['cabeceras']['codigo'],'S', datas['vendedor']['codigo'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
                     total,1,datas['opt']['local'],datas['opt']['tipo'],datas['cabeceras']['direccion'],datas['opt']['precio'],params,\
                     str(data[0][0]).strip(),datas['opt']['almacen'],datas['cabeceras']['ruc'],datas['opt']['obs'],18,igv,base_impo,\
                     gui_inclu[0],'','',datas['tipo_venta'],'F1',0,0,0,0,0,0,datas['agencia'],'',datas['sucursal'],'',datas['nombre'],datas['direccion'],round(self.sumaSDesc(datas['detalle']),2),\
@@ -472,7 +473,7 @@ class ProducAddView(generics.GenericAPIView):
             for item in datas['detalle']:
                 conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
                 params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',item['talla'],'S',str(data[0][0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
-                          datas['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
+                          datas['vendedor']['codigo'],fecha,'S',float(item['descuento']),gui_inclu[0],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
@@ -579,7 +580,7 @@ class EditPedidoView(generics.GenericAPIView):
                 result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
                
                 data['cliente']  = {'codigo':result[0].strip(),'ruc':result[1].strip(),'direccion':result[2].strip(),
-                         'nombre':result[3].strip(),'tipo_pago':result[6],'tipo_envio':result[7],'tipo_venta':result[8],'tipo_pago':result[9].strp()}
+                         'nombre':result[3].strip(),'tipo_pago':result[6],'tipo_envio':result[7],'tipo_venta':result[8],'tipo_pago':result[9].strip()}
                 data['res'] = {'almacen':result[4],'ubicacion':result[5]}
              
             elif action =='a':

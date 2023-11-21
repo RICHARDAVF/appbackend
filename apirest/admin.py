@@ -5,8 +5,8 @@ from rest_framework.authtoken.models import Token
 
 class AdminViewUsuario(admin.ModelAdmin):
     list_display=('id','ruc','razon_social','bdhost',\
-                  'bdname','bduser','bdpassword','bdport','tallas','lote','status')
-    list_editable = ('ruc','razon_social','bdhost','bdname','bduser','bdpassword','bdport','tallas','lote','status')
+                  'bdname','bduser','bdpassword','bdport','tallas','lote','status','codigo')
+    list_editable = ('ruc','razon_social','bdhost','bdname','bduser','bdpassword','bdport','tallas','lote','status','codigo')
     
 
 

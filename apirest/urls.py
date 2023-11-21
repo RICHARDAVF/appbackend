@@ -71,7 +71,7 @@ urlpatterns = [
     path('stock/view/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/<str:ubi>/<str:codigo>/<str:pedido>/<str:talla>/',StockReview.as_view()),
     #INVENTARIO
     path('inv/<str:host>/<str:db>/<str:user>/<str:password>/',InventarioView.as_view()),
-    path('val/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:serie>/',ValidateView.as_view()),
+    path('val/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ValidateView.as_view()),
     #LIQUIDACION DE REGALOS
     path('li-re/<str:host>/<str:db>/<str:user>/<str:password>/',LiquiRegaView.as_view()),
     #TRASLADO VIEW
