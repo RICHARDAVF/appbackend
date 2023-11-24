@@ -11,8 +11,7 @@ class StockView(generics.GenericAPIView):
         alm = kwargs['alm']
         ubi = kwargs['ubi']
         talla = kwargs['talla']
-       
-
+        lista_ubicaciones = request.GET.getlist('arreglo[]', [])
         sql = f"""
             SELECT
                 a.art_codigo,
@@ -33,10 +32,22 @@ class StockView(generics.GenericAPIView):
             ORDER BY b.art_nombre
             """
         if int(talla) == 1:
-
+            if len(lista_ubicaciones) == 0:
+                ubis = [ubi]
+            else:
+                ubis = lista_ubicaciones
+            
             sql = f"""
-                SELECT
+                select art_codigo,tal_codigo,'mom_cant'=sum(mom_cant),art_nombre,PA1_CODIGO,
+                    PA2_CODIGO,
+                    PA3_CODIGO,
+					PA4_CODIGO,
+                    tem_codigo,
+					art_partes
+					 from
+(SELECT
                     a.art_codigo,
+                    c.ume_nombre,
                     'tal_codigo' = a.tal_codigo,
                     'mom_cant' = SUM(CASE
                                     WHEN a.mom_tipmov='E' THEN a.mom_cant 
@@ -80,6 +91,7 @@ class StockView(generics.GenericAPIView):
                     ,b.ART_NOMBRE,
                     a.ALM_CODIGO,
                     a.UBI_COD1,
+					
                     'orden' = (
                         CASE 
                             WHEN a.tal_codigo='XS' THEN 'X1' 
@@ -99,10 +111,13 @@ class StockView(generics.GenericAPIView):
                 FROM movm2023 a 
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
-                WHERE a.elimini=0 
+                WHERE 
+                    a.UBI_COD1 in('01','04')
+                    AND a.elimini=0 
                     AND b.art_mansto=0 
                     AND a.ALM_CODIGO=?
-                    AND a.UBI_COD1=?
+                    
+                    
                 GROUP BY 
                     a.art_codigo, 
                     b.art_partes,
@@ -157,13 +172,20 @@ class StockView(generics.GenericAPIView):
                                 AND y.ped_cierre=0 
                             GROUP BY y.mov_compro, x.art_codigo, x.tal_codigo, y.ubi_codig2, y.ubi_codigo
                         ) AS zzz
-                    ) <> 0 
-                ORDER BY b.art_nombre, c.ume_nombre, orden
+                    ) <> 0 ) as az
+                    group by az.art_codigo,az.art_nombre,az.tal_codigo,az.ume_nombre,az.alm_codigo,az.orden,az.PA1_CODIGO,
+                    az.PA2_CODIGO,
+                    az.PA3_CODIGO,
+					az.PA4_CODIGO,
+                    az.tem_codigo,
+					az.art_partes
+                ORDER BY az.art_nombre, az.ume_nombre, az.orden"""
 
-            """
         conn = QuerysDb.conexion(host,db,user,password)
-        datos = self.querys(conn,sql,(alm,ubi))
-        
+        datos = self.querys(conn,sql,(alm,))
+     
+        if len(datos)==0:
+            return Response({'error':'Almacen o ubicacion sin articulos'})
         stock = [
             {
                 'id': index,
@@ -171,18 +193,22 @@ class StockView(generics.GenericAPIView):
                 'talla': value[1].strip(),
                 'stock': value[2],
                 'nombre': value[3].strip(),
-                'genero':value[7].strip(),
-                'linea':value[8].strip(),
-                'modelo':value[9].strip(),
-                'color':value[10].strip(),
-                'temporada':value[11].strip(),
-                'parte':value[12]
+                'genero':value[4].strip(),
+                'linea':value[5].strip(),
+                'modelo':value[6].strip(),
+                'color':value[7].strip(),
+                'temporada':value[8].strip(),
+                'parte':value[9]
             }
             for index, value in enumerate(datos)
         ]
-        sql = f"""select pa1_nombre,pa1_codigo from t_parte1 where alm_codigo=? order by pa1_nombre"""
+     
+        g = set([i['genero'] for i in stock if i['genero']!=''])
+       
+        sql = f"""SELECT pa1_nombre, pa1_codigo FROM t_parte1 WHERE alm_codigo = ? AND pa1_codigo IN ({','.join(f"'{i}'" for i in g)}) ORDER BY pa1_nombre;"""
+    
         datos = self.querys(conn,sql,(alm,))
-        genero = [{'value':'A',"label":"GENERO"}]+[
+        genero = [
             {
                 'label':value[0],
                 'value':value[1],
@@ -190,9 +216,10 @@ class StockView(generics.GenericAPIView):
             }
             for index,value in enumerate(datos)
         ]
-        sql = f"""select pa2_nombre,pa2_codigo from t_parte2 where alm_codigo=? order by pa2_nombre"""
+        l = set([i['linea'] for i in stock])
+        sql = f"""select pa2_nombre,pa2_codigo from t_parte2 where alm_codigo=? AND pa2_codigo IN ({','.join(i for i in l)}) order by pa2_nombre"""
         datos = self.querys(conn,sql,(alm,))
-        linea = [{'value':'A',"label":"LINEA"}]+[
+        linea = [{'label':'LINEA',"value":'A'}]+[
             {
                 'label':value[0],
                 'value':value[1].strip(),
@@ -200,8 +227,10 @@ class StockView(generics.GenericAPIView):
             }
             for index,value in enumerate(datos)
         ]
-        sql = f"""select pa3_nombre,pa3_codigo from t_parte3 where alm_codigo=? order by pa3_nombre"""
+        m = set([i['modelo'] for i in stock])
+        sql = f"""select pa3_nombre,pa3_codigo from t_parte3 where alm_codigo=?  AND pa3_codigo IN ({','.join(i for i in m)}) order by pa3_nombre"""
         datos = self.querys(conn,sql,(alm,))
+
         modelo =[{'value':'A',"label":"MODELO"}]+ [
             {
                 'label':value[0],
@@ -210,9 +239,10 @@ class StockView(generics.GenericAPIView):
             }
             for index,value in enumerate(datos)
         ]
-        sql = f"""select pa4_nombre,pa4_codigo from t_parte4 where alm_codigo=? order by pa4_nombre"""
+        c = set([i['color'] for i in stock])
+        sql = f"""select pa4_nombre,pa4_codigo from t_parte4 where alm_codigo=? AND pa4_codigo IN ({','.join(i for i in c)}) order by pa4_nombre"""
         datos = self.querys(conn,sql,(alm,))
-        color = [{'value':'A',"label":"COLOR"}]+[
+        color = [{'label':'COLOR',"value":'A'}]+[
             {
                 'label':value[0],
                 'value':value[1].strip(),
@@ -220,19 +250,27 @@ class StockView(generics.GenericAPIView):
             }
             for index,value in enumerate(datos)
         ]
-        sql = f"""select tem_nombre,tem_codigo from t_temporada order by tem_nombre"""
+        try:
+            t  = set([i['temporada']  for i in stock if i['temporada'].strip()!=''])
+            
+            sql = f"""select tem_nombre,tem_codigo from t_temporada WHERE  tem_codigo IN ({','.join(i for i in t)}) order by tem_nombre"""
+            datos = self.querys(conn,sql,())
+
+            temporada = [{'label':'TEMPORADA',"value":'A'}]+[
+                {
+                    'label':value[0],
+                    'value':value[1].strip(),
+                    'id':index
+                }
+                for index,value in enumerate(datos)
+            ]
+        except :
+            temporada = []
+        tl = set([i['talla'] for i in stock])
+        sql = f"""select tal_nombre,tal_codigo from t_tallas WHERE tal_codigo IN ({",".join(f"'{i}'" for i in tl)}) order by tal_nombre"""
+
         datos = self.querys(conn,sql,())
-        temporada = [{'value':'A',"label":"TEMPORADA"}]+[
-            {
-                'label':value[0],
-                'value':value[1].strip(),
-                'id':index
-            }
-            for index,value in enumerate(datos)
-        ]
-        sql = f"""select tal_nombre,tal_codigo from t_tallas order by tal_nombre"""
-        datos = self.querys(conn,sql,())
-        tallas =[{'value':'A',"label":"TALLA"}]+ [
+        tallas =[{'label':'TALLA',"value":'A'}]+[
             {
                 'label':value[0],
                 'value':value[1].strip(),

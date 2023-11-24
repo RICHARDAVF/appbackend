@@ -90,7 +90,7 @@ class UserView(generics.GenericAPIView):
                
                 d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],
                      "usuario":data[0][12].strip(),'aprobacion1':data[0][13],
-                     'aprobacion2':data[0][14],'almacen':data[0][-1]}
+                     'aprobacion2':data[0][14],'almacen':data[0][-1].strip()}
                       
                 datos['user'] = d
                 
@@ -852,9 +852,8 @@ class LugarEntregaView(generics.GenericAPIView):
             codigo = f"{kwargs['cliente']}-{str(1).zfill(7)}"
         else:
             codigo = codigo[0]
-        if data['index']==4:
-            data['index'] = 0
-        params = (data['nombre'],data['direccion'],data['celular'],data['ubigeo'],data['index'],data['link'],data['documento'],codigo.strip(),kwargs['cliente'])
+   
+        params = (data['nombre'],data['direccion'],data['celular'],data['ubigeo'],data['tipo_doc'],data['link'],data['documento'],codigo.strip(),kwargs['cliente'])
         try:
             sql = f"""
                 INSERT INTO t_sucursal(

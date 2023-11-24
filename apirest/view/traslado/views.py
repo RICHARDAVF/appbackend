@@ -56,7 +56,7 @@ class TrasladoView(generics.GenericAPIView):
                                                                 WHEN z.mom_tipmov = 'E' THEN z.mom_cant
                                                                 ELSE -z.mom_cant
                                                             END), 0)
-                                            FROM movm2023 z
+                                            FROM movm{datetime.now().year} z
                                             LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                                             WHERE y.mov_compro = z.mov_pedido
                                             AND x.art_codigo = z.art_codigo
@@ -75,7 +75,7 @@ class TrasladoView(generics.GenericAPIView):
                             AND x.elimini = 0
                             AND y.ped_cierre = 0
                         GROUP BY y.mov_compro, x.art_codigo, x.tal_codigo, y.ubi_codig2, y.ubi_codigo) AS zzz)
-                FROM movm2023 a
+                FROM movm{datetime.now().year} a
                 LEFT JOIN cabepedido b ON a.mov_pedido = b.mov_compro
                 WHERE a.art_codigo = ?
                 AND a.alm_codigo = ?
@@ -223,7 +223,7 @@ class ProducTrasladoView(generics.GenericAPIView):
                                                 ELSE -z.mom_cant 
                                             END
                                         ), 0) 
-                                    FROM movm2023 z 
+                                    FROM movm{datetime.now().year} z 
                                     LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                     WHERE y.mov_compro=z.mov_pedido 
                                         AND x.art_codigo=z.art_codigo 
@@ -276,133 +276,150 @@ class ProducTrasladoView(generics.GenericAPIView):
         return product
 class StockViewProduct(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
-        codigo = kwargs['codigo']
-        if codigo == '000':
-            sql = "SELECT ART_CODIGO,ART_NOMBRE FROM t_articulo ORDER BY ART_NOMBRE ASC"
-            data = array(self.querys(sql,kwargs))
-            art_code = char.strip(data[:,0].tolist())
-            nombre = char.strip(data[:,1].tolist())
-            serializer = [{'id':index,'codigo':code,'nombre':name} for index,(code,name) in enumerate(zip(art_code,nombre))]
-            return Response(serializer)  
-        sql = """
-                SELECT
-                    b.ubi_codigo,
-                    b.ubi_nombre,
-                    a.tal_codigo,
-                    'mom_cant' = SUM(
-                        CASE
-                            WHEN a.mom_tipmov = 'E' THEN a.mom_cant
-                            WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1
-                        END
-                    ) - (
-                        SELECT 'mom_cant' = ISNULL(
-                            SUM(zzz.mom_cant),
-                            0
-                        )
-                        FROM (
-                            SELECT
-                                'mom_cant' = ISNULL(
-                                    SUM(x.mom_cant),
-                                    0
-                                ) + (
-                                    SELECT ISNULL(
-                                        SUM(
-                                            CASE
-                                                WHEN z.mov_pedido = '' THEN 0
-                                                WHEN z.mom_tipmov = 'E' THEN z.mom_cant
-                                                ELSE -z.mom_cant
-                                            END
-                                        ),
+        data = {}
+        try:
+            codigo = kwargs['codigo']
+            if codigo == '000':
+                sql = "SELECT ART_CODIGO,ART_NOMBRE FROM t_articulo ORDER BY ART_NOMBRE ASC"
+                data = array(self.querys(sql,kwargs))
+                art_code = char.strip(data[:,0].tolist())
+                nombre = char.strip(data[:,1].tolist())
+                serializer = [{'id':index,'codigo':code,'nombre':name} for index,(code,name) in enumerate(zip(art_code,nombre))]
+                return Response(serializer)  
+            sql = f"""
+                    SELECT
+                        b.ubi_codigo,
+                        b.ubi_nombre,
+                        a.tal_codigo,
+                        'mom_cant' = SUM(
+                            CASE
+                                WHEN a.mom_tipmov = 'E' THEN a.mom_cant
+                                WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1
+                            END
+                        ) - (
+                            SELECT 'mom_cant' = ISNULL(
+                                SUM(zzz.mom_cant),
+                                0
+                            )
+                            FROM (
+                                SELECT
+                                    'mom_cant' = ISNULL(
+                                        SUM(x.mom_cant),
                                         0
+                                    ) + (
+                                        SELECT ISNULL(
+                                            SUM(
+                                                CASE
+                                                    WHEN z.mov_pedido = '' THEN 0
+                                                    WHEN z.mom_tipmov = 'E' THEN z.mom_cant
+                                                    ELSE -z.mom_cant
+                                                END
+                                            ),
+                                            0
+                                        )
+                                        FROM
+                                            movm{datetime.now().year} z
+                                        LEFT JOIN
+                                            cabepedido zz
+                                        ON
+                                            z.mov_pedido = zz.mov_compro
+                                        WHERE
+                                            y.mov_compro = z.mov_pedido
+                                            AND x.art_codigo = z.art_codigo
+                                            AND x.tal_codigo = z.tal_codigo
+                                            AND y.ubi_codig2 = z.alm_codigo
+                                            AND y.ubi_codigo = z.ubi_cod1
+                                            AND z.elimini = 0
+                                            AND zz.elimini = 0
+                                            AND zz.ped_cierre = 0
                                     )
-                                    FROM
-                                        movm2023 z
-                                    LEFT JOIN
-                                        cabepedido zz
-                                    ON
-                                        z.mov_pedido = zz.mov_compro
-                                    WHERE
-                                        y.mov_compro = z.mov_pedido
-                                        AND x.art_codigo = z.art_codigo
-                                        AND x.tal_codigo = z.tal_codigo
-                                        AND y.ubi_codig2 = z.alm_codigo
-                                        AND y.ubi_codigo = z.ubi_cod1
-                                        AND z.elimini = 0
-                                        AND zz.elimini = 0
-                                        AND zz.ped_cierre = 0
-                                )
-                            FROM
-                                movipedido x
-                            INNER JOIN
-                                cabepedido y
-                            ON
-                                x.mov_compro = y.mov_compro
-                            WHERE
-                                x.art_codigo = a.art_codigo
-                                AND y.ubi_codig2 = a.alm_codigo
-                                AND y.ubi_codigo = a.ubi_cod1
-                                AND x.tal_codigo = a.tal_codigo
-                                AND x.elimini = 0
-                                AND y.ped_cierre = 0
-                            GROUP BY
-                                y.mov_compro,
-                                x.art_codigo,
-                                x.tal_codigo,
-                                y.ubi_codig2,
-                                y.ubi_codigo
-                        ) AS zzz
-                    ),
-                    'orden' = (
-                        CASE
-                            WHEN a.tal_codigo = 'XS' THEN '0X1'
-                            WHEN a.tal_codigo = 'SS' THEN '0X2'
-                            WHEN a.tal_codigo = 'MM' THEN '0X3'
-                            WHEN a.tal_codigo = 'LL' THEN '0X4'
-                            WHEN a.tal_codigo = 'XL' THEN '0X5'
-                            ELSE a.tal_codigo
-                        END
-                    )
-                    FROM
-                    movm2023 a
-                    LEFT JOIN
-                    t_ubicacion b
-                    ON
-                    a.ubi_cod1 = b.ubi_codigo
-                    WHERE
-                    a.art_codigo = ?
-                    AND a.elimini = 0
-                    GROUP BY
-                    b.ubi_codigo,
-                    b.ubi_nombre,
-                    a.tal_codigo,
-                    a.art_codigo,
-                    a.alm_codigo,
-                    a.ubi_cod1
-                    ORDER BY
-                    orden
-        """
+                                FROM
+                                    movipedido x
+                                INNER JOIN
+                                    cabepedido y
+                                ON
+                                    x.mov_compro = y.mov_compro
+                                WHERE
+                                    x.art_codigo = a.art_codigo
+                                    AND y.ubi_codig2 = a.alm_codigo
+                                    AND y.ubi_codigo = a.ubi_cod1
+                                    AND x.tal_codigo = a.tal_codigo
+                                    AND x.elimini = 0
+                                    AND y.ped_cierre = 0
+                                GROUP BY
+                                    y.mov_compro,
+                                    x.art_codigo,
+                                    x.tal_codigo,
+                                    y.ubi_codig2,
+                                    y.ubi_codigo
+                            ) AS zzz
+                        ),
+                        'orden' = (
+                            CASE
+                                WHEN a.tal_codigo = 'XS' THEN '0X1'
+                                WHEN a.tal_codigo = 'SS' THEN '0X2'
+                                WHEN a.tal_codigo = 'MM' THEN '0X3'
+                                WHEN a.tal_codigo = 'LL' THEN '0X4'
+                                WHEN a.tal_codigo = 'XL' THEN '0X5'
+                                ELSE a.tal_codigo
+                            END
+                        )
+                        FROM
+                        movm{datetime.now().year} a
+                        LEFT JOIN
+                        t_ubicacion b
+                        ON
+                        a.ubi_cod1 = b.ubi_codigo
+                        WHERE
+                        a.art_codigo = ?
+                        AND a.elimini = 0
+                        GROUP BY
+                        b.ubi_codigo,
+                        b.ubi_nombre,
+                        a.tal_codigo,
+                        a.art_codigo,
+                        a.alm_codigo,
+                        a.ubi_cod1
+                        ORDER BY
+                        orden
+            """
 
-        
-        data = self.querys(sql,kwargs,(codigo))
-        items = []
-        for item in data:
-            d = {'codigo':item[0].strip(),'ubicacion':item[1].strip(),'talla':item[2].strip(),'cantidad':item[3]}
-            items.append(d)
+            
+            data = self.querys(sql,kwargs,(codigo))
+            items = []
+            for item in data:
+                d = {'codigo':item[0].strip(),'ubicacion':item[1].strip(),'talla':item[2].strip(),'cantidad':item[3]}
+                items.append(d)
 
-        grouped_data = defaultdict(lambda: {"codigo": None, "ubicacion": None, "tallas": [], "cantidades": []})
+            grouped_data = defaultdict(lambda: {"codigo": None, "ubicacion": None, "tallas": [], "cantidades": []})
+            for item in items:
+                key = (item["codigo"], item["ubicacion"])
+                grouped_data[key]["codigo"] = item["codigo"]
+                grouped_data[key]["ubicacion"] = item["ubicacion"]
+                grouped_data[key]["tallas"].append(item["talla"])
+                grouped_data[key]["cantidades"].append(item["cantidad"])
+                    
+            data = list(grouped_data.values())
 
-        for item in items:
-            key = (item["codigo"], item["ubicacion"])
-            grouped_data[key]["codigo"] = item["codigo"]
-            grouped_data[key]["ubicacion"] = item["ubicacion"]
-            grouped_data[key]["tallas"].append(item["talla"])
-            grouped_data[key]["cantidades"].append(item["cantidad"])
+            tallas = []
+            talla_orden = {'SS': 1, 'MM': 2, 'LL': 3, 'XL': 4}
+            for item in data:
+                for i in item['tallas']:
+                    if i.strip() not in  tallas:
+                        tallas.append(i.strip())
+            if "XL" in tallas or 'SS' in tallas or 'MM' in tallas or 'LL' in tallas:
+                tallas = sorted(tallas, key=lambda x: talla_orden.get(x, 99))
+            for item in range(len(data)):
+                cantidades = [0]*len(tallas)
+                for i,j in zip(data[item]['cantidades'],data[item]['tallas']):
+                    index = tallas.index(j)
+                    cantidades[index] = i
+                data[item]['tallas'] = tallas
+                data[item]['cantidades'] = cantidades
+        except Exception as e:
+            data['error'] = f"Ocurrio un error : {str(e)}"
 
-       
-        result = list(grouped_data.values())
-
-        
-        return Response(result)
+        return Response(data)
     def querys(self,sql,kwargs,params=()):
             
         host = kwargs['host']
