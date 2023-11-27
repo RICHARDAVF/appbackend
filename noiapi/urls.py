@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index),
     path('api/',include('apirest.urls')),
+    path('api/',include('apirest.view.smartfood.urls')),
     
     
 ]
