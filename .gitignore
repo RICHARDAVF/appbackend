@@ -11,3 +11,4 @@ fact.json
 datos.json
 output.pdf
 token.txt
+.env
