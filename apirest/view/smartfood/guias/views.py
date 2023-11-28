@@ -389,7 +389,7 @@ class GuiasView(generics.GenericAPIView):
                     "codigoItem":res[0].strip(),
                     "adicional":{
                         "peso":f"{res[2]*int(item['cantidad'])}",
-                        "lote":item['codigo'],
+                        "lote":item['lote'],
                         "fechaVencimiento":item['fecha_vencimiento']
 
                     }

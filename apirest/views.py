@@ -71,7 +71,8 @@ class UserView(generics.GenericAPIView):
                             b.ven_email,
                             a.usu_nimpap,
                             a.usu_perped,
-                            a.usu_almace
+                            a.usu_almace,
+                           'toma_invetario' = rtrim(ltrim(a.usu_doctom))+'-'+  rtrim(ltrim(a.usu_toma))
                         FROM t_usuario AS a 
                         LEFT JOIN t_vendedor AS b 
                         ON a.ven_codigo=b.ven_codigo 
@@ -90,7 +91,7 @@ class UserView(generics.GenericAPIView):
                
                 d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],
                      "usuario":data[0][12].strip(),'aprobacion1':data[0][13],
-                     'aprobacion2':data[0][14],'almacen':data[0][-1].strip()}
+                     'aprobacion2':data[0][14],'almacen':data[0][19].strip(),'toma_inventario':data[0][20]}
                       
                 datos['user'] = d
                 
