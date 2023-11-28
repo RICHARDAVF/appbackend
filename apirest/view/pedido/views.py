@@ -164,7 +164,7 @@ class PdfPedidoView(GenericAPIView):
 
             ]
 
-        table= Table(data)
+        table= Table(data,repeatRows=1)
         table.hAlign = 'RIGHT'
         table.setStyle(TableStyle([
                                     ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
