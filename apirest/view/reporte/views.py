@@ -212,11 +212,11 @@ class PDFview1(generics.GenericAPIView):
                 total+=t
             sum_stock = ['']*len(cabeceras)
             sum_stock[-1] = Paragraph(str(total),normal_style)
-            sum_stock[-2] = Paragraph('TOTAL',normal_style)
+            sum_stock[1] = Paragraph('TOTAL',normal_style)
             table_data.append(sum_stock)
             w,h = A4
             col_width = [w*0.11,w*0.32]+[w*0.5/len(tallas) for i in tallas]+[w*0.07]
-            table = Table(table_data,colWidths=col_width)    
+            table = Table(table_data,colWidths=col_width,repeatRows=1)    
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), (0.7, 0.7, 0.7)),
                 ('TEXTCOLOR', (0, 0), (-1, 0), (1, 1, 1)),

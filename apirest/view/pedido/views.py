@@ -140,7 +140,7 @@ class PdfPedidoView(GenericAPIView):
             w,h = A4
             story.append(Spacer(0,20))
             col_widths = [w*0.15,w*.25,w*.06]+[w*0.3/len(tallas_header)]*len(tallas_header)+[w*.1,w*.1]
-            table = Table(data,colWidths=col_widths)
+            table = Table(data,colWidths=col_widths,repeatRows=1)
             table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
