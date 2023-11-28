@@ -52,29 +52,7 @@ class InventarioView(generics.GenericAPIView):
         except Exception as e:
             data['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
-    def post(self,request,*args,**kwargs):
-        host = kwargs['host']
-        db = kwargs['db']
-        user = kwargs['user']
-        password = kwargs['password']
-        data = request.data
-        respuesta={}
-        sql = f"""
-                INSERT INTO toma{datetime.now().year}(ALM_CODIGO,MOM_MES,MOM_FECHA,ART_CODIGO,OPE_CODIGO,UBI_COD,MOM_CANT,MOM_GLOAS) 
-                VALUES(?,?,?,?,?,?,?)
-            """
-        params = (data['almacen'],str(datetime.now().month).zfill(2),datetime.now(),data['codigo'],data['operacion'],data['ubicacion'],data['cantidad'],data['observacion'])
-        try:
-            conn = QuerysDb.conexion(host,db,user,password)
-            cursor = conn.cursor()
-            cursor.execute(sql,params)
-            conn.commit()
-            conn.close()
-            respuesta['success'] = "Se guardo con exito"
-        except Exception as e:
-            respuesta['error'] = str(e)
-       
-        return Response({'message':respuesta})
+
     def querys(self,conn,sql,params,request):
         cursor = conn.cursor()
         cursor.execute(sql,params)
@@ -105,48 +83,70 @@ class ValidateView(generics.GenericAPIView):
             conn.close()
             return Response(data)
         return Response({'message':'SUCCESS'})
+    def save(self,codigo,talla,color):
+        date = self.request.data
+    
+        data = {}
+        try:
+            mom_d_int = date['mom_d_int']
+            user = date['user']['toma_inventario'].split('-')
+            if mom_d_int == '':
+                sql = "SELECT doc_docum from t_documento WHERE DOC_CODIGO=? AND DOC_SERIE=? "
+                result = Querys(self.kwargs).querys(sql,(user[0],user[1]),'get',0)
+                numero_documento = result[0].strip()
+                mom_d_int = f"{user[1]}-{str(int(numero_documento)).zfill(7)}"
+            else :
+                mom_d_int = date['mom_d_int']
+            params = (date['almacen'],str(datetime.now().month).zfill(2),datetime.now().strftime('%Y-%m-%d'),
+                    codigo,date['operacion'],date['ubicacion'],date['cantidad'],date['observacion'],
+                    color,talla,date['user']['cod'],user[0],'E',datetime.now().strftime('%Y-%m-%d'),f"{mom_d_int}")
+            sql = f"""
+                    INSERT INTO toma{datetime.now().year} (ALM_CODIGO,MOM_MES,MOM_FECHA,
+                    ART_CODIGO,OPE_CODIGO,UBI_COD1,MOM_CANT,MOM_GLOSA,col_codigo,
+                    tal_codigo,usuario,doc_cod1,mom_tipmov,fechausu, mom_d_int) 
+                    VALUES({','.join('?' for i in params)})
+                """
+            data = Querys(self.kwargs).querys(sql,params,'post',1)
+            if 'success' in data and mom_d_int=='':
+                sql = "UPDATE  t_documento SET doc_docum=? WHERE DOC_CODIGO=? AND DOC_SERIE=?"
+                params = (str(numero_documento+1).zfill(7),user[0],user[1])
+                data['success'] = Querys(self.kwargs).querys(sql,params,'post',1)
+                data['mom_d_int'] = mom_d_int
+        except Exception as e:
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return data
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
         try:
             sql = "SELECT  'longitud' = cre_long1+cre_long2+cre_long3+cre_long4+cre_long5+cre_long7+cre_long8 FROM t_creacodigo WHERE alm_codigo=?"
             result = Querys(kwargs).querys(sql,(datos['almacen'],),'get',0)
-
             if result is None:
                 data['error'] = "El codigo no existe en la base de datos"
                 return Response(data)
             longitud = result[0]
             codigo = datos['codigo'][:int(longitud)]
-
-            color = datos['codigo'][int(longitud):int(longitud)+2]
-         
-            sql = "SELECT art_codigo FROM t_articulo WHERE art_codigo = ?"
-            result = Querys(kwargs).querys(sql,(codigo,),'get',0)
-            if result is None:
+            talla_color = datos['codigo'][int(longitud):]
+            color = ''
+            talla = ''
+            sql = "SELECT art_codigo FROM t_articulo WHERE art_codigo = ? OR art_provee=?"
+            result1 = Querys(kwargs).querys(sql,(codigo,codigo),'get',0)
+            if result1 is None:
                 data['error'] = "No existe articulo con este codigo"
                 return Response(data)
-            if len(datos['codigo'])>11:
+            if len(datos['codigo'])>longitud:
                 sql = "SELECT col_codigo FROM t_colores WHERE col_codigo = ?"
-                result = Querys(kwargs).querys(sql,(color,),'get',0)
-                if result is None:
-                    data['error'] = "No existe el color"
+                result = Querys(kwargs).querys(sql,(talla_color if len(talla_color)<2 else talla_color[:2],),'get',0)
+          
+                if result is not None:
+                    color = result[0].strip()
+                    talla = talla_color[len(color):]
+                else:
+                    talla = talla_color
+            data = self.save(result1[0].strip(),talla,color)
         except Exception as e:
             data['error'] = f'Ocurrio un error : {str(e)}'
         return Response(data)
-class QRscanView(generics.GenericAPIView):
-    def post(self,request,*args,**kwargs):
-        data = {}
-        datos = request.data
 
-        try:
-            pass
-        except Exception as e:
-            data['error'] = f"Ocurrio un error :{str(e)}"
-        return Response({"message"})
-class ProcessLote:
-    def __init__(self,data):
-        self.data = data
-    def proces(self):
-        return self.data
 
     
