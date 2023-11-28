@@ -6,7 +6,7 @@ from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR
 from apirest.view.stock.views import StockView,StockReview
-from apirest.view.inventario.views import InventarioView,ValidateView
+from apirest.view.inventario.views import InventarioView,ValidateView,DeleteInventario
 from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
@@ -72,6 +72,9 @@ urlpatterns = [
     #INVENTARIO
     path('inv/<str:host>/<str:db>/<str:user>/<str:password>/',InventarioView.as_view()),
     path('val/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ValidateView.as_view()),
+    path('del/<str:host>/<str:db>/<str:user>/<str:password>/<str:identi>/<str:mom_d_int>/',DeleteInventario.as_view()),
+
+
     #LIQUIDACION DE REGALOS
     path('li-re/<str:host>/<str:db>/<str:user>/<str:password>/',LiquiRegaView.as_view()),
     #TRASLADO VIEW
