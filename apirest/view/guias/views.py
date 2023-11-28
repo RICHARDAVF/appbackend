@@ -12,8 +12,8 @@ from rest_framework.permissions import IsAuthenticated
 import base64
 load_dotenv()
 class Facturacion(generics.GenericAPIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = [IsAuthenticated]
     def validfecha(self,fecha):
         try:
             datetime.strptime(fecha, '%Y-%m-%d')
@@ -389,7 +389,7 @@ class Facturacion(generics.GenericAPIView):
                     "codigoItem":res[0].strip(),
                     "adicional":{
                         "peso":f"{res[2]*int(item['cantidad'])}",
-                        "lote":item['codigo'],
+                        "lote":item['lote'],
                         "fechaVencimiento":item['fecha_vencimiento']
 
                     }
