@@ -177,7 +177,7 @@ class ValidateView(generics.GenericAPIView):
 
 
 class DeleteInventario(generics.GenericAPIView):
-    def delete(self,request,*args,**kwargs):
+    def get(self,request,*args,**kwargs):
         data = {}
         try:
             sql = f"DELETE FROM toma{datetime.now().year} WHERE IDENTI=?"
