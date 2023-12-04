@@ -11,7 +11,7 @@ from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
-from apirest.view.reporte.views import PDFView,PDFview1,PDFWIHTIMAGEView
+from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
@@ -86,7 +86,7 @@ urlpatterns = [
     #REPORTE
     path('reporte1/',PDFView.as_view()),
     path('reporte2/',PDFview1.as_view()),
-    path('reporte3/',PDFWIHTIMAGEView.as_view()),
+    path('download/pdf/',DownloadPDF.as_view()),
     #GUIA ELECTRONICA DE VENTA Y TRASLADO
     path("fact/",Facturacion.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),

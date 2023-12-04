@@ -112,7 +112,7 @@ class StockView(generics.GenericAPIView):
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
                 WHERE 
-                    a.UBI_COD1 in('01','04')
+                    a.UBI_COD1 IN ({','.join(f"'{i}'" for i in ubis) })
                     AND a.elimini=0 
                     AND b.art_mansto=0 
                     AND a.ALM_CODIGO=?
