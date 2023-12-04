@@ -272,7 +272,7 @@ class GuiasView(generics.GenericAPIView):
                     cod,name,peso=self.valid(item['codigo'])
                    
                     params = (
-                        '24',
+                        '01',
                         date.today().strftime('%m'),
                         str(result[0]).zfill(11),
                         '01',
@@ -306,7 +306,7 @@ class GuiasView(generics.GenericAPIView):
                     """
                     self.query(sql1,params,'post')
                     params = (
-                        '24',
+                        '01',
                         date.today().strftime('%m'),
                         '01',
                         date.today().strftime('%Y-%m-%d'),
