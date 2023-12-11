@@ -12,30 +12,33 @@ class StockView(generics.GenericAPIView):
         ubi = kwargs['ubi']
         talla = kwargs['talla']
         lista_ubicaciones = request.GET.getlist('arreglo[]', [])
+        if len(lista_ubicaciones) == 0:
+            ubis = [ubi]
+        else:
+            ubis = lista_ubicaciones
         sql = f"""
             SELECT
                 a.art_codigo,
                 b.ART_NOMBRE,
-                'mom_cant'=SUM(CASE WHEN a.mom_tipmov='E' then a.mom_cant ELSE- a.mom_cant END),
-                a.tal_codigo
-            FROM movm{datetime.now().year} AS a
-            INNER JOIN t_articulo AS b
-            ON 
-                a.ART_CODIGO=b.art_codigo
-            WHERE a.elimini=0
-                AND b.art_mansto=0
-                AND a.ubi_cod1=?
-                AND a.alm_codigo=?
-                
-            GROUP by
-                a.art_codigo,b.ART_NOMBRE,a.col_codigo,a.mom_lote,a.tal_codigo
-            ORDER BY b.art_nombre
+                ubi.ubi_nombre AS ubicacion,
+                SUM(CASE WHEN a.mom_tipmov='E' THEN a.mom_cant ELSE -a.mom_cant END) AS mom_cant
+            FROM
+                movm{datetime.now().year} AS a
+                INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo
+                LEFT JOIN t_ubicacion AS ubi ON a.UBI_COD1 = ubi.ubi_codigo
+            WHERE
+                a.UBI_COD1 IN ({','.join(f"'{i}'" for i in ubis)})
+                AND a.elimini = 0
+                AND b.art_mansto = 0
+                AND a.alm_codigo = ?
+            GROUP BY
+                a.art_codigo, b.ART_NOMBRE, ubi.ubi_nombre, a.col_codigo, a.mom_lote, a.tal_codigo, a.UBI_COD1
+            ORDER BY
+                b.ART_NOMBRE
+
             """
         if int(talla) == 1:
-            if len(lista_ubicaciones) == 0:
-                ubis = [ubi]
-            else:
-                ubis = lista_ubicaciones
+            
             
             sql = f"""
                 select art_codigo,tal_codigo,'mom_cant'=sum(mom_cant),art_nombre,PA1_CODIGO,
@@ -45,7 +48,7 @@ class StockView(generics.GenericAPIView):
                     tem_codigo,
 					art_partes
 					 from
-(SELECT
+                (SELECT
                     a.art_codigo,
                     c.ume_nombre,
                     'tal_codigo' = a.tal_codigo,
@@ -183,7 +186,9 @@ class StockView(generics.GenericAPIView):
 
         conn = QuerysDb.conexion(host,db,user,password)
         datos = self.querys(conn,sql,(alm,))
-     
+        if int(talla)==0:
+            data = self.StockOffTallas(datos)
+            return Response(data)
         if len(datos)==0:
             return Response({'error':'Almacen o ubicacion sin articulos'})
         stock = [
@@ -202,7 +207,7 @@ class StockView(generics.GenericAPIView):
             }
             for index, value in enumerate(datos)
         ]
-     
+
         g = set([i['genero'] for i in stock if i['genero']!=''])
        
         sql = f"""SELECT pa1_nombre, pa1_codigo FROM t_parte1 WHERE alm_codigo = ? AND pa1_codigo IN ({','.join(f"'{i}'" for i in g)}) ORDER BY pa1_nombre;"""
@@ -286,6 +291,22 @@ class StockView(generics.GenericAPIView):
         cursor.execute(sql,params)
         data = cursor.fetchall()
         return data
+    def StockWithTallas(self,datos):
+        return 
+    def StockOffTallas(self,datos):
+       
+        stock = [
+            {
+                'id': index,
+                'codigo': value[0].strip(),
+                'nombre': value[1].strip(),
+                'ubicacion': value[2].strip(),
+                'stock': value[3],
+            }
+            for index, value in enumerate(datos)
+        ]
+        
+        return {'stock':stock,'genero':[],'linea':[],'modelo':[],'color':[],'temporada':[],'talla':[]}
 class StockReview(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
         host = kwargs['host']

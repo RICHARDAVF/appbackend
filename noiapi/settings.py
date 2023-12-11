@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apirest',
-    # 'easy_pdf'
+    'easy_pdf'
   
 ]
 
@@ -167,7 +167,7 @@ STATICFILES_DIRS = [
 # settings.py
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+EASY_PDF_MEDIA_URL = MEDIA_URL
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # CORS_ORIGIN_WHITELIST = [
 #      'http://192.168.0.104:8000',

@@ -6,12 +6,12 @@ from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR
 from apirest.view.stock.views import StockView,StockReview
-from apirest.view.inventario.views import InventarioView,ValidateView,DeleteInventario
+from apirest.view.inventario.views import InventarioView,ValidateView,DeleteInventario,InventarioWithLote
 from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
-from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFWIHTIMAGEView
+from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
@@ -73,6 +73,7 @@ urlpatterns = [
     path('inv/<str:host>/<str:db>/<str:user>/<str:password>/',InventarioView.as_view()),
     path('val/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ValidateView.as_view()),
     path('del/<str:host>/<str:db>/<str:user>/<str:password>/<str:identi>/<str:mom_d_int>/',DeleteInventario.as_view()),
+    path('val/lote/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',InventarioWithLote.as_view()),
 
 
     #LIQUIDACION DE REGALOS
@@ -86,8 +87,9 @@ urlpatterns = [
     #REPORTE
     path('reporte1/',PDFView.as_view()),
     path('reporte2/',PDFview1.as_view()),
-    path('download/pdf/<str:cod>/<str:codigo>/',DownloadPDF.as_view()),
-    path('pdf/',PDFWIHTIMAGEView.as_view()),
+    path('download/pdf/<str:ruc>/<str:cod>/<str:codigo>/',DownloadPDF.as_view()),
+    path('reporte3/',PDFGENERATEView.as_view()),
+
     #GUIA ELECTRONICA DE VENTA Y TRASLADO
     path("fact/",Facturacion.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
