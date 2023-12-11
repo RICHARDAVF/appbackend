@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class UsuarioCredencial(models.Model):
     ruc = models.CharField(max_length=50,verbose_name="RUC",null=True,blank=True)
     razon_social = models.CharField(max_length=254,verbose_name='Razon Social',null=True,blank=True)
@@ -18,7 +17,17 @@ class UsuarioCredencial(models.Model):
         verbose_name_plural = 'UsuarioCredencials'
         db_table = 'usuariocredencial'
         ordering = ['id']
-
+    def __str__(self) -> str:
+        return self.razon_social
+class ConfigCliente(models.Model):
+    cliente = models.ForeignKey(UsuarioCredencial,on_delete=models.CASCADE)
+    separacion_pedido = models.BooleanField(default=False,verbose_name="Separacion de pedido")
+    class Meta:
+        verbose_name = "ConfigClient"
+        verbose_name_plural = "ConfigClients"
+        db_table = 'config_cliente'
+    def __str__(self):
+        return self.cliente.razon_social
 class VersionApp(models.Model):
     nombre = models.CharField(max_length=50,verbose_name="Nombre de la version")
     version = models.CharField(max_length=50,verbose_name="Version de la applicacion")

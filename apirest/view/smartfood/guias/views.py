@@ -57,7 +57,7 @@ class GuiasView(generics.GenericAPIView):
                 data['status'] = 400
                 return Response(data,status=status.HTTP_200_OK)
             if tipodoc!='CE':
-                url = f"https://my.apidevs.pro/api/dni/{datos['doc']}" if datos['tipodoc']==1 else f"https://apiperu.dev/api/{tipodoc}/{datos['doc']}"
+                url = f"https://my.apidev.pro/api/dni/{datos['doc']}" if datos['tipodoc']==1 else f"https://apiperu.dev/api/{tipodoc}/{datos['doc']}"
         
                 response = requests.get(url,headers={
                     "Authorization":f"Bearer {os.getenv(f'TOKEN_{tipodoc.upper()}')}"
@@ -214,7 +214,7 @@ class GuiasView(generics.GenericAPIView):
 
             if  band:
                 for item in datos['items']:
-                   
+    
                     if self.valid(item['codigo']) is None:
                         return Response({"error":f"El codigo {item['codigo']} no existe en la base  de datos"})
                
@@ -375,10 +375,9 @@ class GuiasView(generics.GenericAPIView):
         articulos = []
         peso = 0
         for item in items:
-            sql = "SELECT ume_sunat FROM t_umedida WHERE UME_CODIGO=(SELECT UME_CODIGO FROM t_articulo WHERE art_provee=?)"
+            sql = "SELECT ume_sunat FROM t_umedida WHERE UME_CODIGO=(SELECT UME_CODIGO FROM t_articulo WHERE art_provee=? AND art_activo=0)"
             medida= self.query(sql,(item['codigo'],))
             sql = "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
-            
             res=self.query(sql,(item['codigo'],))
             peso+=res[2]*int(item['cantidad'])
             articulos.append(
