@@ -8,7 +8,7 @@ import io
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from apirest.querys import Querys
-
+from datetime import datetime
 def agrupar(datos):
     datos_agrupados = {}
     for item in datos:
@@ -177,3 +177,59 @@ class PdfPedidoView(GenericAPIView):
         doc.build(story)
         pdf = buffer.getvalue()
         return Response({"pdf":base64.b64encode(pdf).decode('utf-8')})
+class PedidoWithQr(GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+            sql = "SELECT*FROM t_articulo WHERE ART_CODIGO=?"
+            params = ()
+            result = Querys(kwargs).querys(sql,params,'get',1)
+            data = {}
+        except Exception as e:
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response()
+class PrecioProduct(GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        p = ''if kwargs['precio'] =='01' else int(kwargs['precio'])
+        moneda = kwargs['moneda']
+        codigo = kwargs['codigo']
+        try:
+            sql = f"""
+                SELECT a.lis_pmino{p},a.lis_moneda,a.lis_mindes,a.lis_maxdes,b.art_peso
+            FROM maelista AS a LEFT JOIN t_articulo AS b ON a.art_codigo = b.ART_CODIGO
+            WHERE cast(GETDATE() AS date) 
+            BETWEEN cast(a.lis_fini AS date) AND cast(a.lis_ffin AS date) 
+            AND a.lis_tipo IN (1,0) 
+            AND a.lis_moneda=?
+            AND a.art_codigo=?
+            """
+            params = (moneda,codigo)
+            result = Querys(kwargs).querys(sql,params,'get',0)
+            if result is None:
+                data['error'] = 'El articulo no tiene precio'
+                return Response(data)
+            data = {
+                'precio':result[0],
+                'moneda':result[1].strip(),
+                'des_min':result[2],
+                'des_max':result[3],
+                'peso':round(result[4],2)
+            }
+        except Exception as e:
+            data['error'] = f'Ocurrio un error: {str(e)}'
+        return Response(data)
+class NotaPedido(GenericAPIView):
+    def get(self,resquest,*args,**kwargs):
+        data = {}
+        try:
+            sql = f"""
+                SELECT par_moneda FROM t_parrametro WHERE par_anyo = {datetime.now().year}
+                """
+            result = Querys(kwargs).querys(sql,(),'get',0)
+            data = {
+                'moneda':result[0].strip()
+            }
+        except Exception as e:
+            data['error'] = f"Ocurrio un error : {str(e)}"
+        return Response(data)

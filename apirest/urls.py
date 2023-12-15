@@ -15,21 +15,43 @@ from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEV
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
-from apirest.view.pedido.views import PdfPedidoView
+from apirest.view.pedido.views import PdfPedidoView,PrecioProduct,NotaPedido
 from apirest.view.apps.views import DownloadAppView
 from apirest.view.permisos.views import PermisosView
+from apirest.view.login.views import Login
+from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones
+from apirest.view.carga.views import Carga
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
    
     #LOGIN
+    path('v1/login/<str:ruc>/<str:usuario>/<str:password>/',Login.as_view()),
     path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view()),
+    #ALMACENES
+    path('v1/alm/<str:host>/<str:db>/<str:user>/<str:password>/',Almacenes.as_view()),
+    #OPERACIONES
+    path('v1/op/<str:host>/<str:db>/<str:user>/<str:password>/',Operaciones.as_view()),
+    #PROVEEDORES
+    path('v1/pro/<str:host>/<str:db>/<str:user>/<str:password>/',Proveedores.as_view()),
+    #TRABAJADOR
+    path('v1/tra/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',Trabajador.as_view()),
+    #UBICACIONES
+    path('v1/ubi/<str:host>/<str:db>/<str:user>/<str:password>/',Ubicaciones.as_view()),
+    #CARGA
+    path('v1/carga/<str:host>/<str:db>/<str:user>/<str:password>/',Carga.as_view()),
+
     #PERMISOS
     path('permisos/<str:host>/<str:db>/<str:user>/<str:password>/<str:usuario>/',PermisosView.as_view()),
-    #PRODUCTOS
+    #ARTICULOS
     path('product/<str:host>/<str:db>/<str:user>/<str:password>/<int:p>/<str:m>/<str:u>/<str:l>/<int:tallas>/<int:lote>/',ProductoView.as_view()),
     path('product/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ProductSeleView.as_view()),
     path('product/venta/add/',ProducAddView.as_view()),
+    path('v1/art/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/',Articulos.as_view()),
+    #PRECIO PRODUCTOS
+    path('product/precio/<str:host>/<str:db>/<str:user>/<str:password>/<str:precio>/<str:moneda>/<str:codigo>/',PrecioProduct.as_view()),
+    #NOTA DE PEDIDO
+    path('nota/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',NotaPedido.as_view()),
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
     path('client/new/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteCreateView.as_view()),

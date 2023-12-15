@@ -47,6 +47,10 @@ class GuiasView(generics.GenericAPIView):
             for item in datos['items']:
                 if not self.validfecha(item['fecha_vencimiento']):
                     return Response({'error':"formato de la fecha es de vencimiento es  incorrecto (YYYY-MM-DD)"})
+            if len(datos['correo'])>100:
+                data['error'] = 'El campo correo admite solo 100 caracteres'
+                data['status'] = 400
+                return Response(data)
             # if not self.valid_importe(datos):
             #     data['error'] = "Error en el importe para una guia de traslado"
             #     data['status'] = 400
@@ -131,8 +135,8 @@ class GuiasView(generics.GenericAPIView):
                             '',
                             tipedoc,
                             date.today().strftime('%Y-%m-%d'),
-                            ''
-                        
+                            '',
+                            datos['correo']
                             )
                 elif tipodoc == 'CE':
                     params = (maa.strip(),
@@ -155,7 +159,8 @@ class GuiasView(generics.GenericAPIView):
                                 '',
                                 tipedoc,
                                 date.today().strftime('%Y-%m-%d'),
-                                datos['doc']
+                                datos['doc'],
+                                datos['correo']
                                )
                 else:
                     params=(maa.strip(),str(codigo).zfill(6),f"{maa.strip()}{str(codigo).zfill(6)}",
@@ -176,7 +181,8 @@ class GuiasView(generics.GenericAPIView):
                             res['data']['estado'],
                             tipedoc,
                             date.today().strftime('%Y-%m-%d'),
-                            ''
+                            '',
+                            datos['correo']
                             )
                 if datos['tipodoc']!=4:
                     dir_alternativa = f"{ res['data']['direccion']} {res['data']['distrito']} {res['data']['provincia']}"
@@ -189,7 +195,8 @@ class GuiasView(generics.GenericAPIView):
                 sql = f""" 
                     INSERT INTO 
                         t_auxiliar(MAA_CODIGO,AUX_CODIGO,AUX_CLAVE,AUX_NOMBRE,AUX_RAZON,VEN_CODIGO,MAA_NOMBRE,AUX_DIRECC,
-                        DEP_CODIGO,PRO_CODIGO,DIS_CODIGO,AUX_TIPOPE,AUX_DOCUM,AUX_EDI,aux_cuenta,aux_cuentd,aux_condic,aux_estado,aux_tipdoc,aux_fecoru,aux_docadi) 
+                        DEP_CODIGO,PRO_CODIGO,DIS_CODIGO,AUX_TIPOPE,AUX_DOCUM,AUX_EDI,aux_cuenta,aux_cuentd,aux_condic,
+                        aux_estado,aux_tipdoc,aux_fecoru,aux_docadi,aux_email) 
                         VALUES({','.join('?' for i in range(len(params)))})
                 """
                 self.query(sql,params,'post')

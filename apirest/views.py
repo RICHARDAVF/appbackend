@@ -124,7 +124,7 @@ class UserView(generics.GenericAPIView):
                 if precios is not None:
                     d=[]
                     for row in precios:
-                        a = {'value':row[0],'label':row[1]}
+                        a = {'value':row[0],'label':row[1].strip()}
                         d.append(a)
                     datos['precios'] = d
                 serializer = self.serializer_class(user)
