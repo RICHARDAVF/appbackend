@@ -16,10 +16,9 @@ class Carga(GenericAPIView):
                 correlativo = f"{doc_serie.strip()}-{doc_corre}"
                 fecha = datetime.now()
                 mes = str(fecha.month).zfill(2)
-                lote = ''.join([i[-2:] for i in reversed(datetime.now().strftime('%Y-%m-%d').split('-'))])
-                params = (datos['almacen'],mes,fecha.strftime('%Y-%m-%d'),datos['codigo'],lote,'E',datos['operacion'],
-                        datos['ubicacion'],datos['ubicacion'],1,100,lote,correlativo,datos['usuario'],
-                        datetime.now(),doc_cod1,datos['proveedor'],datos['tra_codigo'],lote)
+                params = (datos['almacen'],mes,fecha.strftime('%Y-%m-%d'),datos['codigo'],datos['lote'],'E',datos['operacion'],
+                        datos['ubicacion'],datos['ubicacion'],1,100,datos['lote'],correlativo,datos['usuario'],
+                        datetime.now(),doc_cod1,datos['proveedor'],datos['tra_codigo'],datos['lote2'])
                 sql = f"""
                         INSERT INTO movm{fecha.year}(
                         alm_codigo,mom_mes,mom_fecha,art_codigo,art_codadi,
@@ -41,8 +40,8 @@ class Carga(GenericAPIView):
                 else:
                     identi3 = str(int(identi3[0][8:])+1).zfill(4)
                 
-                params = (mes,datos['codigo'],100,1,lote,fecha,datos['usuario'],correlativo,lote,datos['tra_codigo'],f"{identi}{identi3}",fecha,datos['ubicacion'],
-                        datos['proveedor'],lote)
+                params = (mes,datos['codigo'],100,1,datos['lote'],fecha,datos['usuario'],correlativo,datos['lote'],datos['tra_codigo'],f"{identi}{identi3}",fecha,datos['ubicacion'],
+                        datos['proveedor'],datos['lote2'])
                 sql = f"""INSERT INTO STK_MPT(STK_MES,ART_CODIGO,STK_CANT,STK_B_P_R,STK_LOTE,fechausu,usuario,MOI_d_Int,art_codadi,
                 col_codigo,IDENTI3,stk_fecha,ubi_codigo,mov_codaux,STK_LOTE2) VALUES({','.join('?' for i in params)})"""
 

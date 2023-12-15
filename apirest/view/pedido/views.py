@@ -210,7 +210,7 @@ class PrecioProduct(GenericAPIView):
                 data['error'] = 'El articulo no tiene precio'
                 return Response(data)
             data = {
-                'precio':result[0],
+                'precio':round(result[0],2),
                 'moneda':result[1].strip(),
                 'des_min':result[2],
                 'des_max':result[3],

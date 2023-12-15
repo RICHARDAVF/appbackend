@@ -472,9 +472,12 @@ class ProducAddView(generics.GenericAPIView):
                 """
            
             for item in datas['detalle']:
+                mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
+                mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
+
                 conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
                 params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',item['talla'],'S',str(data[0][0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
-                          datas['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
+                          datas['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,item['peso'],float(item['precio_parcial']),'F1','',0,'',0,0,0,0,0,0,0,'','',mom_bruto) 
 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
