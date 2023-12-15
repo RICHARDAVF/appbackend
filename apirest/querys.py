@@ -28,7 +28,7 @@ class Querys:
             conn.commit()
             conn.close()
         except Exception as e:
-            print(type(e))
+           
             data['error'] = f'Ocurrio un error : {str(e)}'
         return data 
 
