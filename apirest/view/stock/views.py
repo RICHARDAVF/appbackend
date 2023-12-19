@@ -472,7 +472,6 @@ class StockReview(generics.GenericAPIView):
                     """
         data = self.querys(conn,sql,params)
         respuesta['p_pendientes'] = int(data[0])
-    
         conn.commit()
         conn.close()
         return Response(respuesta)

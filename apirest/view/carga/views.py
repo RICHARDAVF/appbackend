@@ -41,9 +41,9 @@ class Carga(GenericAPIView):
                     identi3 = str(int(identi3[0][8:])+1).zfill(4)
                 
                 params = (mes,datos['codigo'],100,1,datos['lote'],fecha,datos['usuario'],correlativo,datos['lote'],datos['tra_codigo'],f"{identi}{identi3}",fecha.strftime('%Y-%m-%d'),datos['ubicacion'],
-                        datos['proveedor'],datos['lote2'])
+                        datos['proveedor'],datos['lote2'],0)
                 sql = f"""INSERT INTO STK_MPT(STK_MES,ART_CODIGO,STK_CANT,STK_B_P_R,STK_LOTE,fechausu,usuario,MOI_d_Int,art_codadi,
-                col_codigo,IDENTI3,stk_fecha,ubi_codigo,mov_codaux,STK_LOTE2) VALUES({','.join('?' for i in params)})"""
+                col_codigo,IDENTI3,stk_fecha,ubi_codigo,mov_codaux,STK_LOTE2,stk_serie) VALUES({','.join('?' for i in params)})"""
 
                 data = Querys(kwargs).querys(sql,params,'post')
                
@@ -60,7 +60,14 @@ class RegistroPeso(GenericAPIView):
         data ={}
         try:
             datos = request.data
-           
+            if datos['action'] == 'edit':
+                status,message = self.update()
+               
+                if status:
+                    data['success'] = message['success']
+                else:
+                    data['error'] = message['error']
+                return Response(data)
             val = datos['pesos']
             dates = [val[i][f'value-id{i+1}'] for i in range(len(val))]
             status,dates = self.validate(dates)
@@ -92,7 +99,27 @@ class RegistroPeso(GenericAPIView):
         except:
             return False,date
 
-        
+    def update(self):
+        data = {}
+        try:
+            datos = self.request.data
+            val = datos['pesos']
+            dates = [val[i][f'value-id{i+1}'] for i in range(len(val))]
+            status,dates = self.validate(dates)
+            if not status:
+                data['error'] = 'Ingrese pesos validos y mayores a cero'
+                return False,data
+            sql = f""" UPDATE m_peso_aleatorio SET {','.join('bal_peso'+f'{str(i+1).zfill(2)}=?' for i in range(20))} WHERE bal_fecha=?"""
+            params = (*dates,datetime.now().strftime('%Y-%m-%d'))
+            res = Querys(self.kwargs).querys(sql,params,'post')
+            if 'error' in res:
+                data['error'] = 'Ocurrio un error al editar los pesos'
+                return False,data
+            data['success'] = 'Los pesos se editaron exitosamente'
+            return True,data
+        except Exception as e:
+            data['error'] = 'Ocurrio un error en la edicion'
+            return False,data
     def get(self,request,*args,**kwargs):
         data = {}
         try:
@@ -111,11 +138,11 @@ class RegistroPeso(GenericAPIView):
             fecha = datetime.now()
             sql = f"SELECT TOP 1 {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? ORDER BY bal_fecha DESC"
             pesos = list(Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',0))
-            sql = f"SELECT MOM_D_INT FROM MOVM{fecha.year} WHERE MOM_FECHA =? AND mom_bruto = 0"
+            sql = f"SELECT MOI_d_Int FROM STK_MPT WHERE stk_fecha =? AND stk_bruto = 0 AND stk_flag='' "
             result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',1)
             
             if len(result)==0:
-                data['success'] = 'Los datos se procesron correctamente'
+                data['success'] = 'Los datos se procesaron correctamente'
                 return Response(data)
             for i in range(len(result)):
                 sql = f'UPDATE  MOVM{fecha.year} SET mom_bruto=? WHERE MOM_FECHA=? AND mom_bruto=? AND MOM_D_INT=?'
