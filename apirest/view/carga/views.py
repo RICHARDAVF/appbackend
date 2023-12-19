@@ -1,7 +1,7 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from datetime import datetime
-
+import random
 from apirest.querys import Querys
 class Carga(GenericAPIView):
     def post(self,request,*args,**kwargs):
@@ -40,12 +40,13 @@ class Carga(GenericAPIView):
                 else:
                     identi3 = str(int(identi3[0][8:])+1).zfill(4)
                 
-                params = (mes,datos['codigo'],100,1,datos['lote'],fecha,datos['usuario'],correlativo,datos['lote'],datos['tra_codigo'],f"{identi}{identi3}",fecha,datos['ubicacion'],
+                params = (mes,datos['codigo'],100,1,datos['lote'],fecha,datos['usuario'],correlativo,datos['lote'],datos['tra_codigo'],f"{identi}{identi3}",fecha.strftime('%Y-%m-%d'),datos['ubicacion'],
                         datos['proveedor'],datos['lote2'])
                 sql = f"""INSERT INTO STK_MPT(STK_MES,ART_CODIGO,STK_CANT,STK_B_P_R,STK_LOTE,fechausu,usuario,MOI_d_Int,art_codadi,
                 col_codigo,IDENTI3,stk_fecha,ubi_codigo,mov_codaux,STK_LOTE2) VALUES({','.join('?' for i in params)})"""
 
                 data = Querys(kwargs).querys(sql,params,'post')
+               
                 if not 'success' in data:
                     data['error'] = 'Ocurrio un error al grabar'
                     return Response(data)
@@ -53,4 +54,85 @@ class Carga(GenericAPIView):
                 Querys(kwargs).querys(sql,(str(int(doc_corre)+1).zfill(7),doc_serie),'post')
         except Exception as e:
             data['error'] = 'Ocurrio un error al registrar'
+        return Response(data)
+class RegistroPeso(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data ={}
+        try:
+            datos = request.data
+           
+            val = datos['pesos']
+            dates = [val[i][f'value-id{i+1}'] for i in range(len(val))]
+            status,dates = self.validate(dates)
+            if not status:
+                data['error'] = 'Ingrese pesos validos y mayores a cero'
+                return Response(data)
+            fecha = datetime.now()
+            params = (fecha.strftime('%Y-%m-%d'),'001',fecha,*dates)
+            sql = f"""
+                INSERT INTO m_peso_aleatorio
+                    (bal_fecha,usuario,fechausu,{','.join(f'bal_peso'+str(i+1).zfill(2) for i in range(len(dates)))})
+                    VALUES ({','.join('?' for i in params)}) 
+                """
+          
+            data = Querys(kwargs).querys(sql,params,'post')
+
+        except Exception as e:
+            print(str(e))
+            data['error'] = 'Ocurrio un error al registrar los pesos'
+        return Response(data)
+    def validate(self,dates):
+        date = []
+        try:
+            for i in dates:
+                if float(i)<=0:
+                    return False,date
+                date.append(float(i))
+            return True,date 
+        except:
+            return False,date
+
+        
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+            sql = f"SELECT TOP 1 {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? ORDER BY bal_fecha DESC"
+            result = Querys(kwargs).querys(sql,(datetime.now().strftime('%Y-%m-%d'),),'get',0)
+            if not result is None:
+                data['inputs'] = [{'id':f'id{index+1}','placeholder':f'Peso {index+1}','value':str(value)} for index,value in enumerate(result)]
+            else:
+                data['inputs'] = []
+        except Exception as e:
+            data['error'] = 'Ocurrio un error al recuperar los datos'
+        return Response(data)
+    def put(self,request,*args,**kwargs):
+        data = {}
+        try:
+            fecha = datetime.now()
+            sql = f"SELECT TOP 1 {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? ORDER BY bal_fecha DESC"
+            pesos = list(Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',0))
+            sql = f"SELECT MOM_D_INT FROM MOVM{fecha.year} WHERE MOM_FECHA =? AND mom_bruto = 0"
+            result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',1)
+            
+            if len(result)==0:
+                data['success'] = 'Los datos se procesron correctamente'
+                return Response(data)
+            for i in range(len(result)):
+                sql = f'UPDATE  MOVM{fecha.year} SET mom_bruto=? WHERE MOM_FECHA=? AND mom_bruto=? AND MOM_D_INT=?'
+                peso = random.choice(pesos)
+                params = (peso,fecha.strftime('%Y-%m-%d'),0,result[i][0])
+                data = Querys(kwargs).querys(sql,params,'post')
+             
+                params = (peso,fecha.strftime('%Y-%m-%d'),0,result[i][0])
+                sql = f'UPDATE  STK_MPT SET stk_bruto=? WHERE stk_fecha=? AND stk_bruto=? AND MOI_d_Int=?'
+                data = Querys(kwargs).querys(sql,params,'post')
+               
+            if 'success' in data:
+                data['success'] = 'Lo datos se procesaron correctamente'
+            else:
+                data['error'] = 'No se procesaron los datos'
+            
+        except Exception as e :
+            
+            data['error'] = 'Ocurrio un error al procesar la data'
         return Response(data)
