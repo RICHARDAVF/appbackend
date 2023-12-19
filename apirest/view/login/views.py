@@ -19,7 +19,8 @@ class Login(GenericAPIView):
             password = HasPassword(password).hash()
             sql = """SELECT 
                 usu_codigo,
-                ven_codigo 
+                ven_codigo,
+                USU_ABREV
                 FROM t_usuario
                 WHERE 
                     USU_ABREV=?
@@ -34,7 +35,9 @@ class Login(GenericAPIView):
             data['credencial'] = user
             data['usuario'] = {
                 'codigo_usuario':result[0].strip(),
-                'codigo_vendedor':result[1].strip()}
+                'codigo_vendedor':result[1].strip(),
+                'nombre_usuario':result[2].strip()
+                }
         except UsuarioCredencial.DoesNotExist:
             data['error'] = f'Empresa no registrada'
         return Response(data)
