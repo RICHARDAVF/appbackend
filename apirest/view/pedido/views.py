@@ -233,3 +233,298 @@ class NotaPedido(GenericAPIView):
         except Exception as e:
             data['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
+class GuardarPedido(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        try:
+            datos = request.data
+            status,message = self.validar_stock()
+            if not status:
+                data['error'] = message['error']
+                return Response(data)
+            sql = "SELECT emp_inclu from t_empresa"
+            gui_inclu = Querys(kwargs).querys(sql,(),'get',0)
+            total1 = float(datos['total'])
+            total=0
+            base_impo=0
+            if int(gui_inclu[0])==1:
+                total = total1
+                base_impo = round(float(total)/1.18,2)
+            else:
+                base_impo= total1
+                total = round(float(base_impo)*1.18,2)
+            igv=round(total-base_impo,2)
+            
+        
+            sql = " SELECT TOP 1 MOV_COMPRO FROM cabepedido WHERE SUBSTRING(mov_compro,1,3)=? ORDER BY MOV_COMPRO DESC"
+            params = (datos['vendedor']['codigo'],)
+            result = Querys(kwargs).querys(sql,params,'get',0)
+            cor = str(datos['vendedor']['codigo'])+'-'+str(int(result[0].split('-')[-1])+1).zfill(7)
+        
+            sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
+           
+            ope_codigo = Querys(kwargs).querys(sql,(),'get',0)        
+            fecha = datetime.now().strftime('%Y-%m-%d')
+            
+            params = (cor,fecha,datos['cabeceras']['codigo'],'S', datos['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
+                    total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],datos['vendedor']['codigo'],\
+                    str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
+                    gui_inclu[0],'','',datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],'',datos['sucursal'],'',datos['nombre'],datos['direccion'],round(self.sumaSDesc(datos['detalle']),2),\
+                    abs(round(total1-self.sumaSDesc(datos['detalle']),2)),datos['tipo_envio'])
+            sql = """INSERT INTO cabepedido (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
+            rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
+            gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,mov_cotiza,aux_nuevo,ped_tipven,doc_codigo,
+            gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,agr_codigo,gui_tienda,
+            edp_codigo,gui_tiedir,ped_tiedir,rou_submon,rou_dscto,ped_tipenv) VALUES"""+'('+ ','.join('?' for i in params)+')'
+        
+
+            res = Querys(kwargs).querys(sql,params,'post')
+           
+            if 'error' in res:
+                data['error'] = 'Ocurrio un error en la grabacion'
+                return Response(data)
+            sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
+                ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
+                mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,art_codadi,mom_lote,mom_bruto) VALUES
+                """
+        
+            for item in datos['detalle']:
+                mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
+                mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
+
+                
+                params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',item['talla'],'S',str(ope_codigo[0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
+                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1','',0,'',0,0,0,0,0,0,0,'','',mom_bruto) 
+
+                sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
+            
+                res = Querys(kwargs).querys(sql,params,'post')
+              
+                if 'error' in res:
+                    data['error'] = 'Ocurrio un error en la grabacion'
+                    return Response(data)
+                data['success'] = 'El pedido se guardo con exito'
+        except Exception as e:
+            print(str(e),'agregando nuevo pedido')
+            data['error'] = 'Ocurrio un error a grabar el pedido'
+        return Response(data)
+    def put(self,request,*args,**kwargs):
+        data = {}
+        try:
+            datos = request.data
+            status,message = self.validar_stock()
+            if not status:
+                data['error'] = message['error']
+                return Response(data)
+            sql = "DELETE FROM cabepedido WHERE MOV_COMPRO=?"
+            Querys(kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+            sql = "DELETE FROM movipedido WHERE mov_compro=?"
+            Querys(kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+            total=0
+            base_impo=0
+            if int(datos['gui_inclu'])==1:
+                total = float(datos['total'])
+                base_impo = round(float(total)/1.18,2)
+            else:
+                base_impo= float(datos['total'])
+                total = round(float(base_impo)*1.18,2)
+            igv=round(float(total)-float(base_impo),2)
+            sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
+            ope_codigo = Querys(kwargs).querys(sql,(),'get',0) 
+            params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),datos['cabeceras']['codigo'],'S',\
+                    datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),\
+                        total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],datos['codigo_usuario'],\
+                        str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
+                        datos['gui_inclu'],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['direccion'],datos['nombre'],round(self.sumaSDesc(datos['detalle']),2),\
+                        round(abs(float(datos['total'])-self.sumaSDesc(datos['detalle'])),2),datos['tipo_envio'])
+            sql = """INSERT INTO cabepedido 
+                (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
+                rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
+                gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,ped_tipven,doc_codigo,
+                gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,gui_tienda,gui_tiedir,
+                ped_tiedir,rou_submon,rou_dscto,ped_tipenv) VALUES"""+'('+ ','.join('?' for i in params)+')'
+            
+            Querys(kwargs).querys(sql,params,'post')
+            sql1 = """INSERT INTO movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
+                ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
+                mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,art_codadi,mom_lote,mom_bruto) VALUES
+                """
+        
+            for item in datos['detalle']:
+              
+                params = ('53',datetime.now().month,datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),item['codigo'],'',item['talla'],'S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
+                            datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%d'),'S',float(item['descuento']),datos['gui_inclu'],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
+                sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
+            
+                Querys(kwargs).querys(sql,params,'post') 
+            data['success'] = f'El pedido {datos["codigo_pedido"]} fue editado exitosamente'    
+        except Exception as e:
+            print(str(e),'edicion de pedido')
+            data['error'] = 'Ocurrio un error en la edicion del pedido'
+        return Response(data)
+    def sumaSDesc(self,datos):
+        total = 0
+        
+        for item in datos:
+            total+=float(item['cantidad'])*float(item['precio'])
+        
+        return total
+    def validar_stock(self):
+        data = {}
+        try:
+            datos = self.request.data
+            
+            articulos = datos['detalle']
+            numero_pedido = datos['codigo_pedido']
+            for item in articulos:
+                stock_real = self.stock_real(item['talla'],item['codigo'],datos['almacen'],datos['local'])[0]
+                pedidos_pendientes = self.pedidos_pendientes(item['codigo'],item['talla'],datos['local'],datos['almacen'],numero_pedido)[0]
+                pedidos_aprobados = self.pedidos_aprobados(item['talla'],item['codigo'],datos['local'],datos['almacen'])[0]
+                stock_disponible = int(stock_real)-int(item['cantidad'])-int(pedidos_aprobados)-int(pedidos_pendientes)
+                if stock_disponible<0:
+                    data['error'] = f'El articulo {item["nombre"]} {item["talla"]} no tiene stock \nStock disponible : {stock_disponible}'
+                    return False,data
+            return True,''
+        except Exception as e:
+            print(str(e),'validacion de estok')
+            data['error'] = "ocurrio un error "
+            return False,data
+
+    def stock_real(self,talla,codigo,almacen,ubicacion):
+        data = {}
+        try:
+            sql = f"""
+                SELECT 'mom_cant' = ISNULL(
+                    SUM(
+                        CASE
+                            WHEN mom_tipmov = 'E' THEN mom_cant
+                            WHEN mom_tipmov = 'S' THEN mom_cant * -1
+                        END
+                    ), 0
+                ) 
+                FROM movm{datetime.now().year} 
+                WHERE elimini = 0 
+                    AND art_codigo = ?
+                    AND ALM_CODIGO = ?
+                    AND UBI_COD1 = ? 
+                    {'AND tal_codigo=?'if talla!='x' else ''}
+                """
+            if talla=='x':
+                params = (codigo,almacen,ubicacion)
+            else:
+                params = (codigo,almacen,ubicacion,talla)
+            data = Querys(self.kwargs).querys(sql,params,'get',0)
+        except Exception as e:
+            print(str(e))
+            data['error'] = 'error'
+        return data
+    def pedidos_pendientes(self,codigo,talla,ubicacion,almacen,numero_pedido):
+        data = {}
+        try:
+            sql = f"""
+                    SELECT 'mom_cant' = ISNULL(SUM(zzz.mom_cant), 0)
+                    FROM (
+                        SELECT 'mom_cant' = ISNULL(SUM(a.MOM_CANT), 0) + (
+                            SELECT ISNULL(SUM(
+                                    CASE
+                                        WHEN z.mov_pedido = '' THEN 0
+                                        WHEN z.mom_tipmov = 'E' THEN z.mom_cant
+                                        ELSE -z.mom_cant
+                                    END
+                                ), 0)
+                            FROM movm2023 z
+                            LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
+                            WHERE b.mov_compro = z.mov_pedido
+                                AND a.art_codigo = z.art_codigo
+                                AND a.tal_codigo = z.tal_codigo
+                                AND b.ubi_codig2 = z.alm_codigo
+                                AND b.ubi_codigo = z.ubi_cod1
+                                AND z.elimini = 0
+                                AND zz.elimini = 0
+                                AND zz.ped_cierre = 0
+                                { 'AND b.mov_compro <> ?' if numero_pedido!='x' else ''}
+
+                        )
+                        FROM movipedido a
+                        INNER JOIN cabepedido b ON a.mov_compro = b.MOV_COMPRO
+                        WHERE a.art_codigo = ?
+                            AND b.ubi_codig2 = ?
+                            AND b.ubi_codigo = ?
+                            
+                           { 'AND tal_codigo = ?' if talla!='x' else ''}
+                            { 'AND b.mov_compro <> ?' if numero_pedido!='x' else ''}
+                            AND a.elimini = 0
+                            AND b.ped_status IN (0, 1)
+                            AND ped_statu2 IN (0, 1)
+                            AND b.ped_cierre = 0
+                        GROUP BY b.mov_compro, a.art_codigo, a.tal_codigo, b.ubi_codig2, b.ubi_codigo
+                    ) AS zzz;
+
+                    """
+            if talla!='x' and numero_pedido!='x':
+                params = (numero_pedido,codigo,almacen,ubicacion,talla,numero_pedido)
+            elif talla!='x' and numero_pedido=='x':
+                params = (codigo,almacen,ubicacion,talla)
+            elif talla=='x' and numero_pedido!='x':
+                params = (numero_pedido,codigo,almacen,ubicacion,numero_pedido)
+            data = Querys(self.kwargs).querys(sql,params,'get',0)   
+        except Exception as e:
+            data['error'] = 'error'
+        return data
+    def pedidos_aprobados(self,talla,codigo,ubicacion,almacen):
+        data = {}
+        try:
+            sql = f"""
+                SELECT 'mom_cant' = ISNULL(
+                    SUM(zzz.mom_cant), 0
+                )
+                FROM (
+                    SELECT 'mom_cant' = ISNULL(
+                            SUM(a.MOM_CANT), 0
+                        ) + (
+                            SELECT ISNULL(
+                                SUM(
+                                    CASE
+                                        WHEN z.mov_pedido = '' THEN 0
+                                        WHEN z.mom_tipmov = 'E' THEN z.mom_cant
+                                        ELSE -z.mom_cant
+                                    END
+                                ), 0
+                            )
+                            FROM movm2023 z
+                            LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
+                            WHERE b.mov_compro = z.mov_pedido
+                                AND a.art_codigo = z.art_codigo
+                                AND a.tal_codigo = z.tal_codigo
+                                AND b.ubi_codig2 = z.alm_codigo
+                                AND b.ubi_codigo = z.ubi_cod1
+                                AND z.elimini = 0
+                                AND zz.elimini = 0
+                                AND zz.ped_cierre = 0
+                        )
+                    FROM movipedido a
+                    INNER JOIN cabepedido b ON a.mov_compro = b.MOV_COMPRO
+                    WHERE a.art_codigo = ?
+                        AND b.ubi_codig2 = ?
+                        AND b.ubi_codigo = ?
+                        {'AND tal_codigo = ?' if talla!='x' else ''}
+                        AND a.elimini = 0
+                        AND b.ped_status = 2
+                        AND ped_statu2 = 2
+                        AND b.ped_cierre = 0
+                    GROUP BY b.mov_compro, a.art_codigo, a.tal_codigo, b.ubi_codig2, b.ubi_codigo
+                ) AS zzz;
+
+                """
+            if talla!='x':
+                params = (codigo,ubicacion,almacen,talla)
+            else:
+                params = (codigo,ubicacion,almacen)
+            data = Querys(self.kwargs).querys(sql,params,'get',0)
+        except Exception as e:
+            print(str(e))
+            data['error'] = 'error'
+        return data
+        
