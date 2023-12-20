@@ -20,7 +20,7 @@ from apirest.view.apps.views import DownloadAppView
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
 from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones
-from apirest.view.carga.views import Carga,RegistroPeso
+from apirest.view.carga.views import Carga,RegistroPeso,ProcessData
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -41,6 +41,7 @@ urlpatterns = [
     #CARGA
     path('v1/carga/<str:host>/<str:db>/<str:user>/<str:password>/',Carga.as_view()),
     path('v1/peso/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroPeso.as_view()),
+    path('v1/process/data/<str:host>/<str:db>/<str:user>/<str:password>/',ProcessData.as_view()),
 
     #PERMISOS
     path('permisos/<str:host>/<str:db>/<str:user>/<str:password>/<str:usuario>/',PermisosView.as_view()),

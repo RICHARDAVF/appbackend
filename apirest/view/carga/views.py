@@ -61,7 +61,7 @@ class RegistroPeso(GenericAPIView):
         try:
             datos = request.data
             if datos['action'] == 'edit':
-                status,message = self.update()
+                status,message = self.data_update()
                
                 if status:
                     data['success'] = message['success']
@@ -99,7 +99,7 @@ class RegistroPeso(GenericAPIView):
         except:
             return False,date
 
-    def update(self):
+    def data_update(self):
         data = {}
         try:
             datos = self.request.data
@@ -132,7 +132,9 @@ class RegistroPeso(GenericAPIView):
         except Exception as e:
             data['error'] = 'Ocurrio un error al recuperar los datos'
         return Response(data)
-    def put(self,request,*args,**kwargs):
+
+class ProcessData(GenericAPIView):
+    def post(self,request,*args,**kwargs):
         data = {}
         try:
             fecha = datetime.now()
@@ -160,6 +162,5 @@ class RegistroPeso(GenericAPIView):
                 data['error'] = 'No se procesaron los datos'
             
         except Exception as e :
-            
             data['error'] = 'Ocurrio un error al procesar la data'
         return Response(data)
