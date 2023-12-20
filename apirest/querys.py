@@ -28,7 +28,7 @@ class Querys:
             conn.commit()
             conn.close()
         except Exception as e:
-            print(str(e),'consulta a la abse de datos')
+            print(str(e),'consulta a la base de datos')
             data['error'] = f'Ocurrio un error : {str(e)}'
         return data 
 
