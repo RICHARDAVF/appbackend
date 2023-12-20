@@ -138,20 +138,20 @@ class RegistroPeso(GenericAPIView):
             fecha = datetime.now()
             sql = f"SELECT TOP 1 {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? ORDER BY bal_fecha DESC"
             pesos = list(Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',0))
-            sql = f"SELECT MOI_d_Int FROM STK_MPT WHERE stk_fecha =? AND stk_bruto = 0 AND stk_flag='' "
+            sql = f"SELECT MOI_d_Int FROM STK_MPT WHERE stk_fecha =?  AND stk_flag='' "
             result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',1)
             
             if len(result)==0:
                 data['success'] = 'Los datos se procesaron correctamente'
                 return Response(data)
             for i in range(len(result)):
-                sql = f'UPDATE  MOVM{fecha.year} SET mom_bruto=? WHERE MOM_FECHA=? AND mom_bruto=? AND MOM_D_INT=?'
+                sql = f'UPDATE  MOVM{fecha.year} SET mom_bruto=? WHERE MOM_FECHA=?  AND MOM_D_INT=?'
                 peso = random.choice(pesos)
-                params = (peso,fecha.strftime('%Y-%m-%d'),0,result[i][0])
+                params = (peso,fecha.strftime('%Y-%m-%d'),result[i][0])
                 data = Querys(kwargs).querys(sql,params,'post')
              
-                params = (peso,fecha.strftime('%Y-%m-%d'),0,result[i][0])
-                sql = f'UPDATE  STK_MPT SET stk_bruto=? WHERE stk_fecha=? AND stk_bruto=? AND MOI_d_Int=?'
+                params = (peso,fecha.strftime('%Y-%m-%d'),result[i][0])
+                sql = f'UPDATE  STK_MPT SET stk_bruto=? WHERE stk_fecha=?  AND MOI_d_Int=?'
                 data = Querys(kwargs).querys(sql,params,'post')
                
             if 'success' in data:

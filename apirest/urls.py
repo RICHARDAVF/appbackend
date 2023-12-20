@@ -15,7 +15,7 @@ from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEV
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
-from apirest.view.pedido.views import PdfPedidoView,PrecioProduct,NotaPedido,GuardarPedido
+from apirest.view.pedido.views import PdfPedidoView,PrecioProduct,NotaPedido,GuardarPedido,EditPedido
 from apirest.view.apps.views import DownloadAppView
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
@@ -71,6 +71,8 @@ urlpatterns = [
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',PdfPedidoView.as_view()),
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
+    path('editar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',EditPedido.as_view()),
+
     
     #AGENCIAS
     path('agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),

@@ -528,3 +528,48 @@ class GuardarPedido(GenericAPIView):
             data['error'] = 'error'
         return data
         
+class EditPedido(GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+            sql = """SELECT 
+                        a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,
+                        a.ubi_codig2,a.ubi_codigo,a.lis_codigo,a.MOV_MONEDA,
+                        a.gui_exp001,a.gui_inclu,
+                        a.ped_tipven,a.tra_codig2,a.gui_tienda,a.gui_tiedir,a.ped_tiedir,
+                       a.pag_codigo,a.ped_tipenv,'agencia'=(SELECT tra_nombre FROM t_transporte WHERE TRA_CODIGO=a.tra_codig2 )
+                        FROM cabepedido AS a
+                        INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
+                        WHERE a.MOV_COMPRO = ? """
+            result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+            data['cabecera'] = {
+                'cliente':{
+                    'codigo':result[0].strip(),
+                    'ruc':result[1].strip(),
+                    'direccion':result[2].strip(),
+                    'razon_social':result[3].strip()
+                },
+                'notapedido':{
+                    'almacen':result[4].strip(),
+                    'ubicacion':result[5].strip(),
+                    'lista_precio':result[6].strip(),
+                    'moneda':result[7].strip(),
+                },
+                'final':{
+                    'obs':result[8].strip(),
+                    'gui_inclu':int(result[9]),
+                    'tipo_venta':int(result[10]),
+                    'agencia_codigo':result[11].strip(),
+                    'agencia_nombre':result[17].strip(),
+                    'entrega_codigo':result[12].strip(),
+                    'entrega_nombre':result[13].strip(),
+                    'entrega_direccion':result[14].strip(),
+                    'tipo_pago':result[15].strip(),
+                    'tipo_envio':int(result[16]),
+
+                }
+            }
+        except Exception as e:
+            print(str(e))
+            data['error'] = 'Sucedio un error al recuperar los datos'
+        return Response(data)
