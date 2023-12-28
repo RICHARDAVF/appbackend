@@ -138,3 +138,34 @@ class TypeClienteView(generics.GenericAPIView):
         except Exception as e:
             data['error'] = f"ocurrio un error : {str(e)}"
         return Response(data) 
+class ClientList(generics.GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+
+            params = ('C',)
+  
+            sql = f"""SELECT 
+                            aux_razon,aux_clave,aux_docum,'direccion'=ISNULL(aux_direcc,''),aux_telef,aux_email ,'codigo_vendedor'=ISNULL(b.ven_codigo,''),'nombre_vendedor'=ISNULL(b.VEN_NOMBRE,''),a.aux_desac
+                        FROM t_auxiliar AS  a LEFT JOIN t_vendedor AS b on a.VEN_CODIGO=b.VEN_CODIGO WHERE 
+                                substring(aux_clave,1,1)=?
+                        ORDER BY  aux_razon ASC"""
+            result = Querys(kwargs).querys(sql,params,'get',1)
+            data = [
+                {
+                    'id':index+1,
+                    'nombre':client[0].strip(),
+                    'codigo':client[1].strip(),
+                    'ruc':client[2].strip(),
+                    'direccion':client[3].strip(),
+                    'telefono':client[4].strip(),
+                    'correo':client[5].strip(),
+                    'vendedor_codigo':client[6].strip(),
+                    'vendedor_nombre':client[7].strip(),
+                    'activo':int(client[8])==0
+                    } for index,client in enumerate(result)]
+           
+        except Exception as e:
+            print(str(e),'listado de clientes')
+            data['error'] = 'Ocurrio un error al listar los clientes'
+        return Response(data)

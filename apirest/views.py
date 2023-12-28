@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics,status
 
 from apirest.querys import Querys
-from .models import UsuarioCredencial,VersionApp
+from .models import ConfigCliente, UsuarioCredencial,VersionApp
 from .serializer import UsuarioSerializer,VersionAppSerialiser
 from rest_framework.response import Response
 from .hash import HasPassword
@@ -49,8 +49,10 @@ class UserView(generics.GenericAPIView):
         password = kwargs['password']
         try:
             user = UsuarioCredencial.objects.get(ruc=ruc)
+            
+            config = ConfigCliente.objects.get(cliente_id=user.id)
             password = HasPassword(password).hash()
-    
+
             sql  = """SELECT 
                             a.usu_codigo,
                             a.ven_codigo,
@@ -129,6 +131,7 @@ class UserView(generics.GenericAPIView):
                     datos['precios'] = d
                 serializer = self.serializer_class(user)
                 datos['creden'] = serializer.data
+                datos['config_client'] = {'separacion_pedido':config.separacion_pedido,'cliente_user':config.cliente_user}
                 return Response(datos,status=status.HTTP_200_OK)
             return Response({'message':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)
 
@@ -591,19 +594,25 @@ class EditPedidoView(generics.GenericAPIView):
 
               
                 sql = """
-                        SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,a.tal_codigo
+                        SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,
+                        a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2
                         FROM movipedido AS a 
                         INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
                         WHERE a.mov_compro = ?
                     """
-        
+               
                 
                 datos= Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',1)
-              
+                
                 articulos =[]
                 for index,item in enumerate(datos):
-                    d={'id':index,'codigo':item[0],'cantidad':item[1],'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip(),'talla':item[6].strip()}
+                    lista_precio = '02' if item[8].strip()=='K' else ('01' if item[8].strip()=='U' else '')
+                    d={'id':index,'codigo':item[0],'cantidad':item[1],
+                       'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip(),'talla':item[6].strip(),
+                       'peso':item[7],'lista_precio':lista_precio,'precio_parcial':item[9]
+                       }
                     articulos.append(d)
+               
                 data = articulos
             
             elif action == 'al':

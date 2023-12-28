@@ -309,6 +309,7 @@ class StockView(generics.GenericAPIView):
         return {'stock':stock,'genero':[],'linea':[],'modelo':[],'color':[],'temporada':[],'talla':[]}
 class StockReview(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
+        
         host = kwargs['host']
         db = kwargs['db']
         user = kwargs['user']
