@@ -17,6 +17,13 @@ class Carga(GenericAPIView):
         data = {}
         try:
             datos = request.data
+            
+            if datos['cantidad'].strip()=='' or not datos['cantidad'].isdigit() or int(datos['cantidad'])<=0  :
+                data['error'] = 'La cantidad no es correcta'
+                return Response(data)
+            if  not datos['cantidad_jaba'].isdigit() or datos['cantidad_jaba'].strip()=='' or int(datos['cantidad_jaba'])<=0 :
+                data['error'] = 'La cantidad de jabas es incorrecta'
+                return Response(data)
             fecha = datetime.now()
             for i in range(int(datos['cantidad_jaba'])):
                 sql = "SELECT DOC_INGRE,doc_coding FROM t_almacen WHERE alm_codigo=?"
@@ -26,7 +33,7 @@ class Carga(GenericAPIView):
                 correlativo = f"{doc_serie.strip()}-{doc_corre}"
                 mes = str(fecha.month).zfill(2)
                 params = (datos['almacen'],mes,fecha.strftime('%Y-%m-%d'),datos['codigo'],datos['lote'],'E',datos['operacion'],
-                        datos['ubicacion'],datos['ubicacion'],1,100,datos['lote'],correlativo,datos['usuario'],
+                        datos['ubicacion'],datos['ubicacion'],1,int(datos['cantidad']),datos['lote'],correlativo,datos['usuario'],
                         fecha.strftime('%Y-%m-%d %H:%M:%S'),doc_cod1,datos['proveedor'],datos['tra_codigo'],datos['lote2'])
                 sql = f"""
                         INSERT INTO movm{fecha.year}(
