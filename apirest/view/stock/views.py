@@ -186,6 +186,7 @@ class StockView(generics.GenericAPIView):
 
         conn = QuerysDb.conexion(host,db,user,password)
         datos = self.querys(conn,sql,(alm,))
+       
         if int(talla)==0:
             data = self.StockOffTallas(datos)
             return Response(data)
@@ -207,54 +208,68 @@ class StockView(generics.GenericAPIView):
             }
             for index, value in enumerate(datos)
         ]
+        try:
+            g = set([i['genero'] for i in stock if i['genero']!=''])
+        
+            sql = f"""SELECT pa1_nombre, pa1_codigo FROM t_parte1 WHERE alm_codigo = ? AND pa1_codigo IN ({','.join(f"'{i}'" for i in g)}) ORDER BY pa1_nombre;"""
+        
+            datos = self.querys(conn,sql,(alm,))
+            genero = [
+                {
+                    'label':value[0],
+                    'value':value[1],
+                    'id':index
+                }
+                for index,value in enumerate(datos)
+            ]
+        except:
+            genero = []
 
-        g = set([i['genero'] for i in stock if i['genero']!=''])
-       
-        sql = f"""SELECT pa1_nombre, pa1_codigo FROM t_parte1 WHERE alm_codigo = ? AND pa1_codigo IN ({','.join(f"'{i}'" for i in g)}) ORDER BY pa1_nombre;"""
-    
-        datos = self.querys(conn,sql,(alm,))
-        genero = [
-            {
-                'label':value[0],
-                'value':value[1],
-                'id':index
-            }
-            for index,value in enumerate(datos)
-        ]
-        l = set([i['linea'] for i in stock])
-        sql = f"""select pa2_nombre,pa2_codigo from t_parte2 where alm_codigo=? AND pa2_codigo IN ({','.join(i for i in l)}) order by pa2_nombre"""
-        datos = self.querys(conn,sql,(alm,))
-        linea = [{'label':'LINEA',"value":'A'}]+[
-            {
-                'label':value[0],
-                'value':value[1].strip(),
-                'id':index
-            }
-            for index,value in enumerate(datos)
-        ]
-        m = set([i['modelo'] for i in stock])
-        sql = f"""select pa3_nombre,pa3_codigo from t_parte3 where alm_codigo=?  AND pa3_codigo IN ({','.join(i for i in m)}) order by pa3_nombre"""
-        datos = self.querys(conn,sql,(alm,))
+        try:
 
-        modelo =[{'value':'A',"label":"MODELO"}]+ [
-            {
-                'label':value[0],
-                'value':value[1],
-                'id':index
-            }
-            for index,value in enumerate(datos)
-        ]
-        c = set([i['color'] for i in stock])
-        sql = f"""select pa4_nombre,pa4_codigo from t_parte4 where alm_codigo=? AND pa4_codigo IN ({','.join(i for i in c)}) order by pa4_nombre"""
-        datos = self.querys(conn,sql,(alm,))
-        color = [{'label':'COLOR',"value":'A'}]+[
-            {
-                'label':value[0],
-                'value':value[1].strip(),
-                'id':index
-            }
-            for index,value in enumerate(datos)
-        ]
+            l = set([i['linea'] for i in stock])
+            sql = f"""select pa2_nombre,pa2_codigo from t_parte2 where alm_codigo=? AND pa2_codigo IN ({','.join(i for i in l)}) order by pa2_nombre"""
+            datos = self.querys(conn,sql,(alm,))
+            linea = [{'label':'LINEA',"value":'A'}]+[
+                {
+                    'label':value[0],
+                    'value':value[1].strip(),
+                    'id':index
+                }
+                for index,value in enumerate(datos)
+            ]
+        except:
+            linea = [{'label':'LINEA',"value":'A'}]
+        try:
+            m = set([i['modelo'] for i in stock])
+            sql = f"""select pa3_nombre,pa3_codigo from t_parte3 where alm_codigo=?  AND pa3_codigo IN ({','.join(i for i in m)}) order by pa3_nombre"""
+            datos = self.querys(conn,sql,(alm,))
+
+            modelo =[{'value':'A',"label":"MODELO"}]+ [
+                {
+                    'label':value[0],
+                    'value':value[1],
+                    'id':index
+                }
+                for index,value in enumerate(datos)
+            ]
+        except:
+            modelo = [{'value':'A',"label":"MODELO"}]
+        try:
+
+            c = set([i['color'] for i in stock])
+            sql = f"""select pa4_nombre,pa4_codigo from t_parte4 where alm_codigo=? AND pa4_codigo IN ({','.join(i for i in c)}) order by pa4_nombre"""
+            datos = self.querys(conn,sql,(alm,))
+            color = [{'label':'COLOR',"value":'A'}]+[
+                {
+                    'label':value[0],
+                    'value':value[1].strip(),
+                    'id':index
+                }
+                for index,value in enumerate(datos)
+            ]
+        except:
+            color = [{'label':'COLOR',"value":'A'}]
         try:
             t  = set([i['temporada']  for i in stock if i['temporada'].strip()!=''])
             
@@ -270,19 +285,22 @@ class StockView(generics.GenericAPIView):
                 for index,value in enumerate(datos)
             ]
         except :
-            temporada = []
-        tl = set([i['talla'] for i in stock])
-        sql = f"""select tal_nombre,tal_codigo from t_tallas WHERE tal_codigo IN ({",".join(f"'{i}'" for i in tl)}) order by tal_nombre"""
+            temporada = [{'label':'TEMPORADA',"value":'A'}]
+        try:
+            tl = set([i['talla'] for i in stock])
+            sql = f"""select tal_nombre,tal_codigo from t_tallas WHERE tal_codigo IN ({",".join(f"'{i}'" for i in tl)}) order by tal_nombre"""
 
-        datos = self.querys(conn,sql,())
-        tallas =[{'label':'TALLA',"value":'A'}]+[
-            {
-                'label':value[0],
-                'value':value[1].strip(),
-                'id':index
-            }
-            for index,value in enumerate(datos)
-        ]
+            datos = self.querys(conn,sql,())
+            tallas =[{'label':'TALLA',"value":'A'}]+[
+                {
+                    'label':value[0],
+                    'value':value[1].strip(),
+                    'id':index
+                }
+                for index,value in enumerate(datos)
+            ]
+        except:
+            tallas = [{'label':'TALLA',"value":'A'}]
         conn.commit()
         conn.close()
         return Response({'stock':stock,'genero':genero,'linea':linea,'modelo':modelo,'color':color,'temporada':temporada,'talla':tallas})
