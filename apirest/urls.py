@@ -16,13 +16,13 @@ from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList
 from apirest.view.pedido.views import PdfPedidoView,PrecioProduct,NotaPedido,GuardarPedido,EditPedido
-from apirest.view.apps.views import DownloadAppView
+from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
 from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia
 from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga
 from apirest.view.incidencias.views import RegistroIncidecias
-from apirest.view.pdf.views import pdf_generate,GeneratedPDF
+# from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -137,8 +137,11 @@ urlpatterns = [
     #VERSION DE LA APLICACION MOVIL ANDROID
     path('check/version/app/',VersionAppView.as_view()),
     path('download/app/',DownloadAppView.as_view()),
+
+    #APLICACION MAPRING 
+    path('v1/download/app/',DownloadAppMapring.as_view()),
     #GENERACION DE PDF
-    path('generate/pdf/',pdf_generate),
-    path('pdf/<str:host>/<str:db>/<str:user>/<str:password>/',GeneratedPDF.as_view())
+    # path('generate/pdf/',pdf_generate),
+    # path('pdf/<str:host>/<str:db>/<str:user>/<str:password>/',GeneratedPDF.as_view())
 
 ]

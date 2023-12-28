@@ -400,7 +400,7 @@ class StockViewProduct(generics.GenericAPIView):
                 grouped_data[key]["cantidades"].append(item["cantidad"])
                     
             data = list(grouped_data.values())
-
+            
             tallas = []
             talla_orden = {'SS': 1, 'MM': 2, 'LL': 3, 'XL': 4}
             for item in data:
@@ -416,6 +416,8 @@ class StockViewProduct(generics.GenericAPIView):
                     cantidades[index] = i
                 data[item]['tallas'] = tallas
                 data[item]['cantidades'] = cantidades
+                data[item]['stock'] = sum(data[item]['cantidades'])
+            
         except Exception as e:
             data['error'] = f"Ocurrio un error : {str(e)}"
 
