@@ -69,7 +69,7 @@ class Trabajador(GenericAPIView):
             """
             result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
             if result is None:
-                data['error'] = "El trabjador no esta registrado"
+                data['error'] = "El trabajador no esta registrado"
                 return Response(data)
             data['trabajador'] = {
                 'codigo':result[0].strip(),
@@ -87,4 +87,24 @@ class Ubicaciones(GenericAPIView):
             data['ubicaciones'] = [{'value':value[0].strip(),'label':value[1].strip()} for value in result]
         except Exception as e:
             data['error'] = "No se pudo cargar las ubicaciones"
+        return Response(data)
+class Incidencia(GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+            sql = """SELECT
+                        inc_codigo,inc_nombre,inc_tipo
+                    FROM t_incidencia
+
+            """
+            result = Querys(kwargs).querys(sql,(),'get',1)
+            data = [
+                {
+                    'id':index,
+                    'codigo':f"{value[0].strip()}-{value[2]}",
+                    'nombre':value[1].strip()
+                } for index,value in enumerate(result)
+            ]
+        except Exception as e:
+            data['error'] = 'Ocurrioun error al recuperar las incidencias'
         return Response(data)

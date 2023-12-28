@@ -1,5 +1,6 @@
 from django.db import models
-
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 class UsuarioCredencial(models.Model):
     ruc = models.CharField(max_length=50,verbose_name="RUC",null=True,blank=True)
     razon_social = models.CharField(max_length=254,verbose_name='Razon Social',null=True,blank=True)
@@ -22,6 +23,7 @@ class UsuarioCredencial(models.Model):
 class ConfigCliente(models.Model):
     cliente = models.ForeignKey(UsuarioCredencial,on_delete=models.CASCADE)
     separacion_pedido = models.BooleanField(default=False,verbose_name="Separacion de pedido")
+    cliente_user = models.BooleanField(verbose_name='Cliente asignado por usuario',default=False)
     class Meta:
         verbose_name = "ConfigClient"
         verbose_name_plural = "ConfigClients"
@@ -37,3 +39,7 @@ class VersionApp(models.Model):
         verbose_name_plural = "Versiones"
         db_table = 'versiones'
 
+@receiver(post_save,sender=UsuarioCredencial)
+def add_automatic_c(sender,instance,created,**kwargs):
+    if created:
+        ConfigCliente.objects.create(cliente_id=instance.id)

@@ -14,13 +14,15 @@ from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,Orde
 from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
-from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView
+from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList
 from apirest.view.pedido.views import PdfPedidoView,PrecioProduct,NotaPedido,GuardarPedido,EditPedido
 from apirest.view.apps.views import DownloadAppView
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
-from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones
-from apirest.view.carga.views import Carga,RegistroPeso,ProcessData
+from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia
+from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga
+from apirest.view.incidencias.views import RegistroIncidecias
+from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
     #DOCUMENTACION
@@ -38,10 +40,17 @@ urlpatterns = [
     path('v1/tra/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',Trabajador.as_view()),
     #UBICACIONES
     path('v1/ubi/<str:host>/<str:db>/<str:user>/<str:password>/',Ubicaciones.as_view()),
+    #INCIDENCIAS
+    path('v1/inc/<str:host>/<str:db>/<str:user>/<str:password>/',Incidencia.as_view()),
+    path('v1/inc/add/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroIncidecias.as_view()),
+    path('v1/inc/list/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroIncidecias.as_view()),
+
+  
     #CARGA
     path('v1/carga/<str:host>/<str:db>/<str:user>/<str:password>/',Carga.as_view()),
     path('v1/peso/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroPeso.as_view()),
     path('v1/process/data/<str:host>/<str:db>/<str:user>/<str:password>/',ProcessData.as_view()),
+    path('v1/list/carga/<str:host>/<str:db>/<str:user>/<str:password>/',ListadoCarga.as_view()),
 
     #PERMISOS
     path('permisos/<str:host>/<str:db>/<str:user>/<str:password>/<str:usuario>/',PermisosView.as_view()),
@@ -56,6 +65,7 @@ urlpatterns = [
     path('nota/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',NotaPedido.as_view()),
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
+    path('client/list/<str:host>/<str:db>/<str:user>/<str:password>/',ClientList.as_view()),
     path('client/new/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteCreateView.as_view()),
     path('client/type/<str:host>/<str:db>/<str:user>/<str:password>/',TypeClienteView.as_view()),
     #TIPO DE PAGO
@@ -126,6 +136,9 @@ urlpatterns = [
     path('searchdoc/<str:doc>/<str:tipo>/',SearchDNIRUC.as_view(),name='search_doc'),
     #VERSION DE LA APLICACION MOVIL ANDROID
     path('check/version/app/',VersionAppView.as_view()),
-    path('download/app/',DownloadAppView.as_view())
+    path('download/app/',DownloadAppView.as_view()),
+    #GENERACION DE PDF
+    path('generate/pdf/',pdf_generate),
+    path('pdf/<str:host>/<str:db>/<str:user>/<str:password>/',GeneratedPDF.as_view())
 
 ]

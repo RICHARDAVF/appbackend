@@ -191,7 +191,7 @@ class PedidoWithQr(GenericAPIView):
 class PrecioProduct(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
-        p = ''if kwargs['precio'] =='01' else int(kwargs['precio'])
+        p = '' if kwargs['precio'] =='01' else int(kwargs['precio'])
         moneda = kwargs['moneda']
         codigo = kwargs['codigo']
         try:
@@ -242,6 +242,8 @@ class GuardarPedido(GenericAPIView):
             if not status:
                 data['error'] = message['error']
                 return Response(data)
+            if datos['codigo_pedido']!='x':
+                return self.data_update()
             sql = "SELECT emp_inclu from t_empresa"
             gui_inclu = Querys(kwargs).querys(sql,(),'get',0)
             total1 = float(datos['total'])
@@ -292,9 +294,9 @@ class GuardarPedido(GenericAPIView):
             for item in datos['detalle']:
                 mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
                 mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
-
+                talla = item['talla'] if item['talla'] !='x' else ''
                 
-                params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',item['talla'],'S',str(ope_codigo[0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
+                params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],'',talla,'S',str(ope_codigo[0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
                         datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1','',0,'',0,0,0,0,0,0,0,'','',mom_bruto) 
 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
@@ -309,18 +311,14 @@ class GuardarPedido(GenericAPIView):
             print(str(e),'agregando nuevo pedido')
             data['error'] = 'Ocurrio un error a grabar el pedido'
         return Response(data)
-    def put(self,request,*args,**kwargs):
+    def data_update(self,):
         data = {}
         try:
-            datos = request.data
-            status,message = self.validar_stock()
-            if not status:
-                data['error'] = message['error']
-                return Response(data)
+            datos = self.request.data
             sql = "DELETE FROM cabepedido WHERE MOV_COMPRO=?"
-            Querys(kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+            Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
             sql = "DELETE FROM movipedido WHERE mov_compro=?"
-            Querys(kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+            Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
             total=0
             base_impo=0
             if int(datos['gui_inclu'])==1:
@@ -331,8 +329,8 @@ class GuardarPedido(GenericAPIView):
                 total = round(float(base_impo)*1.18,2)
             igv=round(float(total)-float(base_impo),2)
             sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
-            ope_codigo = Querys(kwargs).querys(sql,(),'get',0) 
-            params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),datos['cabeceras']['codigo'],'S',\
+            ope_codigo = Querys(self.kwargs).querys(sql,(),'get',0) 
+            params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),datos['cabeceras']['codigo'],'S',\
                     datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),\
                         total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],datos['codigo_usuario'],\
                         str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
@@ -345,7 +343,7 @@ class GuardarPedido(GenericAPIView):
                 gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,gui_tienda,gui_tiedir,
                 ped_tiedir,rou_submon,rou_dscto,ped_tipenv) VALUES"""+'('+ ','.join('?' for i in params)+')'
             
-            Querys(kwargs).querys(sql,params,'post')
+            Querys(self.kwargs).querys(sql,params,'post')
             sql1 = """INSERT INTO movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
                 mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
@@ -353,12 +351,14 @@ class GuardarPedido(GenericAPIView):
                 """
         
             for item in datos['detalle']:
-              
-                params = ('53',datetime.now().month,datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),item['codigo'],'',item['talla'],'S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
-                            datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%d'),'S',float(item['descuento']),datos['gui_inclu'],'',0,0,'F1','',0,'',0,0,0,0,0,0,0,'','',0) 
+                mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
+                mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
+                talla = item['talla'] if item['talla'] !='x' else ''
+                params = ('53',datetime.now().month,datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),item['codigo'],'',talla,'S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
+                            datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%d'),'S',float(item['descuento']),datos['gui_inclu'],mom_conpre,item['peso'],float(item['precio_parcial']),'F1','',0,'',0,0,0,0,0,0,0,'','',mom_bruto) 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
-                Querys(kwargs).querys(sql,params,'post') 
+                Querys(self.kwargs).querys(sql,params,'post') 
             data['success'] = f'El pedido {datos["codigo_pedido"]} fue editado exitosamente'    
         except Exception as e:
             print(str(e),'edicion de pedido')
@@ -379,10 +379,15 @@ class GuardarPedido(GenericAPIView):
             articulos = datos['detalle']
             numero_pedido = datos['codigo_pedido']
             for item in articulos:
+                
                 stock_real = self.stock_real(item['talla'],item['codigo'],datos['almacen'],datos['local'])[0]
+               
                 pedidos_pendientes = self.pedidos_pendientes(item['codigo'],item['talla'],datos['local'],datos['almacen'],numero_pedido)[0]
+             
                 pedidos_aprobados = self.pedidos_aprobados(item['talla'],item['codigo'],datos['local'],datos['almacen'])[0]
+                
                 stock_disponible = int(stock_real)-int(item['cantidad'])-int(pedidos_aprobados)-int(pedidos_pendientes)
+       
                 if stock_disponible<0:
                     data['error'] = f'El articulo {item["nombre"]} {item["talla"]} no tiene stock \nStock disponible : {stock_disponible}'
                     return False,data
@@ -421,6 +426,7 @@ class GuardarPedido(GenericAPIView):
             data['error'] = 'error'
         return data
     def pedidos_pendientes(self,codigo,talla,ubicacion,almacen,numero_pedido):
+       
         data = {}
         try:
             sql = f"""
@@ -452,8 +458,7 @@ class GuardarPedido(GenericAPIView):
                         WHERE a.art_codigo = ?
                             AND b.ubi_codig2 = ?
                             AND b.ubi_codigo = ?
-                            
-                           { 'AND tal_codigo = ?' if talla!='x' else ''}
+                            { 'AND tal_codigo = ?' if talla!='x' else ''}
                             { 'AND b.mov_compro <> ?' if numero_pedido!='x' else ''}
                             AND a.elimini = 0
                             AND b.ped_status IN (0, 1)
@@ -469,6 +474,8 @@ class GuardarPedido(GenericAPIView):
                 params = (codigo,almacen,ubicacion,talla)
             elif talla=='x' and numero_pedido!='x':
                 params = (numero_pedido,codigo,almacen,ubicacion,numero_pedido)
+            elif talla == 'x' and numero_pedido =='x':
+                params = (codigo,almacen,ubicacion)
             data = Querys(self.kwargs).querys(sql,params,'get',0)   
         except Exception as e:
             data['error'] = 'error'
