@@ -413,11 +413,14 @@ class StockViewProduct(generics.GenericAPIView):
                 cantidades = [0]*len(tallas)
                 for i,j in zip(data[item]['cantidades'],data[item]['tallas']):
                     index = tallas.index(j)
-                    cantidades[index] = i
+                    cantidades[index] = int(i)
+                data[item]['id'] = item+1
                 data[item]['tallas'] = tallas
+                data[item]['talla'] = ''.join(f"{t:4}" for t in tallas)
                 data[item]['cantidades'] = cantidades
+                data[item]['cant'] = ''.join( f"{c:<4}" for c in cantidades)
                 data[item]['stock'] = sum(data[item]['cantidades'])
-            
+            print(data)
         except Exception as e:
             data['error'] = f"Ocurrio un error : {str(e)}"
 

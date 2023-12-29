@@ -17,7 +17,7 @@ class RegistroIncidecias(GenericAPIView):
                     FROM m_trabajador_incidencia AS a
                     INNER JOIN t_incidencia AS b ON a.inc_codigo=b.inc_codigo
                     INNER JOIN TRABAJADOR AS c on a.tra_codigo=c.TRA_CODIGO
-                    ORDER BY a.FECHAUSU
+                    ORDER BY a.FECHAUSU DESC
                 """
             result = Querys(kwrgs).querys(sql,(),'get',1)
             data = [

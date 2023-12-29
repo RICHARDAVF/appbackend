@@ -20,7 +20,7 @@ from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
 from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia
-from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga
+from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga,JabaUbicacion
 from apirest.view.incidencias.views import RegistroIncidecias
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
@@ -51,6 +51,7 @@ urlpatterns = [
     path('v1/peso/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroPeso.as_view()),
     path('v1/process/data/<str:host>/<str:db>/<str:user>/<str:password>/',ProcessData.as_view()),
     path('v1/list/carga/<str:host>/<str:db>/<str:user>/<str:password>/',ListadoCarga.as_view()),
+    path('v1/total/jabas/<str:host>/<str:db>/<str:user>/<str:password>/<str:ubi>/',JabaUbicacion.as_view()),
 
     #PERMISOS
     path('permisos/<str:host>/<str:db>/<str:user>/<str:password>/<str:usuario>/',PermisosView.as_view()),
