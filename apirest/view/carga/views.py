@@ -241,7 +241,7 @@ class ListadoCarga(GenericAPIView):
                 data['msg'] = 'El operario aun no tiene registros'
                 return Response(data)
            
-            data = [
+            dates = [
                 {
                     'id':index+1,
                     'n_jabas':int(value[0]),
@@ -252,9 +252,33 @@ class ListadoCarga(GenericAPIView):
                     'ubicacion':value[5].strip(),
                 } for index, value in enumerate(result)
                     ]
-      
+            total_jabas = sum([item['n_jabas'] for item in dates])
+            data['list'] = dates
+            data['total'] = total_jabas
             return Response(data)
         except Exception as e:
             print(str(e),'listado carga')
             data['error'] = 'Ocurrio un error al carga los datos'
+        return Response(data)
+class JabaUbicacion(GenericAPIView):
+    def get(self,request,*args,**kwargs):
+        data = {}
+        try:
+            sql ="""
+                SELECT 
+                    COUNT(*) AS jabas 
+                FROM movm2023 
+                WHERE 
+                    MOM_FECHA=? 
+                    AND UBI_COD1=? """
+            params = (datetime.now().strftime('%Y-%m-%d'),kwargs['ubi'])
+            result = Querys(kwargs).querys(sql,params,'get',0)
+            if result is None:
+                total = 0
+            else:
+                total = result[0]
+            data['total_jabas'] = total
+        except Exception as e:
+            print(str(e))
+            data['error'] = 'Ocurrio un error al recuperar el total de las jabas'
         return Response(data)
