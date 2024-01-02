@@ -5,6 +5,7 @@ import requests
 import os
 import json
 from datetime import date,datetime
+from apirest.querys import Querys
 from apirest.views import QuerysDb
 from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
@@ -24,8 +25,23 @@ class GuiasView(generics.GenericAPIView):
         return len(datos['num_pedido'].strip())!=8 or datos['num_pedido'][0]!='T'
     def guia_venta(self,datos):
         return len(datos['num_pedido'].strip())== 0 or datos['num_pedido'][0]=='T'
+    def get_tipo_cambio(self):
+        data = {}
+        try:
+            sql = "select TC_COMPRA from t_tcambio where TC_FECHA=?"
+            fecha =datetime.now().strftime('%Y-%m-%d')
+            params =(fecha,)
+            result = Querys(self.kwargs).querys(sql,params,'get',0)
+            if result is None:
+                data['error'] = f'No hay registros para tipo de cambio en la base de datos para la fecha {fecha}'
+            else:
+                data['compra'] = result[0]
+        except:
+            data['error'] = 'Error en la conexion con la base de datos para obtener tipo de cambio'
+        return data
     def post(self,request,*args,**kwargs):
         data = {}
+        anio = datetime.now().year# '2023'
         try:
             datos = request.data
             if datos['tipodoc'] not in [1,4,6]:
@@ -70,7 +86,7 @@ class GuiasView(generics.GenericAPIView):
                 if not res['success']:
                     data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
                     return Response(data)
-            sql = f"SELECT gui_serie,gui_docum FROM GUIC{datetime.now().year} WHERE gui_ordenc=?"
+            sql = f"SELECT gui_serie,gui_docum FROM GUIC{anio} WHERE gui_ordenc=?"
             band = False
             gui_serie = self.query(sql,(datos['num_pedido']))
             sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
@@ -205,20 +221,22 @@ class GuiasView(generics.GenericAPIView):
                 dir_alternativa = f"{dates[1].strip()} {dates[2].strip()} {dates[3].strip()}"
             data = self.beforepost(datos,gui_serie,dir_alternativa)
             #USUARIOS DE PRUEBA
-            self.query(f"INSERT INTO corret{datetime.now().year}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
-            sql = f"SELECT numero FROM corret{datetime.now().year} WHERE numero=(SELECT MAX(numero) FROM corret{datetime.now().year} WHERE usuario=000)"
+            self.query(f"INSERT INTO corret{anio}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
+            sql = f"SELECT numero FROM corret{anio} WHERE numero=(SELECT MAX(numero) FROM corret{anio} WHERE usuario=000)"
             result= self.query(sql,())
             
             fecha = date.today().strftime('%Y-%m-%d')
             response = requests.get(f'https://api.apis.net.pe/v1/tipo-cambio-sunat?fecha={fecha}')
             tipo_c = ''
-            if response.status_code ==200:
-                tc = response.json()
-                tipo_c = tc['compra']
+            if 'error' in self.get_tipo_cambio():
+                if response.status_code ==200:
+                    tc = response.json()
+                    tipo_c = tc['compra']
+            elif 'compra' in self.get_tipo_cambio():
+                tipo_c = self.get_tipo_cambio()['compra']
             else:
                 return Response({'error':'Errores en la conexion para tipo de cambio'})
-            
-
+           
             if  band:
                 for item in datos['items']:
     
@@ -258,7 +276,7 @@ class GuiasView(generics.GenericAPIView):
                             datos['observacion']
                         )
                 sql = f"""
-                        INSERT INTO GUIC{date.today().strftime('%Y')}(
+                        INSERT INTO GUIC{anio}(
                             MOV_COMPRO,MOV_FECHA,MOV_CODAUX,DOC_CODIGO,MOV_T_C,USUARIO,
                             FECHAUSU,
                             mov_fvenc,
@@ -306,7 +324,7 @@ class GuiasView(generics.GenericAPIView):
                     )
                     
                     sql1 = f"""
-                        INSERT INTO GUID{date.today().strftime('%Y')}(ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,MOM_FECHA,
+                        INSERT INTO GUID{anio}(ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,MOM_FECHA,
                         ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,UBI_COD,UBI_COD1,MOM_CANT,mom_valor,MOM_MONEDA,MOM_T_C,MOM_PUNIT,
                         USUARIO,FECHAUSU,doc_compro,art_afecto,gui_inclu,mom_linea,mom_lote,art_codadi,mom_bruto) 
                         VALUES({','.join('?' for i in params)})
@@ -342,7 +360,7 @@ class GuiasView(generics.GenericAPIView):
                     )
                    
                     sql2 = f"""
-                        INSERT INTO MOVM{date.today().strftime('%Y')}(ALM_CODIGO,MOM_MES,doc_cod1,MOM_FECHA,
+                        INSERT INTO MOVM{anio}(ALM_CODIGO,MOM_MES,doc_cod1,MOM_FECHA,
                         ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,UBI_COD,UBI_COD1,MOM_CANT,mom_valor,MOM_MONEDA,
                         MOM_T_C,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,MOM_D_INT,mom_codaux,mom_retip1,
                         mom_redoc1,mom_lote,art_codadi,mom_bruto,mom_linea,gui_inclu) 
@@ -378,6 +396,7 @@ class GuiasView(generics.GenericAPIView):
         sql =  "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
         return self.query(sql,(codigo,))
     def beforepost(self,datos,num_doc,direc):
+        anio = datetime.now().year#'2023'
         items = datos['items']
         articulos = []
         peso = 0
