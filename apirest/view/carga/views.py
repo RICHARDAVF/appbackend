@@ -273,7 +273,9 @@ class JabaUbicacion(GenericAPIView):
                 FROM movm{anio} 
                 WHERE 
                     MOM_FECHA=? 
-                    AND UBI_COD1=? """
+                    AND UBI_COD1=? 
+                    AND MOM_TIPMOV='E'
+                    """
             params = (datetime.now().strftime('%Y-%m-%d'),kwargs['ubi'])
             result = Querys(kwargs).querys(sql,params,'get',0)
             if result is None:
