@@ -9,7 +9,8 @@ class OrdenView(generics.GenericAPIView):
         db = kwargs['db']
         user = kwargs['user']
         password = kwargs['password']
-        sql = """
+        anio = datetime.now().year
+        sql = f"""
                 SELECT 
                     a.art_codigo,
                     a.art_nombre,
@@ -22,7 +23,7 @@ class OrdenView(generics.GenericAPIView):
                                     WHEN mom_tipmov = 'S' THEN mom_cant * -1 
                                 END) 
                             FROM 
-                                movm2023 
+                                movm{anio}
                             WHERE 
                                 alm_codigo = '02' 
                                 AND elimini = 0 

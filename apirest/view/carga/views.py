@@ -82,9 +82,10 @@ class Carga(GenericAPIView):
         datos = self.request.data
         fecha = datetime.now().strftime('%Y-%m-%d')
         data = 0
-        sql  = """SELECT 
+        anio = datetime.now().year
+        sql  = f"""SELECT 
                     COUNT(*) AS jabas 
-                FROM MOVM2023 
+                FROM MOVM{anio} 
                 WHERE 
                     col_codigo=?
                     AND MOM_FECHA=? """
@@ -213,6 +214,7 @@ class ProcessData(GenericAPIView):
 class ListadoCarga(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
+        anio = datetime.now().year
         try:
             fecha = datetime.now()
             datos = request.data
@@ -223,7 +225,7 @@ class ListadoCarga(GenericAPIView):
                         'operario' = COALESCE(tra.TRA_NOMBRE, ''),
                         'almacen' = COALESCE(alm.ALM_NOMBRE, ''),
                         'ubicacion' = COALESCE(ubi.ubi_nombre, '')
-                    FROM movm2023 AS a
+                    FROM movm{anio} AS a
                     LEFT JOIN t_auxiliar AS aux ON aux.MAA_CODIGO = 'PR' AND aux.AUX_CLAVE = a.mom_codaux
                     LEFT JOIN TRABAJADOR AS tra ON tra.TRA_CODIGO = a.col_codigo
                     LEFT JOIN t_almacen AS alm ON alm.ALM_CODIGO = a.ALM_CODIGO
@@ -263,11 +265,12 @@ class ListadoCarga(GenericAPIView):
 class JabaUbicacion(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
+        anio = datetime.now().year
         try:
-            sql ="""
+            sql =f"""
                 SELECT 
                     COUNT(*) AS jabas 
-                FROM movm2023 
+                FROM movm{anio} 
                 WHERE 
                     MOM_FECHA=? 
                     AND UBI_COD1=? """
