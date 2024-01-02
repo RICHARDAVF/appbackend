@@ -186,7 +186,7 @@ class ProcessData(GenericAPIView):
                 data['error'] = 'Falta registrar los pesos'
                 return Response(data)
             pesos = list(result)
-            sql = f"SELECT MOI_d_Int FROM STK_MPT WHERE stk_fecha =?  AND stk_flag='' "
+            sql = f"SELECT MOI_d_Int FROM STK_MPT WHERE stk_fecha =?  AND stk_bruto=0 "
             result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',1)
             
             if len(result)==0:
