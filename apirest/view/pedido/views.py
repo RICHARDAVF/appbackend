@@ -426,7 +426,7 @@ class GuardarPedido(GenericAPIView):
             data['error'] = 'error'
         return data
     def pedidos_pendientes(self,codigo,talla,ubicacion,almacen,numero_pedido):
-       
+        anio = datetime.now().year
         data = {}
         try:
             sql = f"""
@@ -440,7 +440,7 @@ class GuardarPedido(GenericAPIView):
                                         ELSE -z.mom_cant
                                     END
                                 ), 0)
-                            FROM movm2023 z
+                            FROM movm{anio} z
                             LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                             WHERE b.mov_compro = z.mov_pedido
                                 AND a.art_codigo = z.art_codigo
@@ -482,6 +482,7 @@ class GuardarPedido(GenericAPIView):
         return data
     def pedidos_aprobados(self,talla,codigo,ubicacion,almacen):
         data = {}
+        anio = datetime.now().year
         try:
             sql = f"""
                 SELECT 'mom_cant' = ISNULL(
@@ -500,7 +501,7 @@ class GuardarPedido(GenericAPIView):
                                     END
                                 ), 0
                             )
-                            FROM movm2023 z
+                            FROM movm{anio} z
                             LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                             WHERE b.mov_compro = z.mov_pedido
                                 AND a.art_codigo = z.art_codigo

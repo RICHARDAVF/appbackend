@@ -424,7 +424,6 @@ class StockViewProduct(generics.GenericAPIView):
 
         return Response(data)
     def querys(self,sql,kwargs,params=()):
-            
         host = kwargs['host']
         db = kwargs['db']
         user = kwargs['user']

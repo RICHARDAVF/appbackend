@@ -41,7 +41,7 @@ class GuiasView(generics.GenericAPIView):
         return data
     def post(self,request,*args,**kwargs):
         data = {}
-        anio = datetime.now().year# '2023'
+        anio = datetime.now().year
         try:
             datos = request.data
             if datos['tipodoc'] not in [1,4,6]:
@@ -86,7 +86,7 @@ class GuiasView(generics.GenericAPIView):
                 if not res['success']:
                     data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
                     return Response(data)
-            sql = f"SELECT gui_serie,gui_docum FROM GUIC{anio} WHERE gui_ordenc=?"
+            sql = f"SELECT gui_serie,gui_docum FROM GUIC{anio} WHERE gui_ordenc=? AND elimini=0"
             band = False
             gui_serie = self.query(sql,(datos['num_pedido']))
             sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
@@ -228,12 +228,12 @@ class GuiasView(generics.GenericAPIView):
             fecha = date.today().strftime('%Y-%m-%d')
             response = requests.get(f'https://api.apis.net.pe/v1/tipo-cambio-sunat?fecha={fecha}')
             tipo_c = ''
-            if 'error' in self.get_tipo_cambio():
+            if 'compra' in self.get_tipo_cambio():
+                tipo_c = self.get_tipo_cambio()['compra']
+            elif 'error' in self.get_tipo_cambio():
                 if response.status_code ==200:
                     tc = response.json()
                     tipo_c = tc['compra']
-            elif 'compra' in self.get_tipo_cambio():
-                tipo_c = self.get_tipo_cambio()['compra']
             else:
                 return Response({'error':'Errores en la conexion para tipo de cambio'})
            
@@ -396,7 +396,7 @@ class GuiasView(generics.GenericAPIView):
         sql =  "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
         return self.query(sql,(codigo,))
     def beforepost(self,datos,num_doc,direc):
-        anio = datetime.now().year#'2023'
+        anio = datetime.now().year
         items = datos['items']
         articulos = []
         peso = 0

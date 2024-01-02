@@ -11,6 +11,7 @@ class StockView(generics.GenericAPIView):
         alm = kwargs['alm']
         ubi = kwargs['ubi']
         talla = kwargs['talla']
+        anio = datetime.now().year
         lista_ubicaciones = request.GET.getlist('arreglo[]', [])
         if len(lista_ubicaciones) == 0:
             ubis = [ubi]
@@ -69,7 +70,7 @@ class StockView(generics.GenericAPIView):
                                                             ELSE -z.mom_cant 
                                                         END
                                                     ), 0) 
-                                                FROM movm2023 z 
+                                                FROM movm{anio} z 
                                                 LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                                 WHERE y.mov_compro=z.mov_pedido 
                                                     AND x.art_codigo=z.art_codigo 
@@ -111,7 +112,7 @@ class StockView(generics.GenericAPIView):
                     b.PA4_CODIGO,
                     b.tem_codigo,
                     b.art_partes
-                FROM movm2023 a 
+                FROM movm{anio} a 
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
                 WHERE 
@@ -154,7 +155,7 @@ class StockView(generics.GenericAPIView):
                                                 ELSE -z.mom_cant 
                                             END
                                         ), 0) 
-                                    FROM movm2023 z 
+                                    FROM movm{anio} z 
                                     LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                     WHERE y.mov_compro=z.mov_pedido 
                                         AND x.art_codigo=z.art_codigo 
@@ -337,6 +338,7 @@ class StockReview(generics.GenericAPIView):
         almacen = kwargs['alm']
         codigo = kwargs['codigo']
         talla = kwargs['talla']
+        anio = datetime.now().year
         respuesta = {}
         params = (codigo,almacen,ubicacion)
         if talla!='x':
@@ -379,7 +381,7 @@ class StockReview(generics.GenericAPIView):
                                     END
                                 ), 0
                             )
-                            FROM movm2023 z
+                            FROM movm{anio} z
                             LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                             WHERE b.mov_compro = z.mov_pedido
                                 AND a.art_codigo = z.art_codigo
@@ -419,7 +421,7 @@ class StockReview(generics.GenericAPIView):
                                     ELSE -z.mom_cant
                                 END
                             ), 0)
-                        FROM movm2023 z
+                        FROM movm{anio} z
                         LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                         WHERE b.mov_compro = z.mov_pedido
                             AND a.art_codigo = z.art_codigo
@@ -461,7 +463,7 @@ class StockReview(generics.GenericAPIView):
                                         ELSE -z.mom_cant
                                     END
                                 ), 0)
-                            FROM movm2023 z
+                            FROM movm{anio} z
                             LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                             WHERE b.mov_compro = z.mov_pedido
                                 AND a.art_codigo = z.art_codigo
