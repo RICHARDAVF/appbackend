@@ -19,7 +19,6 @@ class RegistroPeticionesMiddleware:
         metodo = request.method
         ruta = request.path
         fecha_hora = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         mensaje = f"{fecha_hora} - {metodo} {ruta}\n"
 
         # Ruta al archivo de registro

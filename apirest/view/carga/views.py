@@ -25,22 +25,24 @@ class Carga(GenericAPIView):
                 data['error'] = 'La cantidad de jabas es incorrecta'
                 return Response(data)
             fecha = datetime.now()
+            pesos = self.get_pesos()
             for i in range(int(datos['cantidad_jaba'])):
                 sql = "SELECT DOC_INGRE,doc_coding FROM t_almacen WHERE alm_codigo=?"
                 doc_serie,doc_cod1 = Querys(kwargs).querys(sql,(datos['almacen'],),'get',0)
                 sql = "SELECT doc_docum FROM  t_documento WHERE DOC_SERIE=? AND DOC_CODIGO='NE'"
+                peso = random.choice(pesos)
                 doc_corre =  Querys(kwargs).querys(sql,(doc_serie.strip(),),'get',0)[0]
                 correlativo = f"{doc_serie.strip()}-{doc_corre}"
                 mes = str(fecha.month).zfill(2)
                 params = (datos['almacen'],mes,fecha.strftime('%Y-%m-%d'),datos['codigo'],datos['lote'],'E',datos['operacion'],
                         datos['ubicacion'],datos['ubicacion'],1,int(datos['cantidad']),datos['lote'],correlativo,datos['usuario'],
-                        fecha.strftime('%Y-%m-%d %H:%M:%S'),doc_cod1,datos['proveedor'],datos['tra_codigo'],datos['lote2'])
+                        fecha.strftime('%Y-%m-%d %H:%M:%S'),doc_cod1,datos['proveedor'],datos['tra_codigo'],datos['lote2'],peso)
                 sql = f"""
                         INSERT INTO movm{fecha.year}(
                         alm_codigo,mom_mes,mom_fecha,art_codigo,art_codadi,
                         mom_tipmov,ope_codigo,ubi_cod,ubi_cod1,mom_b_p_r,
                         mom_cant,mom_lote,mom_d_int,usuario,fechausu,
-                        doc_cod1,mom_codaux,col_codigo,mom_lote2
+                        doc_cod1,mom_codaux,col_codigo,mom_lote2,mom_bruto
                         ) VALUES({','.join('?' for i in params)})
                     """
                 data = Querys(kwargs).querys(sql,params,'post')
@@ -57,9 +59,9 @@ class Carga(GenericAPIView):
                     identi3 = str(int(identi3[0][8:])+1).zfill(4)
                 
                 params = (mes,datos['codigo'],100,1,datos['lote'],fecha.strftime('%Y-%m-%d %H:%M:%S'),datos['usuario'],correlativo,datos['lote'],datos['tra_codigo'],f"{identi}{identi3}",fecha.strftime('%Y-%m-%d'),datos['ubicacion'],
-                        datos['proveedor'],datos['lote2'],0)
+                        datos['proveedor'],datos['lote2'],0,peso)
                 sql = f"""INSERT INTO STK_MPT(STK_MES,ART_CODIGO,STK_CANT,STK_B_P_R,STK_LOTE,fechausu,usuario,MOI_d_Int,art_codadi,
-                col_codigo,IDENTI3,stk_fecha,ubi_codigo,mov_codaux,STK_LOTE2,stk_serie) VALUES({','.join('?' for i in params)})"""
+                col_codigo,IDENTI3,stk_fecha,ubi_codigo,mov_codaux,STK_LOTE2,stk_serie,stk_bruto) VALUES({','.join('?' for i in params)})"""
 
                 data = Querys(kwargs).querys(sql,params,'post')
                
@@ -93,10 +95,15 @@ class Carga(GenericAPIView):
         data = Querys(self.kwargs).querys(sql,params,'get',0)
         return f'✔ El operario va {data[0]} jabas'
     def exist_peso(self):
-        sql = "SELECT*FROM m_peso_aleatorio WHERE bal_fecha=?"
+        sql = "SELECT*FROM m_peso_aleatorio WHERE bal_fecha=? AND bal_tipope=?"
         fecha = datetime.now().strftime('%Y-%m-%d')
-        result = Querys(self.kwargs).querys(sql,(fecha,),'get',0)
+        result = Querys(self.kwargs).querys(sql,(fecha,int(self.request.data['tipo_peso'])),'get',0)
         return result is None
+    def get_pesos(self):
+        sql = f'SELECT {",".join("bal_peso"+str(i+1).zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? AND bal_tipope=?'
+        params = (datetime.now().strftime('%Y-%m-%d'),int(self.request.data['tipo_peso']))
+        pesos = Querys(self.kwargs).querys(sql,params,'get',0)
+        return list(pesos) if pesos is not None else [0]*20
 class RegistroPeso(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data ={}
@@ -117,10 +124,10 @@ class RegistroPeso(GenericAPIView):
                 data['error'] = 'Ingrese pesos validos y mayores a cero'
                 return Response(data)
             fecha = datetime.now()
-            params = (fecha.strftime('%Y-%m-%d'),'001',fecha,*dates)
+            params = (fecha.strftime('%Y-%m-%d'),datos['usuario'],fecha,int(datos['tipo_peso']),*dates)
             sql = f"""
                 INSERT INTO m_peso_aleatorio
-                    (bal_fecha,usuario,fechausu,{','.join(f'bal_peso'+str(i+1).zfill(2) for i in range(len(dates)))})
+                    (bal_fecha,usuario,fechausu,bal_tipope,{','.join(f'bal_peso'+str(i+1).zfill(2) for i in range(len(dates)))})
                     VALUES ({','.join('?' for i in params)}) 
                 """
           
@@ -151,8 +158,8 @@ class RegistroPeso(GenericAPIView):
             if not status:
                 data['error'] = 'Ingrese pesos validos y mayores a cero'
                 return False,data
-            sql = f""" UPDATE m_peso_aleatorio SET {','.join('bal_peso'+f'{str(i+1).zfill(2)}=?' for i in range(20))} WHERE bal_fecha=?"""
-            params = (*dates,datetime.now().strftime('%Y-%m-%d'))
+            sql = f""" UPDATE m_peso_aleatorio SET {','.join('bal_peso'+f'{str(i+1).zfill(2)}=?' for i in range(20))} WHERE bal_fecha=? AND bal_tipope=?"""
+            params = (*dates,datetime.now().strftime('%Y-%m-%d'),int(datos['tipo_peso']))
             res = Querys(self.kwargs).querys(sql,params,'post')
             if 'error' in res:
                 data['error'] = 'Ocurrio un error al editar los pesos'
@@ -165,9 +172,14 @@ class RegistroPeso(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
         try:
-            sql = f"SELECT TOP 1 {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? ORDER BY bal_fecha DESC"
-            result = Querys(kwargs).querys(sql,(datetime.now().strftime('%Y-%m-%d'),),'get',0)
-            if not result is None:
+            tipo_peso = kwargs['tipo_peso']
+           
+            sql = f"""SELECT TOP 1 {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} 
+            FROM m_peso_aleatorio WHERE bal_fecha=? AND bal_tipope=? ORDER BY bal_fecha DESC"""
+          
+            result = Querys(kwargs).querys(sql,(datetime.now().strftime('%Y-%m-%d'),tipo_peso),'get',0)
+           
+            if not result is None and 'error' not in result:
                 data['inputs'] = [{'id':f'id{index+1}','placeholder':f'Peso {index+1}','value':str(value)} for index,value in enumerate(result)]
             else:
                 data['inputs'] = []
@@ -180,15 +192,17 @@ class ProcessData(GenericAPIView):
         data = {}
         try:
             fecha = datetime.now()
-            sql = f"SELECT  {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? ORDER BY bal_fecha DESC"
-            result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',0)
+            sql = f"SELECT  {','.join('bal_peso'+f'{i+1}'.zfill(2) for i in range(20))} FROM m_peso_aleatorio WHERE bal_fecha=? AND bal_tipope=? ORDER BY bal_fecha DESC"
+            result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),request.data['tipo_peso']),'get',0)
+          
             if result is None:
                 data['error'] = 'Falta registrar los pesos'
                 return Response(data)
             pesos = list(result)
+          
             sql = f"SELECT MOI_d_Int FROM STK_MPT WHERE stk_fecha =?  AND stk_bruto=0 "
             result = Querys(kwargs).querys(sql,(fecha.strftime('%Y-%m-%d'),),'get',1)
-            
+
             if len(result)==0:
                 data['success'] = 'Los datos se procesaron correctamente'
                 return Response(data)
@@ -226,7 +240,7 @@ class ListadoCarga(GenericAPIView):
                         'almacen' = COALESCE(alm.ALM_NOMBRE, ''),
                         'ubicacion' = COALESCE(ubi.ubi_nombre, '')
                     FROM movm{anio} AS a
-                    LEFT JOIN t_auxiliar AS aux ON aux.MAA_CODIGO = 'PR' AND aux.AUX_CLAVE = a.mom_codaux
+                    LEFT JOIN t_auxiliar AS aux ON  aux.AUX_CLAVE = a.mom_codaux
                     LEFT JOIN TRABAJADOR AS tra ON tra.TRA_CODIGO = a.col_codigo
                     LEFT JOIN t_almacen AS alm ON alm.ALM_CODIGO = a.ALM_CODIGO
                     LEFT JOIN t_ubicacion AS ubi ON ubi.ubi_codigo = a.UBI_COD1

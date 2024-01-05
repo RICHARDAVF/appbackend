@@ -131,7 +131,7 @@ class ReadCuentasView(generics.GenericAPIView):
                 b.MOV_FVENC DESC;
 
             """
-        print(filtro)
+        
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
         

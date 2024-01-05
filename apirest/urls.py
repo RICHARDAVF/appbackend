@@ -28,10 +28,10 @@ urlpatterns = [
     #DOCUMENTACION
    
     #LOGIN
-    path('v1/login/<str:ruc>/<str:usuario>/<str:password>/',Login.as_view()),
-    path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view()),
+    path('v1/login/<str:ruc>/<str:usuario>/<str:password>/',Login.as_view(),name='Login-v1'),
+    path('login/<str:ruc>/<str:usuario>/<str:password>/',UserView.as_view(),name='login'),
     #ALMACENES
-    path('v1/alm/<str:host>/<str:db>/<str:user>/<str:password>/',Almacenes.as_view()),
+    path('v1/alm/<str:host>/<str:db>/<str:user>/<str:password>/',Almacenes.as_view(),name='almacenes'),
     #OPERACIONES
     path('v1/op/<str:host>/<str:db>/<str:user>/<str:password>/',Operaciones.as_view()),
     #PROVEEDORES
@@ -48,10 +48,10 @@ urlpatterns = [
   
     #CARGA
     path('v1/carga/<str:host>/<str:db>/<str:user>/<str:password>/',Carga.as_view()),
-    path('v1/peso/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroPeso.as_view()),
+    path('v1/peso/<str:host>/<str:db>/<str:user>/<str:password>/<str:tipo_peso>/',RegistroPeso.as_view()),
     path('v1/process/data/<str:host>/<str:db>/<str:user>/<str:password>/',ProcessData.as_view()),
     path('v1/list/carga/<str:host>/<str:db>/<str:user>/<str:password>/',ListadoCarga.as_view()),
-    path('v1/total/jabas/<str:host>/<str:db>/<str:user>/<str:password>/<str:ubi>/',JabaUbicacion.as_view()),
+    path('v1/total/jabas/<str:host>/<str:db>/<str:user>/<str:password>/<str:ubi>/',JabaUbicacion.as_view(),name='listado-jabas'),
 
     #PERMISOS
     path('permisos/<str:host>/<str:db>/<str:user>/<str:password>/<str:usuario>/',PermisosView.as_view()),
