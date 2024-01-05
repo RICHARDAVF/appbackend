@@ -40,8 +40,7 @@ class Validation:
 
     def valid(self):
         data = {}
-        url = f"https://my.apidev.pro/api/dni/{self.doc}" if self.tipo=='dni' else f"https://apiperu.dev/api/ruc/{self.doc}"
-       
+        url = f"https://my.apidev.pro/api/dni/{self.doc}" if self.tipo=='dni' else f"https://apiperu.dev/api/ruc/{self.doc}"      
         response = requests.get(url,headers={
                 "Authorization":f"Bearer {os.getenv(f'TOKEN_{self.tipo.upper()}')}"
             })

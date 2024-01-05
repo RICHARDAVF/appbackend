@@ -16,13 +16,6 @@ class QuerysDb:
         try:
             conn = pyodbc.connect('DRIVER={SQL Server};SERVER=' +
                                dbhost+';DATABASE='+dbname+';UID='+dbuser+';PWD=' + dbpassword)
-            # conn = pyodbc.connect(
-            # Trusted_Connection = 'Yes',
-            # Driver = '{SQL Server}',
-            # Server = dbhost,
-            # Database = dbname,
-            
-            # )
             return conn
         except:
             return None
@@ -88,7 +81,7 @@ class UserView(generics.GenericAPIView):
             if conn is not None:
                 data = self.querys(conn,sql,params=(usuario,password))
                 if data is  None :
-                    datos['message']='Usuario o Contraseña incorrecta'
+                    datos['error']='Usuario o Contraseña incorrecta'
                     return Response(datos,status=status.HTTP_200_OK)
                
                 d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],
@@ -133,11 +126,11 @@ class UserView(generics.GenericAPIView):
                 datos['creden'] = serializer.data
                 datos['config_client'] = {'separacion_pedido':config.separacion_pedido,'cliente_user':config.cliente_user}
                 return Response(datos,status=status.HTTP_200_OK)
-            return Response({'message':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)
+            return Response({'error':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)
 
                 
         except UsuarioCredencial.DoesNotExist:
-            return Response({'message':'Esta empresa no esta resgitrado'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error':'Esta empresa no esta resgitrado'}, status=status.HTTP_404_NOT_FOUND)
     def querys(self,conn,sql,params=()):
         cursor = conn.cursor()
         cursor.execute(sql,params)
@@ -147,6 +140,7 @@ class UserView(generics.GenericAPIView):
         return  data if len(data)>0 else  None
 class ProductoView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
+        anio = datetime.now().year
         host = kwargs['host']
         db = kwargs['db']
         user = kwargs['user']
@@ -205,7 +199,7 @@ class ProductoView(generics.GenericAPIView):
                                                             ELSE -z.mom_cant 
                                                         END
                                                     ), 0) 
-                                                FROM movm2023 z 
+                                                FROM movm{anio} z 
                                                 LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                                 WHERE y.mov_compro=z.mov_pedido 
                                                     AND x.art_codigo=z.art_codigo 
@@ -721,25 +715,30 @@ class EstadoPedido(generics.GenericAPIView):
             return Response({'message':str(e)})
         
     def post(self,request,*args,**kwargs):
-        data = request.data
-        credencial = data['credencial']
-        conn = QuerysDb.conexion(credencial['bdhost'],credencial['bdname'],credencial['bduser'],credencial['bdpassword'])
-        cursor = conn.cursor()
-        if data['aprobacion']==1:
-            if int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==1:
-                sql = """UPDATE cabepedido set ped_status=2,ped_statu2=2 WHERE MOV_COMPRO=?"""
-            elif int(data['user']['aprobacion1'])==1 and int(data['user']['aprobacion2'])==0:
-                sql = "UPDATE cabepedido SET ped_status=2 WHERE MOV_COMPRO=?"
-            elif int(data['user']['aprobacion1'])==0 and int(data['user']['aprobacion2']==1):
+        data = {}
+        try:
+            datos = request.data
+            credencial = datos['credencial']
+            conn = QuerysDb.conexion(credencial['bdhost'],credencial['bdname'],credencial['bduser'],credencial['bdpassword'])
+            cursor = conn.cursor()
+            if datos['aprobacion']==1:
+                if int(datos['user']['aprobacion1'])==1 and int(datos['user']['aprobacion2'])==1:
+                    sql = """UPDATE cabepedido set ped_status=2,ped_statu2=2 WHERE MOV_COMPRO=?"""
+                elif int(datos['user']['aprobacion1'])==1 and int(datos['user']['aprobacion2'])==0:
+                    sql = "UPDATE cabepedido SET ped_status=2 WHERE MOV_COMPRO=?"
+                elif int(datos['user']['aprobacion1'])==0 and int(datos['user']['aprobacion2']==1):
+                    sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
+            else:
                 sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
-        else:
-            sql = "UPDATE cabepedido SET ped_statu2=2 WHERE MOV_COMPRO=?"
 
-        cursor.execute(sql,data['codigo_pedido'])
-        conn.commit()
-        conn.close()
-        
-        return Response({'message':'Aprobacion exitosa'})
+            cursor.execute(sql,datos['codigo_pedido'])
+            conn.commit()
+            conn.close()
+            data['success'] = 'La aprobacion fue exitosa'
+        except Exception as e:
+            print(str(e),'Aprobacion de un pedido')
+            data['error'] = 'ocurrio un error al aprobar el pedido'
+        return Response(data)
 class AgenciaView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
         host = kwargs['host']
