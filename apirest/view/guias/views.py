@@ -397,7 +397,7 @@ class Facturacion(generics.GenericAPIView):
                     "descripcion":res[1].strip(),
                     "codigoItem":res[0].strip(),
                     "adicional":{
-                        "peso":f"{res[2]*int(item['cantidad'])}",
+                        "peso":f"{res[2]*int(item['cantidad']):.3f}",
                         "lote":item['lote'],
                         "fechaVencimiento":item['fecha_vencimiento']
 
@@ -419,7 +419,7 @@ class Facturacion(generics.GenericAPIView):
                 "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 "tipoDocumentoGuia": "09",
                 "motivoTraslado": "01" if datos['codigo_operacion']=='05' else "04",
-                "pesoBrutoTotal": f"{peso}",
+                "pesoBrutoTotal": f"{peso if peso!=0 else 1:.3f}",
                 "unidadPesoBruto": "KGM",
                 "modalidadTraslado": "01",
                 "fechaInicioTraslado":datetime.now().strftime('%Y-%m-%d %H:%M:%S') ,

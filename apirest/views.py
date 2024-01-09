@@ -238,16 +238,8 @@ class ProductoView(generics.GenericAPIView):
                     'mom_lote' = '',
                     'art_noprom' = '',
                     'art_norega' = '',
-                    'orden' = (
-                        CASE 
-                            WHEN a.tal_codigo='XS' THEN 'X1' 
-                            WHEN a.tal_codigo='SS' THEN 'X2' 
-                            WHEN a.tal_codigo='MM' THEN 'X3' 
-                            WHEN a.tal_codigo='LL' THEN 'X4' 
-                            WHEN a.tal_codigo='XL' THEN 'X5' 
-                            ELSE a.tal_codigo 
-                        END
-                    )
+                    b.ven_codigo
+                    
                 FROM movm{datetime.now().year} AS a 
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
@@ -255,7 +247,7 @@ class ProductoView(generics.GenericAPIView):
                     AND b.art_mansto=0 
                     AND a.ALM_CODIGO=?
                     AND a.UBI_COD1=? 
-                GROUP BY a.art_codigo, b.ART_NOMBRE, c.ume_nombre, a.ALM_CODIGO, a.UBI_COD1, b.art_peso, b.art_mansto, a.tal_codigo 
+                GROUP BY a.art_codigo, b.ART_NOMBRE, c.ume_nombre, a.ALM_CODIGO, a.UBI_COD1, b.art_peso, b.art_mansto, a.tal_codigo,b.ven_codigo
                 HAVING 
                     SUM(CASE 
                         WHEN a.mom_tipmov='E' THEN a.mom_cant 
@@ -296,7 +288,7 @@ class ProductoView(generics.GenericAPIView):
                             GROUP BY y.mov_compro, x.art_codigo, x.tal_codigo, y.ubi_codig2, y.ubi_codigo
                         ) AS zzz
                     ) <> 0 
-                ORDER BY b.art_nombre, c.ume_nombre, orden
+                ORDER BY b.art_nombre, c.ume_nombre
 
                 """
         else:
@@ -322,7 +314,8 @@ class ProductoView(generics.GenericAPIView):
                     'art_codadi' = '',
                     'mom_lote' = '',
                     'art_noprom' = '',
-                    'art_norega' = ''
+                    'art_norega' = '',
+                    b.ven_codigo
                 FROM
                     movm{datetime.now().year} AS a
                 LEFT JOIN
@@ -364,17 +357,20 @@ class ProductoView(generics.GenericAPIView):
                 nombre = char.strip(product[:, 4].tolist())
                 precio = array([prices.get(str(code), 0.00) for code in codigo])
                 talla = char.strip(product[:, 2].tolist())
+                vendedor = char.strip(product[:,-1].tolist())
                 serialize_product = [{'id': index, 'codigo': code, 'stock': st, 'nombre': nom,
-                      'precio': pr, 'talla': ta} for index, (code, st, nom, pr, ta) in
-                     enumerate(zip(codigo, stock, nombre, precio, talla))]     
+                      'precio': pr, 'talla': ta,'vendedor':ven} for index, (code, st, nom, pr, ta,ven) in
+                     enumerate(zip(codigo, stock, nombre, precio, talla,vendedor))]     
             else:
                 codigo = char.strip(product[:, 0].tolist())
                 stock = product[:, 3].tolist()
                 nombre = char.strip(product[:, 4].tolist())
                 precio = array([prices.get(str(code), 0.00) for code in codigo])
+                vendedor = char.strip(product[:,-1].tolist())
+
                 serialize_product = [{'id': index, 'codigo': code, 'stock': st, 'nombre': nom,
-                      'precio': pr, } for index, (code, st, nom, pr) in
-                     enumerate(zip(codigo, stock, nombre, precio))]
+                      'precio': pr,'vendedor':ven } for index, (code, st, nom, pr,ven) in
+                     enumerate(zip(codigo, stock, nombre, precio,vendedor))]
 
             return Response(serialize_product,status=status.HTTP_200_OK)
         return Response({'message':'Error en la base de datos'})
@@ -406,10 +402,6 @@ class ClienteView(generics.GenericAPIView):
             return Response(serialize_client,status=status.HTTP_200_OK)
         return Response({'message':'Error en la base de datos'})       
 class ProducAddView(generics.GenericAPIView):
-   
-    def addCabepedio(self,sql,params,cred):
-        conn = QuerysDb.conexion(cred['bdhost'],cred['bdname'],cred['bduser'],cred['bdpassword'])
-        return self.querys(conn,sql,params,'get')
     def post(self,request,*args,**kwargs):
         datas = request.data
    

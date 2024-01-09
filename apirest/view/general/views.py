@@ -40,7 +40,7 @@ class Proveedores(GenericAPIView):
             sql = """SELECT 
                     aux_razon,aux_clave FROM t_auxiliar 
                 WHERE 
-                    SUBSTRING(aux_clave,1,1) = 'P'
+                    SUBSTRING(aux_clave,1,2) = 'PP'
                      AND  aux_desac=0 """
             result = Querys(kwargs).querys(sql,(),'get',1)
             data['proveedores'] = [{'value':value[1].strip(),'label':value[0].strip()} for value in result]
@@ -61,6 +61,9 @@ class Trabajador(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
         try:
+            if kwargs['codigo'] =='':
+                data['error'] = 'Ingrese un codigo valido'
+                return Response(data)
             sql = """
             SELECT 
                 TRA_CODIGO,TRA_APATER,TRA_AMATER,TRA_NOMBRE 

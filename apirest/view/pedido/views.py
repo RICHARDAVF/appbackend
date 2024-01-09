@@ -234,6 +234,7 @@ class NotaPedido(GenericAPIView):
             data['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
 class GuardarPedido(GenericAPIView):
+
     def post(self,request,*args,**kwargs):
         data = {}
         try:
@@ -267,9 +268,9 @@ class GuardarPedido(GenericAPIView):
            
             ope_codigo = Querys(kwargs).querys(sql,(),'get',0)        
             fecha = datetime.now().strftime('%Y-%m-%d')
-            
-            params = (cor,fecha,datos['cabeceras']['codigo'],'S', datos['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
-                    total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],datos['vendedor']['codigo'],\
+            codigo_vendedor = self.validar_vendedor()
+            params = (cor,fecha,datos['cabeceras']['codigo'],datos['moneda'], datos['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
+                    total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,\
                     str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
                     gui_inclu[0],'','',datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],'',datos['sucursal'],'',datos['nombre'],datos['direccion'],round(self.sumaSDesc(datos['detalle']),2),\
                     abs(round(total1-self.sumaSDesc(datos['detalle']),2)),datos['tipo_envio'])
@@ -285,12 +286,16 @@ class GuardarPedido(GenericAPIView):
             if 'error' in res:
                 data['error'] = 'Ocurrio un error en la grabacion'
                 return Response(data)
+        
+            res = self.auditoria_create(params,'NUEVO(APPV1)')
+            if 'error' in res:
+                data['error'] = 'Ocurrio un error al grabar el pedido'
+                return Response(data)
             sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
                 mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
                 mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,art_codadi,mom_lote,mom_bruto) VALUES
                 """
-        
             for item in datos['detalle']:
                 mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
                 mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
@@ -302,9 +307,13 @@ class GuardarPedido(GenericAPIView):
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
                 res = Querys(kwargs).querys(sql,params,'post')
-              
                 if 'error' in res:
                     data['error'] = 'Ocurrio un error en la grabacion'
+                    return Response(data)
+                res = self.auditoria_detalle(params,'NUEVO(APPV1)')
+                
+                if 'error' in res:
+                    data['error'] = 'Ocurrio un error el grabar el pedido'
                     return Response(data)
                 data['success'] = 'El pedido se guardo con exito'
         except Exception as e:
@@ -330,9 +339,9 @@ class GuardarPedido(GenericAPIView):
             igv=round(float(total)-float(base_impo),2)
             sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
             ope_codigo = Querys(self.kwargs).querys(sql,(),'get',0) 
-            params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),datos['cabeceras']['codigo'],'S',\
+            params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),datos['cabeceras']['codigo'],datos['moneda'],\
                     datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),\
-                        total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],datos['codigo_usuario'],\
+                        total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],datos['codigo_vendedor'],\
                         str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
                         datos['gui_inclu'],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['direccion'],datos['nombre'],round(self.sumaSDesc(datos['detalle']),2),\
                         round(abs(float(datos['total'])-self.sumaSDesc(datos['detalle'])),2),datos['tipo_envio'])
@@ -396,7 +405,6 @@ class GuardarPedido(GenericAPIView):
             print(str(e),'validacion de estok')
             data['error'] = "ocurrio un error "
             return False,data
-
     def stock_real(self,talla,codigo,almacen,ubicacion):
         data = {}
         try:
@@ -535,7 +543,56 @@ class GuardarPedido(GenericAPIView):
             print(str(e))
             data['error'] = 'error'
         return data
+    def validar_vendedor(self):
+        codigo_vendedor = ''
         
+        if self.request.data['empresa'] =='3':
+            for item in self.request.data['detalle']:
+                codigo_vendedor = item['vendedor']
+        if codigo_vendedor=='':
+            codigo_vendedor = self.request.data['vendedor']['codigo']
+        return codigo_vendedor  
+    def auditoria_create(self,params:tuple,state:str):
+        parametros = list(params)
+        usuario = self.request.data['vendedor']['cod']
+        
+        fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        parametros.pop(23)
+        parametros = (*parametros,usuario,fecha,state)
+        sql = f""" INSERT INTO bkcabepedido(MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
+            rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
+            gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,mov_cotiza,aux_nuevo,doc_codigo,
+            gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,agr_codigo,gui_tienda,
+            edp_codigo,gui_tiedir,ped_tiedir,rou_submon,rou_dscto,ped_tipenv,bk_usuario,bk_fecha,bk_observ)
+                VALUES({','.join('?' for i in parametros)})"""
+        return Querys(self.kwargs).querys(sql,parametros,'post')
+    def auditoria_detalle(self,params,state):
+        parametros = list(params)
+        parametros.pop(17)#ELMINAR mon_compre
+        parametros.pop(18)#ELIMINAR mom_peso
+        parametros.pop(19)#ELMINIAR mom_punit2
+        usuario = self.request.data['vendedor']['cod']
+      
+        fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        parametros = (*parametros,usuario,fecha,state)
+        print(parametros)
+        sql = f"""
+                INSERT INTO bkmovipedido (
+                ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
+                ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
+                doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,art_codadi,mom_lote,mom_bruto,bk_usuario,bk_fecha,bk_observ
+                ) VALUES({','.join('?' for i in parametros)})
+                """
+        sql = """select top 1 ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
+                ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
+                doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,art_codadi,mom_lote,mom_bruto,bk_usuario,bk_fecha,bk_observ from bkmovipedido"""
+        
+        res = Querys(self.kwargs).querys(sql,(),'get',0)
+        for i,j in zip(parametros,res):
+            print(type(i),i,type(j),j)
+        return {}#Querys(self.kwargs).querys(sql,parametros,'post')
 class EditPedido(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
