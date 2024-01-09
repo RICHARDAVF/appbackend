@@ -1,3 +1,4 @@
+from typing import List
 import requests
 import json
 import dotenv
@@ -5,13 +6,13 @@ import os
 import pyodbc
 dotenv.load_dotenv()
 class Querys:
-    def __init__(self,kwargs):
+    def __init__(self,kwargs:dict):
         self.kwargs = kwargs
     def conexion(self):
        
         return pyodbc.connect('DRIVER={SQL Server};SERVER=' +
                                self.kwargs['host']+';DATABASE='+self.kwargs['db']+';UID='+self.kwargs['user']+';PWD=' + self.kwargs['password'])
-    def querys(self,sql,params,method,opt=1):
+    def querys(self,sql:str,params:tuple,method:str,opt:int=1):
         conn = self.conexion()
         data = {}
         if conn is None:
@@ -34,7 +35,7 @@ class Querys:
 
 
 class Validation:
-    def __init__(self,doc,tipo) :
+    def __init__(self,doc:str,tipo:str) :
         self.doc  = doc
         self.tipo = tipo
 
