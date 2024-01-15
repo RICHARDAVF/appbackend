@@ -41,7 +41,9 @@ class Proveedores(GenericAPIView):
                     aux_razon,aux_clave FROM t_auxiliar 
                 WHERE 
                     SUBSTRING(aux_clave,1,2) = 'PP'
-                     AND  aux_desac=0 """
+                    AND  aux_desac=0
+                    AND AUX_RAZON<>''
+                ORDER BY AUX_RAZON"""
             result = Querys(kwargs).querys(sql,(),'get',1)
             data['proveedores'] = [{'value':value[1].strip(),'label':value[0].strip()} for value in result]
         except Exception as e:

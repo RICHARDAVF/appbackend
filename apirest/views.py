@@ -581,7 +581,7 @@ class EditPedidoView(generics.GenericAPIView):
               
                 sql = """
                         SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,
-                        a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2
+                        a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2,b.ven_codigo
                         FROM movipedido AS a 
                         INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
                         WHERE a.mov_compro = ?
@@ -595,7 +595,7 @@ class EditPedidoView(generics.GenericAPIView):
                     lista_precio = '02' if item[8].strip()=='K' else ('01' if item[8].strip()=='U' else '')
                     d={'id':index,'codigo':item[0],'cantidad':item[1],
                        'total':item[2],'precio':item[3],'descuento':item[4],'nombre':item[5].strip(),'talla':item[6].strip(),
-                       'peso':item[7],'lista_precio':lista_precio,'precio_parcial':item[9]
+                       'peso':item[7],'lista_precio':lista_precio,'precio_parcial':item[9],'vendedor':item[10].strip()
                        }
                     articulos.append(d)
                
@@ -840,7 +840,8 @@ class LugarEntregaView(generics.GenericAPIView):
         return Response(data)
     def post(self,request,*args,**kwargs):
         data = request.data
-        
+        if data['action'] =='edit':
+            return self.edit(request,args,kwargs)
         sql = """
             SELECT TOP 1
                 'codigo'=LEFT(tie_codigo, 8) + '-' + RIGHT('0000000' + CAST(CAST(RIGHT(tie_codigo, 7) AS INT) + 1 AS VARCHAR(7)), 7)
@@ -877,7 +878,7 @@ class LugarEntregaView(generics.GenericAPIView):
         except Exception as e:
             data['error'] = f"Ocurrio un error: {str(e)}"
         return Response(data)
-    def put(self,request,*args,**kwargs):
+    def edit(self,request,args,kwargs):
         try:
             sql = """
                     UPDATE t_sucursal

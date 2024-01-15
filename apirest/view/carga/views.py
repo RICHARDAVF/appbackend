@@ -26,12 +26,20 @@ class Carga(GenericAPIView):
                 return Response(data)
             fecha = datetime.now()
             pesos = self.get_pesos()
+            
             for i in range(int(datos['cantidad_jaba'])):
-                sql = "SELECT DOC_INGRE,doc_coding FROM t_almacen WHERE alm_codigo=?"
-                doc_serie,doc_cod1 = Querys(kwargs).querys(sql,(datos['almacen'],),'get',0)
-                sql = "SELECT doc_docum FROM  t_documento WHERE DOC_SERIE=? AND DOC_CODIGO='NE'"
+                sql = """SELECT
+                            c.DOC_CODIGO,
+                            a.usu_alma,
+                            c.doc_docum 
+                        FROM t_usuario AS a LEFT JOIN t_documento AS b 
+                        ON a.usu_docal2=b.doc_codigo AND a.usu_alma2=b.doc_serie 
+                        LEFT JOIN t_documento AS c on a.usu_docalm=c.doc_codigo AND a.usu_alma=c.doc_serie WHERE a.usu_codigo=?"""
                 peso = random.choice(pesos)
-                doc_corre =  Querys(kwargs).querys(sql,(doc_serie.strip(),),'get',0)[0]
+                doc_cod1,doc_serie,doc_corre =  Querys(kwargs).querys(sql,(datos['usuario'],),'get',0)
+                if doc_cod1 is None or doc_serie=='' or doc_corre is None:
+                    data['error'] = 'El usuario no tiene un correlativo'
+                    return Response(data)
                 correlativo = f"{doc_serie.strip()}-{doc_corre}"
                 mes = str(fecha.month).zfill(2)
                 params = (datos['almacen'],mes,fecha.strftime('%Y-%m-%d'),datos['codigo'],datos['lote'],'E',datos['operacion'],
