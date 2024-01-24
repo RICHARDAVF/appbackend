@@ -363,7 +363,7 @@ class StockReview(generics.GenericAPIView):
    
         conn = QuerysDb.conexion(host,db,user,password)
         data = self.querys(conn,sql,params)
-        respuesta['stock_real'] = int(data[0])
+        respuesta['stock_real'] = round(data[0],2)
         sql = f"""
                 SELECT 'mom_cant' = ISNULL(
                     SUM(zzz.mom_cant), 0
@@ -409,7 +409,7 @@ class StockReview(generics.GenericAPIView):
        
        
         data = self.querys(conn,sql,params)
-        respuesta['p_aprobados'] = int(data[0])
+        respuesta['p_aprobados'] = round(data[0],2)
         sql = f"""
                 SELECT 'mom_cant' = ISNULL(SUM(zzz.mom_cant), 0)
                 FROM (
@@ -492,7 +492,7 @@ class StockReview(generics.GenericAPIView):
 
                     """
         data = self.querys(conn,sql,params)
-        respuesta['p_pendientes'] = int(data[0])
+        respuesta['p_pendientes'] = round(data[0],2)
         conn.commit()
         conn.close()
         return Response(respuesta)

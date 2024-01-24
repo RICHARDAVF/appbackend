@@ -451,7 +451,7 @@ class GuiasView(generics.GenericAPIView):
                     "tipoDocumentoTransportista": "6",
                     "denominacionTransportista": nombre.strip(),
                     "ordenCompra": datos['num_pedido'],
-                    "descripcionMotivoTraslado": "VENTAS" if datos['num_pedido'] =='05' else 'TRASLADO',
+                    "descripcionMotivoTraslado": "VENTAS" if datos['codigo_operacion'] =='05' else 'TRASLADO',
                     "dirAlternativa": direc,
                     "observaciones":datos['observacion']
                 },

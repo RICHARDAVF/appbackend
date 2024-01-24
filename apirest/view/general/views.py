@@ -1,12 +1,11 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
 from apirest.querys import Querys
 class Almacenes(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
         try:
-            sql = "SELECT ALM_CODIGO,ALM_NOMBRE FROM t_almacen"
+            sql = "SELECT ALM_CODIGO,ALM_NOMBRE FROM t_almacen WHERE alm_grupo in(1,2) AND alm_nomost=0 ORDER BY ALM_CODIGO"
             result = Querys(kwargs).querys(sql,(),'get',1)
             data['almacenes'] = [{'label':value[1],'value':value[0]} for value in result]
         except:
