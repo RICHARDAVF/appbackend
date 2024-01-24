@@ -8,6 +8,7 @@ from apirest.views import QuerysDb
 class ClienteCreateView(generics.GenericAPIView):
     def post(self,request,*args,**kwargs):
         datos = request.data[0]
+      
         user = request.data[1]
         maa_codigo = 'CL'
         maa_nombre = 'CLIENTES'
@@ -15,6 +16,11 @@ class ClienteCreateView(generics.GenericAPIView):
             maa_codigo = 'CE'
             maa_nombre = 'CLIENTE EXTRANJERO'
         data = {}
+        sql = "SELECT*FROM t_auxiliar WHERE MAA_CODIGO=? AND AUX_DOCUM=?"
+        result = Querys(kwargs).querys(sql,(maa_codigo,datos['doc']),'get',0)
+     
+        if result is not None:
+            return Response({'error':'El usuario ya existe'})
         sql = """
             SELECT can_codigo,
                 CASE
@@ -26,17 +32,15 @@ class ClienteCreateView(generics.GenericAPIView):
             FROM t_canal
             WHERE can_codigo = (SELECT can_codigo FROM t_categoria WHERE cat_codigo = ?)
         """
-        sql = "SELECT*FROM t_auxiliar WHERE MAA_CODIGO=? AND AUX_DOCUM=?"
-        result = Querys(kwargs).querys(sql,(maa_codigo,datos['doc']),'get',0)
-        if result is not None:
-            return Response({'error':'El usuario ya existe'})
         result= Querys(kwargs).querys(sql,(datos['codigo_familia'],datos['codigo_client']),'get',0)
+   
         if result is None:
             can_codigo,lis_codigo  = '',''
         else:
             can_codigo,lis_codigo = result
         sql = f"SELECT cta_clisol,cta_clidol FROM t_parrametro WHERE par_anyo={datetime.now().year}"
         result = Querys(kwargs).querys(sql,(),'get',0)
+     
         aux_cuenta,aux_cuentad = result
         sql = """SELECT A1.AUX_CODIGO
                 FROM t_auxiliar A1
@@ -47,9 +51,10 @@ class ClienteCreateView(generics.GenericAPIView):
                 ) A2 ON A1.AUX_CODIGO = A2.MAX_AUX_CODIGO
                 WHERE A1.MAA_CODIGO=? """
         result = Querys(kwargs).querys(sql,(maa_codigo,maa_codigo),'get',0)
+        print(result,maa_codigo)
         if result is None:
             result = ['0']
-        
+   
         try:
             params = (maa_codigo,str(int(result[0])+1).zfill(6),f"{maa_codigo}{str(int(result[0])+1).zfill(6)}",datos['nombre_c'],datos['nombre_rs'],user['codigo'],maa_nombre,datos['direccion'],
                         datos['departamento'],datos['provincia'],datos['distrito'],datos['tipo_persona'],datos['doc'],datos['celular'],datetime.now(),datos['ubigeo'],user['cod'],datos['tipo_doc'],
@@ -68,6 +73,7 @@ class ClienteCreateView(generics.GenericAPIView):
             if 'error' in result:
                 data['error'] = result['error']
         except Exception as e:
+            print(str(e))
             data['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
 class FamiliaView(generics.GenericAPIView):
@@ -146,7 +152,8 @@ class ClientList(generics.GenericAPIView):
             params = ('C',)
   
             sql = f"""SELECT 
-                            aux_razon,aux_clave,aux_docum,'direccion'=ISNULL(aux_direcc,''),aux_telef,aux_email ,'codigo_vendedor'=ISNULL(b.ven_codigo,''),'nombre_vendedor'=ISNULL(b.VEN_NOMBRE,''),a.aux_desac
+                            aux_razon,aux_clave,aux_docum,'direccion'=ISNULL(aux_direcc,''),aux_telef,aux_email ,'codigo_vendedor'=ISNULL(b.ven_codigo,''),'nombre_vendedor'=ISNULL(b.VEN_NOMBRE,''),a.aux_desac,
+                            'distrio'=ISNULL(dis_codigo,''),'provincia'=ISNULL(pro_codigo,''),'region'=ISNULL(dep_codigo,'')
                         FROM t_auxiliar AS  a LEFT JOIN t_vendedor AS b on a.VEN_CODIGO=b.VEN_CODIGO WHERE 
                                 substring(aux_clave,1,1)=?
                         ORDER BY  aux_razon ASC"""
@@ -157,7 +164,7 @@ class ClientList(generics.GenericAPIView):
                     'nombre':client[0].strip(),
                     'codigo':client[1].strip(),
                     'ruc':client[2].strip(),
-                    'direccion':client[3].strip(),
+                    'direccion':f"{client[3].strip()} {client[9].strip()} {client[10].strip()} {client[11].strip()}",
                     'telefono':client[4].strip(),
                     'correo':client[5].strip(),
                     'vendedor_codigo':client[6].strip(),

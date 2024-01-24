@@ -1,6 +1,8 @@
 from rest_framework import routers
 from django.urls import path,include
 
+from apirest.view.nota_pedido.views import NotaPedido
+
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
                     EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView,TipoPago)
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
@@ -15,13 +17,14 @@ from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEV
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList
-from apirest.view.pedido.views import PdfPedidoView,PrecioProduct,NotaPedido,GuardarPedido,EditPedido
+from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
 from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia
 from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga,JabaUbicacion
 from apirest.view.incidencias.views import RegistroIncidecias
+from apirest.view.articulos.views import ArticuloStock
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -63,7 +66,10 @@ urlpatterns = [
     #PRECIO PRODUCTOS
     path('product/precio/<str:host>/<str:db>/<str:user>/<str:password>/<str:precio>/<str:moneda>/<str:codigo>/',PrecioProduct.as_view()),
     #NOTA DE PEDIDO
-    path('nota/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',NotaPedido.as_view()),
+    path('nota/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',Moneda.as_view()),
+    path('v1/list/art/<str:ruc>/',ArticuloStock.as_view()),
+    path('v1/nota/pedido/<str:ruc>/',NotaPedido.as_view()),
+
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
     path('client/list/<str:host>/<str:db>/<str:user>/<str:password>/',ClientList.as_view()),
@@ -83,8 +89,8 @@ urlpatterns = [
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:empresa>/',PdfPedidoView.as_view()),
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
-    path('editar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',EditPedido.as_view()),
-
+    path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
+    path('v1/list/pedido/<str:ruc>/',ListPedidos.as_view()),
     
     #AGENCIAS
     path('agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),

@@ -7,7 +7,8 @@ import base64
 import io
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from apirest.querys import Querys
+from apirest.crendeciales import Credencial
+from apirest.querys import CAQ, Querys
 from datetime import datetime
 def agrupar(datos):
     datos_agrupados = {}
@@ -219,7 +220,7 @@ class PrecioProduct(GenericAPIView):
         except Exception as e:
             data['error'] = f'Ocurrio un error: {str(e)}'
         return Response(data)
-class NotaPedido(GenericAPIView):
+class Moneda(GenericAPIView):
     def get(self,resquest,*args,**kwargs):
         data = {}
         try:
@@ -234,17 +235,23 @@ class NotaPedido(GenericAPIView):
             data['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
 class GuardarPedido(GenericAPIView):
-
+    crendecial = None
     def post(self,request,*args,**kwargs):
         data = {}
+        datos = request.data
+        self.crendecial = Credencial(datos['credencial'])
         try:
-            datos = request.data
             status,message = self.validar_stock()
             if not status:
                 data['error'] = message['error']
                 return Response(data)
+            if datos['credencial']['codigo']=='3':
+                s,msg = self.validar_linea_credito()
+                if not s:
+                    data['error'] = msg
+                    return Response(data)
             if datos['codigo_pedido']!='x':
-                return self.data_update()
+                self.data_update()
             sql = "SELECT emp_inclu from t_empresa"
             gui_inclu = Querys(kwargs).querys(sql,(),'get',0)
             total1 = float(datos['total'])
@@ -263,14 +270,15 @@ class GuardarPedido(GenericAPIView):
             params = (datos['vendedor']['codigo'],)
             result = Querys(kwargs).querys(sql,params,'get',0)
             cor = str(datos['vendedor']['codigo'])+'-'+str(int(result[0].split('-')[-1])+1).zfill(7)
-        
+            if datos['codigo_pedido']!='x':
+                cor = datos['codigo_pedido']
             sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
            
             ope_codigo = Querys(kwargs).querys(sql,(),'get',0)        
             fecha = datetime.now().strftime('%Y-%m-%d')
             codigo_vendedor = self.validar_vendedor()
             params = (cor,fecha,datos['cabeceras']['codigo'],datos['moneda'], datos['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
-                    total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,\
+                    total,1,datos['ubicacion'],datos['tipo_pago'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,\
                     str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
                     gui_inclu[0],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['nombre'],datos['direccion'],round(self.sumaSDesc(datos['detalle']),2),\
                     abs(round(total1-self.sumaSDesc(datos['detalle']),2)),datos['tipo_envio'])
@@ -310,87 +318,85 @@ class GuardarPedido(GenericAPIView):
                 if 'error' in res:
                     data['error'] = 'Ocurrio un error en la grabacion'
                     return Response(data)
-                res = self.auditoria_movipedido(params,'NUEVO(APPV1)')
+                # res = self.auditoria_movipedido(params,'NUEVO(APPV1)')
                 
-                if 'error' in res:
-                    data['error'] = 'Ocurrio un error el grabar el pedido'
-                    return Response(data)
+                # if 'error' in res:
+                #     data['error'] = 'Ocurrio un error el grabar el pedido'
+                #     return Response(data)
                 data['success'] = 'El pedido se guardo con exito'
         except Exception as e:
             print(str(e),'agregando nuevo pedido')
             data['error'] = 'Ocurrio un error a grabar el pedido'
         return Response(data)
     def data_update(self,):
-        data = {}
-        try:
-            datos = self.request.data
-            sql = "DELETE FROM cabepedido WHERE MOV_COMPRO=?"
-            Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
-            sql = "DELETE FROM movipedido WHERE mov_compro=?"
-            Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
-            total=0
-            base_impo=0
-            if int(datos['gui_inclu'])==1:
-                total = float(datos['total'])
-                base_impo = round(float(total)/1.18,2)
-            else:
-                base_impo= float(datos['total'])
-                total = round(float(base_impo)*1.18,2)
-            igv=round(float(total)-float(base_impo),2)
-            sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
-            ope_codigo = Querys(self.kwargs).querys(sql,(),'get',0) 
-            codigo_vendedor = self.validar_vendedor()
-            params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),datos['cabeceras']['codigo'],datos['moneda'],\
-                    datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),\
-                        total,1,datos['local'],datos['tipo'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,\
-                        str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
-                        datos['gui_inclu'],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['direccion'],datos['nombre'],round(self.sumaSDesc(datos['detalle']),2),\
-                        round(abs(float(datos['total'])-self.sumaSDesc(datos['detalle'])),2),datos['tipo_envio'])
-            sql = """INSERT INTO cabepedido 
-                (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
-                rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
-                gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,ped_tipven,doc_codigo,
-                gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,gui_tienda,gui_tiedir,
-                ped_tiedir,rou_submon,rou_dscto,ped_tipenv) VALUES"""+'('+ ','.join('?' for i in params)+')'
+        datos = self.request.data
+        sql = "DELETE FROM cabepedido WHERE MOV_COMPRO=?"
+        Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+        sql = "DELETE FROM movipedido WHERE mov_compro=?"
+        Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+        #     total=0
+        #     base_impo=0
+        #     if int(datos['gui_inclu'])==1:
+        #         total = float(datos['total'])
+        #         base_impo = round(float(total)/1.18,2)
+        #     else:
+        #         base_impo= float(datos['total'])
+        #         total = round(float(base_impo)*1.18,2)
+        #     igv=round(float(total)-float(base_impo),2)
+        #     sql = f"SELECT ope_codigo FROM t_parrametro WHERE par_anyo={datetime.now().year}"
+        #     ope_codigo = Querys(self.kwargs).querys(sql,(),'get',0) 
+        #     codigo_vendedor = self.validar_vendedor()
+        #     params = (datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),datos['cabeceras']['codigo'],datos['moneda'],\
+        #             datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%dT%H:%M:%S'),\
+        #                 total,1,datos['ubicacion'],datos['tipo_pago'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,\
+        #                 str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
+        #                 datos['gui_inclu'],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['direccion'],datos['nombre'],round(self.sumaSDesc(datos['detalle']),2),\
+        #                 round(abs(float(datos['total'])-self.sumaSDesc(datos['detalle'])),2),datos['tipo_envio'])
+        #     sql = """INSERT INTO cabepedido 
+        #         (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
+        #         rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
+        #         gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,ped_tipven,doc_codigo,
+        #         gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,gui_tienda,gui_tiedir,
+        #         ped_tiedir,rou_submon,rou_dscto,ped_tipenv) VALUES"""+'('+ ','.join('?' for i in params)+')'
 
-            res = Querys(self.kwargs).querys(sql,params,'post')
+        #     res = Querys(self.kwargs).querys(sql,params,'post')
            
-            if 'error' in res:
-                data['error'] = 'Ocurrio un error al editar el pedido'
-                return Response(data)
-            # res = self.auditoria_cabepedido(params,'EDITADO(APPV1)')
+        #     if 'error' in res:
+        #         data['error'] = 'Ocurrio un error al editar el pedido'
+        #         return Response(data)
+        #     # res = self.auditoria_cabepedido(params,'EDITADO(APPV1)')
           
-            # if 'error' in res:
-            #     data['error'] = 'Ocurrio un error el editar el pedido'
-            #     return Response(data)
-            sql1 = """INSERT INTO movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,tal_codigo,MOM_TIPMOV,
-                ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
-                mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,mom_linea,mom_conpro,mom_conreg,
-                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto) VALUES
-                """
+        #     # if 'error' in res:
+        #     #     data['error'] = 'Ocurrio un error el editar el pedido'
+        #     #     return Response(data)
+        #     sql1 = """INSERT INTO movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,tal_codigo,MOM_TIPMOV,
+        #         ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
+        #         mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,mom_linea,mom_conpro,mom_conreg,
+        #         mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto) VALUES
+        #         """
            
         
-            for item in datos['detalle']:
-                mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
-                mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
-                talla = item['talla'] if item['talla'] !='x' else ''
-                params = ('53',datetime.now().month,datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),item['codigo'],talla,'S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
-                            datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%d'),'S',float(item['descuento']),datos['gui_inclu'],mom_conpre,item['peso'],float(item['precio_parcial']),'F1',0,0,0,0,0,0,0,0,mom_bruto) 
-                sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
+        #     for item in datos['detalle']:
+        #         mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
+        #         mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
+        #         talla = item['talla'] if item['talla'] !='x' else ''
+        #         params = ('53',datetime.now().month,datos['codigo_pedido'],datetime.now().strftime('%Y-%m-%d'),item['codigo'],talla,'S','04',float(item['cantidad']),float(item['total']),float(item['precio']),\
+        #                     datos['codigo_usuario'],datetime.now().strftime('%Y-%m-%d'),'S',float(item['descuento']),datos['gui_inclu'],mom_conpre,item['peso'],float(item['precio_parcial']),'F1',0,0,0,0,0,0,0,0,mom_bruto) 
+        #         sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
-                res = Querys(self.kwargs).querys(sql,params,'post') 
-                if 'error' in res:
-                    data['error'] = 'Ocurrio un error al editar el pedido'
-                    return Response(data)
-                # res = self.auditoria_movipedido(params,'EDITADO(APPV1)')
-                # if 'error' in res:
-                #     data['error'] = 'Ocurrio un error el editar el pedido'
-                #     return Response(data)
-            data['success'] = f'El pedido {datos["codigo_pedido"]} fue editado exitosamente'    
-        except Exception as e:
-            print(str(e),'edicion de pedido')
-            data['error'] = 'Ocurrio un error en la edicion del pedido'
-        return Response(data)
+        #         res = Querys(self.kwargs).querys(sql,params,'post') 
+        #         if 'error' in res:
+        #             data['error'] = 'Ocurrio un error al editar el pedido'
+        #             return Response(data)
+        #         # res = self.auditoria_movipedido(params,'EDITADO(APPV1)')
+        #         # if 'error' in res:
+        #         #     data['error'] = 'Ocurrio un error el editar el pedido'
+        #         #     return Response(data)
+        #     data['success'] = f'El pedido {datos["codigo_pedido"]} fue editado exitosamente'    
+        # except Exception as e:
+        #     print(str(e),'edicion de pedido')
+        #     data['error'] = 'Ocurrio un error en la edicion del pedido'
+        # return Response(data)
     def sumaSDesc(self,datos):
         total = 0
         
@@ -407,11 +413,11 @@ class GuardarPedido(GenericAPIView):
             numero_pedido = datos['codigo_pedido']
             for item in articulos:
                 
-                stock_real = self.stock_real(item['talla'],item['codigo'],datos['almacen'],datos['local'])[0]
+                stock_real = self.stock_real(item['talla'],item['codigo'],datos['almacen'],datos['ubicacion'])[0]
                
-                pedidos_pendientes = self.pedidos_pendientes(item['codigo'],item['talla'],datos['local'],datos['almacen'],numero_pedido)[0]
+                pedidos_pendientes = self.pedidos_pendientes(item['codigo'],item['talla'],datos['ubicacion'],datos['almacen'],numero_pedido)[0]
              
-                pedidos_aprobados = self.pedidos_aprobados(item['talla'],item['codigo'],datos['local'],datos['almacen'])[0]
+                pedidos_aprobados = self.pedidos_aprobados(item['talla'],item['codigo'],datos['ubicacion'],datos['almacen'])[0]
                 
                 stock_disponible = int(stock_real)-int(item['cantidad'])-int(pedidos_aprobados)-int(pedidos_pendientes)
        
@@ -578,9 +584,9 @@ class GuardarPedido(GenericAPIView):
         parametros = (*parametros,usuario,fecha,state)
         sql = f""" INSERT INTO bkcabepedido(MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
             rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
-            gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,mov_cotiza,aux_nuevo,doc_codigo,
-            gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,agr_codigo,gui_tienda,
-            edp_codigo,gui_tiedir,ped_tiedir,rou_submon,rou_dscto,ped_tipenv,bk_usuario,bk_fecha,bk_observ)
+            gui_exp001,ROU_PIGV,ROU_IGV,ROU_BRUTO,gui_inclu,doc_codigo,
+            gui_aprot1,gui_aprot2,gui_aprot3,gui_aprov1,gui_aprov2,gui_aproc1,tra_codig2,gui_tienda,
+            gui_tiedir,ped_tiedir,rou_submon,rou_dscto,ped_tipenv,bk_usuario,bk_fecha,bk_observ)
                 VALUES({','.join('?' for i in parametros)})"""
         return Querys(self.kwargs).querys(sql,parametros,'post')
     def auditoria_movipedido(self,params,state):
@@ -602,48 +608,185 @@ class GuardarPedido(GenericAPIView):
                 ) VALUES({','.join('?' for i in parametros)})
                 """
         return Querys(self.kwargs).querys(sql,parametros,'post')
+    def validar_linea_credito(self):
+        """
+        Este metodo solo esta habilitado para algunos clientes
+        """
+        try:
+            datos = self.request.data
+            
+            sql = "SELECT pag_nvallc FROM t_maepago WHERE pag_codigo=?"
+            s,result = CAQ.request(self.crendecial,sql,(datos['tipo_pago'],),'get',0)
+            
+            if int(result[0])!=1:
+                return True,''
+            sql  = """SELECT 
+                        aux_limite 
+                    FROM t_auxiliar 
+                    WHERE 
+                        AUX_CLAVE=?"""
+            _,result = CAQ.request(self.crendecial,sql,(datos['cabeceras']['codigo'],),'get',0)
+            linea_credito = float(result[0])
+           
+            if int(linea_credito)==0:
+                return False,'El cliente no tiene linea de credito'
+            sql = """
+                    SELECT 
+                        'saldo'=(
+                            CASE 
+                                WHEN mov_moned='S' THEN SUM(mov_d) 
+                                WHEN mov_moned='D' THEN SUM(mov_d_d) 
+                                ELSE 0 END
+                                )-(
+                            CASE 
+                            WHEN mov_moned='S' THEN SUM(mov_h) 
+                            WHEN mov_moned='D' THEN SUM(mov_h_d) 
+                            ELSE 0 END
+                            ) 
+                    FROM mova2024 
+                    WHERE aux_clave=? 
+                        AND SUBSTRING(pla_cuenta,1,2)>='12'
+                        AND SUBSTRING(pla_cuenta,1,2)<='13' 
+                        AND mov_elimin=0 
+                    GROUP BY mov_moned"""
+            s,result=CAQ.request(self.crendecial,sql,(datos['cabeceras']['codigo'],),'get',0)
+            
+            if not s :
+                return False,'Ocurrio un error al consultar por la deuda del cliente'
+            if result is None:
+                saldo = 0
+            else:
+                saldo = float(result[0])
+            
+            total = self.monto_total(datos['detalle'])
+         
+            if datos['moneda']=='S':
+                total = self.conversion(total)
+            t = linea_credito-saldo-total
+            
+            return t>0,f'El pedido ha superado en $ {abs(t):.2f} y el total del pedido es de: $ {total:.2f}'
+        except Exception as e:
+            print(str(e))
+            return False,'Ocurrio un error al validar la linea de credito'
+            
+    def monto_total(self,datos):
+        return sum( float(item['total']) for item in datos)
+    def conversion(self,total):
+        return 3.713*total
+
+
 class EditPedido(GenericAPIView):
-    def get(self,request,*args,**kwargs):
+    crendecial = None
+    def post(self,request,*args,**kwargs):
         data = {}
+        datos  = request.data
+        self.crendecial = Credencial(datos['credencial'])
         try:
             sql = """SELECT 
                         a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,
                         a.ubi_codig2,a.ubi_codigo,a.lis_codigo,a.MOV_MONEDA,
                         a.gui_exp001,a.gui_inclu,
                         a.ped_tipven,a.tra_codig2,a.gui_tienda,a.gui_tiedir,a.ped_tiedir,
-                       a.pag_codigo,a.ped_tipenv,'agencia'=(SELECT tra_nombre FROM t_transporte WHERE TRA_CODIGO=a.tra_codig2 )
+                        a.pag_codigo,a.ped_tipenv,'agencia'=ISNULL((SELECT tra_nombre FROM t_transporte WHERE TRA_CODIGO=a.tra_codig2 ),''),
+                        b.aux_telef,b.aux_email 
                         FROM cabepedido AS a
                         INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
                         WHERE a.MOV_COMPRO = ? """
-            result = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+            s,result = CAQ.request(self.crendecial,sql,(datos['codigo']),'get',0)
+            if not s:
+                data['error'] = result['error']
+                return Response(data)
             data['cabecera'] = {
                 'cliente':{
                     'codigo':result[0].strip(),
                     'ruc':result[1].strip(),
                     'direccion':result[2].strip(),
-                    'razon_social':result[3].strip()
+                    'nombre':result[3].strip(),
+                    'telefono':result[18].strip(),
+                    'email':result[19].strip()
                 },
-                'notapedido':{
-                    'almacen':result[4].strip(),
-                    'ubicacion':result[5].strip(),
-                    'lista_precio':result[6].strip(),
-                    'moneda':result[7].strip(),
-                },
-                'final':{
-                    'obs':result[8].strip(),
-                    'gui_inclu':int(result[9]),
-                    'tipo_venta':int(result[10]),
-                    'agencia_codigo':result[11].strip(),
-                    'agencia_nombre':result[17].strip(),
-                    'entrega_codigo':result[12].strip(),
-                    'entrega_nombre':result[13].strip(),
-                    'entrega_direccion':result[14].strip(),
-                    'tipo_pago':result[15].strip(),
-                    'tipo_envio':int(result[16]),
-
-                }
+                
+                'almacen':result[4].strip(),
+                'ubicacion':result[5].strip(),
+                'lista_precio':result[6].strip(),
+                'moneda':result[7].strip(),
+                'obs':result[8].strip(),
+                'gui_inclu':int(result[9]),
+                'tipo_venta':int(result[10]),
+                'agencia_codigo':result[11].strip(),
+                'agencia_nombre':result[17].strip(),
+                'entrega_codigo':result[12].strip(),
+                'entrega_nombre':result[13].strip(),
+                'entrega_direccion':result[14].strip(),
+                'tipo_pago':result[15].strip(),
+                'tipo_envio':int(result[16]), 
             }
+            sql = """ SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,
+                        a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2,b.ven_codigo
+                        FROM movipedido AS a 
+                        INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
+                        WHERE a.mov_compro = ?"""
+            s,result = CAQ.request(self.crendecial,sql,(datos['codigo'],),'get',1)
+            if not s:
+                data['error'] = result['error']
+                return Response(data)
+            data['articulos'] = [
+                {
+                    "id":index,
+                    "codigo":value[0].strip(),
+                    "cantidad":value[1],
+                    "total":value[2],
+                    "precio":value[3],
+                    "descuento":value[4],
+                    "nombre":value[5].strip(),
+                    "talla":value[6].strip(),
+                    "peso":value[7],
+                    "lista_precio":'',
+                    "precio_parcial":value[9],
+                    "vendedor":value[10].strip(),
+                } for index, value in enumerate(result)
+            ]
         except Exception as e:
             print(str(e))
             data['error'] = 'Sucedio un error al recuperar los datos'
+        return Response(data)
+class ListPedidos(GenericAPIView):
+    anio = datetime.now().year
+    credencial = None
+    def post(self,request,*args,**kwargs):
+        data = {}
+        try:
+            datos = request.datos
+            self.credencial = Credencial(datos['credencial'])
+            all_items = datos['all_items']
+            sql =f"""
+                SELECT a.MOV_COMPRO, a.MOV_FECHA,
+                ped_status = CASE 
+                    WHEN a.elimini = 1 THEN 'ANULADO' 
+                    WHEN (a.ped_status = 3 OR a.ped_statu2 = 3) THEN 'RECHAZADO' 
+                    WHEN (a.ped_status IN (1, 0) OR a.ped_statu2 IN (1, 0)) THEN 'PENDIENTE' 
+                    WHEN (a.ped_status = 2 AND a.ped_statu2 = 2) THEN 'APROBADO' 
+                END,
+                b.aux_razon, a.ROU_BRUTO, a.ROU_IGV, a.ROU_TVENTA,a.ven_codigo,a.MOV_MONEDA,
+                COALESCE((SELECT TRA_NOMBRE FROM t_transporte WHERE TRA_CODIGO = a.tra_codig2), '') AS agencia,
+                (SELECT TOP 1 mom_dscto1 FROM movipedido WHERE mov_compro = a.MOV_COMPRO) AS descuento,
+                a.gui_exp001
+                FROM cabepedido AS a 
+                INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.aux_clave 
+            {"WHERE a.ped_cierre=0 AND a.elimini=0" if all_items==0 else ''}
+                ORDER BY MOV_FECHA DESC, MOV_COMPRO DESC
+
+                """
+            params = ()
+            s,result = CAQ.request(self.credencial,sql,params,'GET','POST')
+            if not s:
+                data['error'] = result['error']
+                return Response(data)
+            data = []
+            for index,value in enumerate(result):
+                data.append({'id':index,"codigo_pedido":value[0],"fecha":value[1].strftime('%Y-%m-%d'),'status':value[2],"cliente":value[3].strip(),\
+                                "subtotal":value[4],"igv":value[5],"total":value[6],'codigo':value[7].strip(),'moneda':value[8].strip(),'agencia':value[9].strip(),
+                                'descuento':value[10],'obs':value[11].strip()})
+        except Exception as e:
+            data['error'] = 'Ocurrio un error el recuperar los pedidos'
         return Response(data)

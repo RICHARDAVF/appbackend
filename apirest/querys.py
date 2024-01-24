@@ -1,4 +1,4 @@
-from typing import List
+
 import requests
 import json
 import dotenv
@@ -6,7 +6,7 @@ import os
 import pyodbc
 dotenv.load_dotenv()
 class Querys:
-    def __init__(self,kwargs:dict):
+    def __init__(self,kwargs):
         self.kwargs = kwargs
     def conexion(self):
        
@@ -51,3 +51,47 @@ class Validation:
         else:
             data = res
         return data
+class CAQ:
+    def conexion(self,credenciales:object):
+         return pyodbc.connect("""DRIVER={SQL Server}
+                               ;SERVER=""" +credenciales.host+
+                               ';DATABASE='+credenciales.name+
+                               ';UID='+credenciales.user+
+                               ';PWD=' + credenciales.password)
+    @classmethod
+    def request(cls,credencial:object,sql:str,params:tuple,method:str,option:int):
+        """
+        crendecial:Es un objeto que que atributos,host,name,user y passord
+        sql:Consulta sql para sql server 2016 o superrior
+        params: Los parametros para la condicion 
+        method:
+            GET:'Para recuperar los datos'
+                'option':
+                    1:Para consulta fetchall()
+                    0:Para consulta fetchone()
+            POST:'Para guardar los datos'
+        """
+        data = {}
+        try:
+            instance = cls()
+            conn = instance.conexion(credencial)
+            if conn is None:
+                data['error'] = 'No se puede establecer una conexion con la base de datos'
+                return False,data
+            cursor = conn.cursor()
+            cursor.execute(sql,params)
+            if method == 'get' and option == 1:
+                data = cursor.fetchall()
+            
+            elif method == 'get' and option == 0:
+                data = cursor.fetchone()
+            else:
+                pass
+            conn.commit()
+            conn.close()
+            return True,data
+        except Exception as e:
+            print(str(e))
+            data['error'] = 'Ocurrio un error en el servidor'
+            return False,data
+        
