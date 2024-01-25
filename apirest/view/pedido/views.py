@@ -236,6 +236,8 @@ class Moneda(GenericAPIView):
         return Response(data)
 class GuardarPedido(GenericAPIView):
     crendecial = None
+    message = 'El pedido se guardo con exito'
+    bk_message = 'NUEVO(APPV1)'
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
@@ -295,7 +297,7 @@ class GuardarPedido(GenericAPIView):
                 data['error'] = 'Ocurrio un error en la grabacion'
                 return Response(data)
         
-            res = self.auditoria_cabepedido(params,'NUEVO(APPV1)')
+            res = self.auditoria_cabepedido(params,self.bk_message)
             if 'error' in res:
                 data['error'] = 'Ocurrio un error al grabar el pedido'
                 return Response(data)
@@ -318,12 +320,13 @@ class GuardarPedido(GenericAPIView):
                 if 'error' in res:
                     data['error'] = 'Ocurrio un error en la grabacion'
                     return Response(data)
-                # res = self.auditoria_movipedido(params,'NUEVO(APPV1)')
+                res = self.auditoria_movipedido(params,self.bk_message)
                 
-                # if 'error' in res:
-                #     data['error'] = 'Ocurrio un error el grabar el pedido'
-                #     return Response(data)
-                data['success'] = 'El pedido se guardo con exito'
+                if 'error' in res:
+                    data['error'] = 'Ocurrio un error el grabar el pedido'
+                    return Response(data)
+            data['success'] = self.message
+            
         except Exception as e:
             print(str(e),'agregando nuevo pedido')
             data['error'] = 'Ocurrio un error a grabar el pedido'
@@ -334,6 +337,8 @@ class GuardarPedido(GenericAPIView):
         Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
         sql = "DELETE FROM movipedido WHERE mov_compro=?"
         Querys(self.kwargs).querys(sql,(datos['codigo_pedido'],),'post')
+        self.message = f"El pedido {datos['codigo_pedido']} fue editado exitosamente"
+        self.bk_message = 'EDITADO(APPV1)'
         #     total=0
         #     base_impo=0
         #     if int(datos['gui_inclu'])==1:
@@ -598,13 +603,12 @@ class GuardarPedido(GenericAPIView):
       
         fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         parametros = (*parametros,usuario,fecha,state)
-      
         sql = f"""
                 INSERT INTO bkmovipedido (
-                ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,col_codigo,tal_codigo,MOM_TIPMOV,
+                ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
-                doc_codigo,ped_priori,mom_linea,ped_observ,mom_conpro,mom_conreg,
-                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,art_codadi,mom_lote,mom_bruto,bk_usuario,bk_fecha,bk_observ
+                doc_codigo,mom_linea,mom_conpro,mom_conreg,
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto,bk_usuario,bk_fecha,bk_observ
                 ) VALUES({','.join('?' for i in parametros)})
                 """
         return Querys(self.kwargs).querys(sql,parametros,'post')

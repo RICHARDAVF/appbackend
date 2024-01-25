@@ -111,7 +111,7 @@ class OrdenFormView(generics.GenericAPIView):
         password = kwargs['password']
         pedido_numero = "R000001"
         year  = datetime.now().strftime('%Y-%m-%d').split('-')[0][2:]
-        
+        print(request.data)
         try:
             count = 0
             while count<2:
