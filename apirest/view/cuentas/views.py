@@ -22,7 +22,8 @@ class CuentasView(generics.GenericAPIView):
                 'letra_s' = SUM(CASE WHEN a.mov_moned = 'S' AND a.DOC_CODIGO = '50' THEN a.mov_d - a.MOV_H ELSE 0 END),
                 'letra_d' = SUM(CASE WHEN a.mov_moned = 'D' AND a.DOC_CODIGO = '50' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
                 'total_s' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d - a.MOV_H ELSE 0 END),
-                'total_d' = SUM(CASE WHEN a.mov_moned = 'D' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END)
+                'total_d' = SUM(CASE WHEN a.mov_moned = 'D' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
+                a.USUARIO
             FROM
                 MOVA{datetime.now().year} a
                 INNER JOIN t_auxiliar b ON a.aux_clave = b.aux_clave
@@ -34,7 +35,8 @@ class CuentasView(generics.GenericAPIView):
             
             GROUP BY
                 a.aux_clave,
-                b.aux_razon
+                b.aux_razon,
+                a.USUARIO
             {
                 '''HAVING
                 SUM(CASE WHEN a.mov_moned = 'S' AND a.DOC_CODIGO <> '50' THEN a.mov_d - a.MOV_H ELSE 0 END) <> 0
@@ -57,7 +59,7 @@ class CuentasView(generics.GenericAPIView):
             elementos = []
             for index,value in enumerate(data):
                 d ={'id':index,'codigo':value[0].strip(),'razon_social':value[1].strip(),'monto_soles':value[2],'monto_dolares':value[3],'letra_soles':value[4],\
-                    'letra_dolares':value[5],'total_soles':value[6],'total_dolares':value[7],'filtro':filtro}
+                    'letra_dolares':value[5],'total_soles':value[6],'total_dolares':value[7],'filtro':filtro,'usuario':value[8].strip()}
                 elementos.append(d)
         except Exception as e:
             elementos = str(e)

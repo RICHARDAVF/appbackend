@@ -16,9 +16,10 @@ class ClienteCreateView(generics.GenericAPIView):
             maa_codigo = 'CE'
             maa_nombre = 'CLIENTE EXTRANJERO'
         data = {}
+        
         sql = "SELECT*FROM t_auxiliar WHERE MAA_CODIGO=? AND AUX_DOCUM=?"
         result = Querys(kwargs).querys(sql,(maa_codigo,datos['doc']),'get',0)
-     
+       
         if result is not None:
             return Response({'error':'El usuario ya existe'})
         sql = """
@@ -33,7 +34,7 @@ class ClienteCreateView(generics.GenericAPIView):
             WHERE can_codigo = (SELECT can_codigo FROM t_categoria WHERE cat_codigo = ?)
         """
         result= Querys(kwargs).querys(sql,(datos['codigo_familia'],datos['codigo_client']),'get',0)
-   
+        
         if result is None:
             can_codigo,lis_codigo  = '',''
         else:
@@ -42,16 +43,14 @@ class ClienteCreateView(generics.GenericAPIView):
         result = Querys(kwargs).querys(sql,(),'get',0)
      
         aux_cuenta,aux_cuentad = result
-        sql = """SELECT A1.AUX_CODIGO
-                FROM t_auxiliar A1
-                JOIN (
-                SELECT MAX(AUX_CODIGO) AS MAX_AUX_CODIGO
+        sql = """
+                SELECT MAX(AUX_CODIGO) 
                 FROM t_auxiliar
                 WHERE MAA_CODIGO=?
-                ) A2 ON A1.AUX_CODIGO = A2.MAX_AUX_CODIGO
-                WHERE A1.MAA_CODIGO=? """
-        result = Querys(kwargs).querys(sql,(maa_codigo,maa_codigo),'get',0)
-        print(result,maa_codigo)
+                """
+ 
+        result = Querys(kwargs).querys(sql,(maa_codigo,),'get',0)
+
         if result is None:
             result = ['0']
    
