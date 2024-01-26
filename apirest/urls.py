@@ -21,7 +21,7 @@ from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,M
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
-from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia
+from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros
 from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga,JabaUbicacion
 from apirest.view.incidencias.views import RegistroIncidecias
 from apirest.view.articulos.views import ArticuloStock
@@ -43,6 +43,9 @@ urlpatterns = [
     path('v1/tra/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',Trabajador.as_view()),
     #UBICACIONES
     path('v1/ubi/<str:host>/<str:db>/<str:user>/<str:password>/',Ubicaciones.as_view()),
+    #PARAMETROS
+    path('v1/list/par/<str:ruc>/',Parametros.as_view()),
+
     #INCIDENCIAS
     path('v1/inc/<str:host>/<str:db>/<str:user>/<str:password>/',Incidencia.as_view()),
     path('v1/inc/add/<str:host>/<str:db>/<str:user>/<str:password>/',RegistroIncidecias.as_view()),

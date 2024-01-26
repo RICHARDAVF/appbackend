@@ -1,6 +1,8 @@
+from datetime import datetime
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from apirest.querys import Querys
+from apirest.crendeciales import Credencial
+from apirest.querys import CAQ, Querys
 class Almacenes(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
@@ -111,4 +113,19 @@ class Incidencia(GenericAPIView):
             ]
         except Exception as e:
             data['error'] = 'Ocurrioun error al recuperar las incidencias'
+        return Response(data)
+class Parametros(GenericAPIView):
+    credencial = None
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            sql = f"SELECT ubi_codigo,alm_codigo FROM t_parrametro where par_anyo={datetime.now().year}"
+            s,result = CAQ.request(self.credencial,sql,(),'get',0)
+            if not s:
+                raise Exception('Ocurrio un error al recuperar los parametross')
+            data = {'almacen':result[1].strip(),'ubicacion':result[0].strip()}
+        except Exception as e:
+            data['error'] = str(e)
         return Response(data)

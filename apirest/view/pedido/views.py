@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from apirest.crendeciales import Credencial
 from apirest.querys import CAQ, Querys
 from datetime import datetime
+
+from apirest.view.apis.views import TipoCambio
 def agrupar(datos):
     datos_agrupados = {}
     for item in datos:
@@ -238,6 +240,7 @@ class GuardarPedido(GenericAPIView):
     crendecial = None
     message = 'El pedido se guardo con exito'
     bk_message = 'NUEVO(APPV1)'
+    anio = datetime.now().year
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
@@ -622,7 +625,7 @@ class GuardarPedido(GenericAPIView):
             sql = "SELECT pag_nvallc FROM t_maepago WHERE pag_codigo=?"
             s,result = CAQ.request(self.crendecial,sql,(datos['tipo_pago'],),'get',0)
             
-            if int(result[0])!=1:
+            if int(result[0])==1:
                 return True,''
             sql  = """SELECT 
                         aux_limite 
@@ -634,7 +637,7 @@ class GuardarPedido(GenericAPIView):
            
             if int(linea_credito)==0:
                 return False,'El cliente no tiene linea de credito'
-            sql = """
+            sql = f"""
                     SELECT 
                         'saldo'=(
                             CASE 
@@ -647,7 +650,7 @@ class GuardarPedido(GenericAPIView):
                             WHEN mov_moned='D' THEN SUM(mov_h_d) 
                             ELSE 0 END
                             ) 
-                    FROM mova2024 
+                    FROM mova{self.anio}
                     WHERE aux_clave=? 
                         AND SUBSTRING(pla_cuenta,1,2)>='12'
                         AND SUBSTRING(pla_cuenta,1,2)<='13' 
@@ -676,7 +679,15 @@ class GuardarPedido(GenericAPIView):
     def monto_total(self,datos):
         return sum( float(item['total']) for item in datos)
     def conversion(self,total):
-        return 3.713*total
+        return self.tipo_cambio()*total
+    def tipo_cambio(self):
+        sql = f"SELECT tc_venta FROM t_tcambio where TC_FECHA={datetime.now().strftime('%Y-%m-%d')}"
+        s,result = CAQ.request(self.crendecial,sql,(),'get',0)
+        if result is None:
+            tipo_cambio = TipoCambio.tipo_cambio()
+        else:
+            tipo_cambio = result[0]
+        return tipo_cambio
 
 
 class EditPedido(GenericAPIView):

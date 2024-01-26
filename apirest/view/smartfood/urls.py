@@ -1,5 +1,5 @@
 from .guias.views import GuiasView,PDFFACTView,AnulacionGuiaView
-from .pdf.views import SFPDFGenerate
+# from .pdf.views import SFPDFGenerate
 from django.urls import path
 urlpatterns = [
     path('v1/fact/',GuiasView.as_view()),

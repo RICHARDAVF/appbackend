@@ -46,7 +46,7 @@ class NotaPedido(GenericAPIView):
                 WHERE modifica=1 ORDER BY ubi_codigo"""
         params = ()
         
-        if datos['ubicacion']!='':
+        if datos['ubicacion']!='' and datos['credencial']['codigo']=='1':
             sql = """
                     SELECT
                         ubi_codigo,ubi_nombre 

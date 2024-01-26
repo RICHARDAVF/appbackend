@@ -23,7 +23,7 @@ class CuentasView(generics.GenericAPIView):
                 'letra_d' = SUM(CASE WHEN a.mov_moned = 'D' AND a.DOC_CODIGO = '50' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
                 'total_s' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d - a.MOV_H ELSE 0 END),
                 'total_d' = SUM(CASE WHEN a.mov_moned = 'D' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
-                a.USUARIO
+                a.ven_codigo
             FROM
                 MOVA{datetime.now().year} a
                 INNER JOIN t_auxiliar b ON a.aux_clave = b.aux_clave
@@ -36,7 +36,7 @@ class CuentasView(generics.GenericAPIView):
             GROUP BY
                 a.aux_clave,
                 b.aux_razon,
-                a.USUARIO
+                a.ven_codigo
             {
                 '''HAVING
                 SUM(CASE WHEN a.mov_moned = 'S' AND a.DOC_CODIGO <> '50' THEN a.mov_d - a.MOV_H ELSE 0 END) <> 0
@@ -52,18 +52,19 @@ class CuentasView(generics.GenericAPIView):
 
             """
         # print(filtro)
-       
+        data = {}
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
-            data = self.querys(conn,sql,(),'get')
-            elementos = []
-            for index,value in enumerate(data):
-                d ={'id':index,'codigo':value[0].strip(),'razon_social':value[1].strip(),'monto_soles':value[2],'monto_dolares':value[3],'letra_soles':value[4],\
+            result = self.querys(conn,sql,(),'get')
+            data = [
+                {'id':index,'codigo':value[0].strip(),'razon_social':value[1].strip(),'monto_soles':value[2],'monto_dolares':value[3],'letra_soles':value[4],\
                     'letra_dolares':value[5],'total_soles':value[6],'total_dolares':value[7],'filtro':filtro,'usuario':value[8].strip()}
-                elementos.append(d)
+                    for index,value in enumerate(result)]
+            
         except Exception as e:
-            elementos = str(e)
-        return Response({'message':elementos})
+            print(str(e))
+            data['error'] = 'Ocurrio un error al recuperar las cuentas'
+        return Response(data)
     def querys(self,conn,sql,params,request):
         cursor = conn.cursor()
         cursor.execute(sql,params)
@@ -159,42 +160,72 @@ class ReadCuentasView(generics.GenericAPIView):
         return data
 
 class ReadDocumentoView(generics.GenericAPIView):
+    anio = datetime.now().year
     def get(self,request,*args,**kwargs):
-        year = kwargs['year'].split('-')[0]
-        conn = QuerysDb.conexion(kwargs['host'],kwargs['db'],kwargs['user'],kwargs['password'])
-        sql = f"""
-            SELECT
-                b.art_codigo,
-                c.ART_NOMBRE,
-                b.MOM_PUNIT,
-                b.MOM_CANT,
-                b.MOM_BRUTO,
-                b.mom_valor,
-                b.mom_dscto1,
-                b.mom_dscto2,
-                'UME_NOMBRE' = ISNULL(d.UME_NOMBRE, ''),
-                a.MOV_MONEDA,
-                b.art_codadi
-            FROM
-                GUIC{year} a
-                INNER JOIN GUID{year} b ON a.MOV_COMPRO = b.MOV_COMPRO
-                INNER JOIN t_articulo c ON b.ART_CODIGO = c.ART_CODIGO
-                LEFT JOIN t_umedida d ON b.med_codigo = d.UME_CODIGO
-            WHERE
-                a.fac_docum = ?
-            ORDER BY
-                c.ART_NOMBRE
-            """
-        data = self.querys(conn,sql,(kwargs['codigo'],),'get')
-        result = {}
-        if len(data)==0:
-            result['error']='No se encontraron datos'
-        else:
-            elementos = []
-            for index,value in enumerate(data):
-                elementos.append({'id':index,'codigo':value[0].strip(),'nombre':value[1].strip(),'precio':value[2],'cantidad':value[3],'monto':value[5],'moneda':value[9].strip()})
-            result['result']=elementos
-        return Response(result)
+        data = {}
+        try:
+            year = kwargs['year'].split('-')[0]
+            conn = QuerysDb.conexion(kwargs['host'],kwargs['db'],kwargs['user'],kwargs['password'])
+            sql = f"""
+                SELECT
+                    b.art_codigo,
+                    c.ART_NOMBRE,
+                    b.MOM_PUNIT,
+                    b.MOM_CANT,
+                    b.MOM_BRUTO,
+                    b.mom_valor,
+                    b.mom_dscto1,
+                    b.mom_dscto2,
+                    'UME_NOMBRE' = ISNULL(d.UME_NOMBRE, ''),
+                    a.MOV_MONEDA,
+                    b.art_codadi,
+                    a.ROU_IGV,
+                    a.rou_bruto,
+                    a.rou_submon
+                FROM
+                    GUIC{year} a
+                    INNER JOIN GUID{year} b ON a.MOV_COMPRO = b.MOV_COMPRO
+                    INNER JOIN t_articulo c ON b.ART_CODIGO = c.ART_CODIGO
+                    LEFT JOIN t_umedida d ON b.med_codigo = d.UME_CODIGO
+                WHERE
+                    a.fac_docum = ?
+                ORDER BY
+                    c.ART_NOMBRE
+                """
+            result = self.querys(conn,sql,(kwargs['codigo'],),'get')
+            if len(result)==0:
+                data['error']='No se encontraron datos'
+                return Response(data)
+            
+       
+            data['articulos'] = [
+                {
+                    'id':index,'codigo':value[0].strip(),'nombre':value[1].strip(),'precio':value[2],
+                                'cantidad':value[3],'monto':value[5],'moneda':value[9].strip(),
+                                'igv':value[11],'total':value[12],'base_imponible':value[13]
+                } for index,value in enumerate(result)
+                ]
+            result = self.cabecera(year)
+            data['cabecera'] = {
+                'base_imponible':result[0],
+                'igv':result[1],
+                'total':result[2],
+                'moneda':result[3].strip()
+            }
+        except Exception as e:
+            data['error'] = 'Ocurrio un error al recuperar los datos'
+            print(str(e))
+        return Response(data)
+    def cabecera(self,year):
+        conn = QuerysDb.conexion(self.kwargs['host'],self.kwargs['db'],self.kwargs['user'],self.kwargs['password'])
+
+        sql = f"""SELECT
+                ROU_BRUTO,
+                ROU_IGV,
+                ROU_TVENTA,
+                MOV_MONEDA
+                FROM guic{year}    WHERE  fac_docum=?"""
+        return self.querys(conn,sql,(self.kwargs['codigo'],),'get')[0]
     def querys(seld,conn,sql,params,request):
         cursor= conn.cursor()
         cursor.execute(sql,params)
