@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from rest_framework import generics,status
-
 from apirest.querys import Querys
 from .models import ConfigCliente, UsuarioCredencial,VersionApp
 from .serializer import UsuarioSerializer,VersionAppSerialiser
@@ -21,7 +20,6 @@ class QuerysDb:
             return None
 def index(request):
     return render(request,'index.html')
-
 class VersionAppView(generics.GenericAPIView):
     serializer_class = VersionAppSerialiser
     def get(self,request,*args,**kwargs):
@@ -42,7 +40,6 @@ class UserView(generics.GenericAPIView):
         password = kwargs['password']
         try:
             user = UsuarioCredencial.objects.get(ruc=ruc)
-            
             config = ConfigCliente.objects.get(cliente_id=user.id)
             password = HasPassword(password).hash()
 
@@ -126,10 +123,9 @@ class UserView(generics.GenericAPIView):
                 datos['creden'] = serializer.data
                 datos['config_client'] = {'separacion_pedido':config.separacion_pedido,'cliente_user':config.cliente_user}
                 return Response(datos,status=status.HTTP_200_OK)
-            return Response({'error':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)
-
-                
-        except UsuarioCredencial.DoesNotExist:
+            return Response({'error':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)           
+        except Exception as e:
+            print(str(e))
             return Response({'error':'Esta empresa no esta resgitrado'}, status=status.HTTP_404_NOT_FOUND)
     def querys(self,conn,sql,params=()):
         cursor = conn.cursor()
