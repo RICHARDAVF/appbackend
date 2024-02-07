@@ -23,8 +23,10 @@ class ArticuloStock(GenericAPIView):
           
                 sql = self.art_with_separacion()
             else:
+                
                 sql = self.art_off_separacion()
             params = (datos['almacen'],datos['ubicacion'])
+        
             s,result = CAQ.request(self.credencial,sql,params,'get',1)
             if not s:
                 data = result
@@ -169,7 +171,7 @@ class ArticuloStock(GenericAPIView):
                         b.art_peso,
                         b.ven_codigo
                     FROM
-                        movm2023 AS a
+                        movm{self.anio} AS a
                     LEFT JOIN
                         t_articulo b ON a.ART_CODIGO = b.art_codigo
                     LEFT JOIN
