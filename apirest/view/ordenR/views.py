@@ -142,7 +142,7 @@ class OrdenFormView(generics.GenericAPIView):
             orden = request.data['orden']
             conn = QuerysDb.conexion(host,db,user,password)
             for item in orden:
-                conn = QuerysDb.conexion(host,db,user,password)
+               
                 params= (pedido_numero,item['codigo'],item['cantidad'],0,item['nombre'],datetime.now().strftime('%Y-%m-%d'),datetime.now().strftime('%Y-%m-%d'),
                         usuario['codigo'],item['unidad'],item['descripcion'],item['cantidad'],item['op'],item['tipo'])
                 sql = f"""

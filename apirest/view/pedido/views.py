@@ -77,109 +77,113 @@ class PdfPedidoView(GenericAPIView):
                 partes[parte] = [item]
         return partes
     def get(self,request,*args,**kwargs):
-        partes = self.order()
+        try:
+            partes = self.order()
 
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4)
 
-        styles = getSampleStyleSheet()
-        custom_style = ParagraphStyle(name='Negrita', parent=styles['Normal'])
-        custom_style.fontName = 'Helvetica-Bold'  
-        custom_style.alignment = 0 
-       
-        story = []  
-        style_normal = styles["Normal"]
-        style_normal.alignment = 2
-        style_normal.fontName = "Helvetica-Bold"
-        style_normal.wordWrap = False
-        style_heading = styles["Heading1"]
-        sql = """
-                SELECT 
-                    a.MOV_FECHA,
-                    b.AUX_NOMBRE,
-                    a.gui_direc,
-                    a.gui_ruc,
-                    'vendedor'=(SELECT USU_NOMBRE FROM t_usuario WHERE usu_codigo=a.USUARIO ),
-					a.gui_exp001,
-					a.rou_dscto,
-					a.ROU_IGV,
-					a.ROU_BRUTO,
-					a.rou_submon,
-					a.ROU_TVENTA,
-                    a.MOV_MONEDA,
-                    a.ROU_PIGV
-                FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE WHERE MOV_COMPRO=?
-        """
-        dates = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+            styles = getSampleStyleSheet()
+            custom_style = ParagraphStyle(name='Negrita', parent=styles['Normal'])
+            custom_style.fontName = 'Helvetica-Bold'  
+            custom_style.alignment = 0 
         
-        story.append(Paragraph(f"{kwargs['empresa']}", style_heading))
-        story.append(Spacer(1, 12))
-        numero_pedido = Paragraph(f"NUMERO PEDIDO: {self.kwargs['codigo']}",custom_style)
-        story.append(numero_pedido)
-        fecha = Paragraph(f"EMISION: {dates[0].strftime('%d/%m/%Y')}",custom_style)
-        story.append(fecha)
-        cliente = Paragraph(f"CLIENTE: {dates[1].strip()}",custom_style)
-        story.append(cliente)
-        direccion = Paragraph(f"DIRECCION: {dates[2].strip()}",custom_style)
-        story.append(direccion)
-        documento = Paragraph(f"DOCUMENTO: {dates[3].strip()}",custom_style)
-        story.append(documento)
-        vendedor = Paragraph(f"VENDEDOR: {dates[4].strip()}",custom_style)
-        story.append(vendedor)
-        for parte in partes:
-            result,tallas_header = self.agruparTallas(partes[parte])
-            cabeceras = ["CODIGO", "ARTICULO","CANT."]+[i for i in tallas_header]+['P. UNIT','TOTAL']
-            data = [cabeceras,
-                    ]
-            total = 0
-            for item in result.values():
+            story = []  
+            style_normal = styles["Normal"]
+            style_normal.alignment = 2
+            style_normal.fontName = "Helvetica-Bold"
+            style_normal.wordWrap = False
+            style_heading = styles["Heading1"]
+            sql = """
+                    SELECT 
+                        a.MOV_FECHA,
+                        b.AUX_NOMBRE,
+                        a.gui_direc,
+                        a.gui_ruc,
+                        'vendedor'=(SELECT USU_NOMBRE FROM t_usuario WHERE usu_codigo=a.USUARIO ),
+                        a.gui_exp001,
+                        a.rou_dscto,
+                        a.ROU_IGV,
+                        a.ROU_BRUTO,
+                        a.rou_submon,
+                        a.ROU_TVENTA,
+                        a.MOV_MONEDA,
+                        a.ROU_PIGV
+                    FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE WHERE MOV_COMPRO=?
+            """
+            dates = Querys(kwargs).querys(sql,(kwargs['codigo'],),'get',0)
+            
+            story.append(Paragraph(f"{kwargs['empresa']}", style_heading))
+            story.append(Spacer(1, 12))
+            numero_pedido = Paragraph(f"NUMERO PEDIDO: {self.kwargs['codigo']}",custom_style)
+            story.append(numero_pedido)
+            fecha = Paragraph(f"EMISION: {dates[0].strftime('%d/%m/%Y')}",custom_style)
+            story.append(fecha)
+            cliente = Paragraph(f"CLIENTE: {dates[1].strip()}",custom_style)
+            story.append(cliente)
+            direccion = Paragraph(f"DIRECCION: {dates[2].strip()}",custom_style)
+            story.append(direccion)
+            documento = Paragraph(f"DOCUMENTO: {dates[3].strip()}",custom_style)
+            story.append(documento)
+            vendedor = Paragraph(f"VENDEDOR: {dates[4].strip()}",custom_style)
+            story.append(vendedor)
+            for parte in partes:
+                result,tallas_header = self.agruparTallas(partes[parte])
+                cabeceras = ["CODIGO", "ARTICULO","CANT."]+[i for i in tallas_header]+['P. UNIT','TOTAL']
+                data = [cabeceras,
+                        ]
+                total = 0
+                for item in result.values():
 
-                numeros = [elemento for elemento in item['cantidad'] if isinstance(elemento, (int, float))]
-                total+=sum(numeros)
-                lista = [item['codigo'],Paragraph(item['nombre']),sum(numeros)]+item['cantidad']+[round(item['precio'],2),sum(item['total'])]
-                data.append(lista)
-           
-            data.append(['','TOTAL:',total]+['']*(len(tallas_header)+2))
-            w,h = A4
-            story.append(Spacer(0,20))
-            col_widths = [w*0.15,w*.25,w*.06]+[w*0.3/len(tallas_header)]*len(tallas_header)+[w*.1,w*.1]
-            table = Table(data,colWidths=col_widths,repeatRows=1)
-            table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                    ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-                                   ]))
+                    numeros = [elemento for elemento in item['cantidad'] if isinstance(elemento, (int, float))]
+                    total+=sum(numeros)
+                    lista = [item['codigo'],Paragraph(item['nombre']),sum(numeros)]+item['cantidad']+[round(item['precio'],2),sum(item['total'])]
+                    data.append(lista)
+            
+                data.append(['','TOTAL:',total]+['']*(len(tallas_header)+2))
+                w,h = A4
+                story.append(Spacer(0,20))
+                col_widths = [w*0.15,w*.25,w*.06]+[w*0.3/len(tallas_header)]*len(tallas_header)+[w*.1,w*.1]
+                table = Table(data,colWidths=col_widths,repeatRows=1)
+                table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                                        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                                    ]))
 
+                story.append(table)
+            obs = Paragraph(f"Observacion: {dates[5].strip()}")
+        
+            story.append(obs)
+            moneda = 'S/ ' if 'S' == dates[11].strip() else '$'
+            data = [
+                ['CARGO','MONEDA',"MONTO"],
+                ['SUBTOTAL',moneda,round(dates[9], 2)],
+                ['DESCUENTO',moneda,round(dates[6], 2)],
+                ['BASE IMPONIBLE',moneda,round(dates[8], 2)],
+                [f'IGV {dates[12]:.0f}%',moneda,round(dates[7], 2)],
+                ['TOTAL VENTA',moneda,round(dates[10], 2)],
+
+                ]
+
+            table= Table(data,repeatRows=1)
+            table.hAlign = 'RIGHT'
+            table.setStyle(TableStyle([
+                                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                                        ('ALIGN',(0,0),(-1,-1),'RIGHT'),
+                                    ('BACKGROUND', (0, 1), (-1, -1), colors.white)
+                                    ]))
             story.append(table)
-        obs = Paragraph(f"Observacion: {dates[5].strip()}")
-    
-        story.append(obs)
-        moneda = 'S/ ' if 'S' == dates[11].strip() else '$'
-        data = [
-            ['CARGO','MONEDA',"MONTO"],
-            ['SUBTOTAL',moneda,round(dates[9], 2)],
-            ['DESCUENTO',moneda,round(dates[6], 2)],
-            ['BASE IMPONIBLE',moneda,round(dates[8], 2)],
-            [f'IGV {dates[12]:.0f}%',moneda,round(dates[7], 2)],
-            ['TOTAL VENTA',moneda,round(dates[10], 2)],
+            story.append(PageBreak())
 
-            ]
-
-        table= Table(data,repeatRows=1)
-        table.hAlign = 'RIGHT'
-        table.setStyle(TableStyle([
-                                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                                    ('ALIGN',(0,0),(-1,-1),'RIGHT'),
-                                   ('BACKGROUND', (0, 1), (-1, -1), colors.white)
-                                   ]))
-        story.append(table)
-        story.append(PageBreak())
-
-        doc.build(story)
-        pdf = buffer.getvalue()
-        return Response({"pdf":base64.b64encode(pdf).decode('utf-8')})
+            doc.build(story)
+            pdf = buffer.getvalue()
+            return Response({"pdf":base64.b64encode(pdf).decode('utf-8')})
+        except Exception as e :
+            print(str(e))
+            return Response({'error':'No se puede generar el pdf'})
 class PedidoWithQr(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
