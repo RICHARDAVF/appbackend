@@ -1,5 +1,7 @@
 from rest_framework import generics
 from rest_framework.response import Response
+from apirest.crendeciales import Credencial
+from apirest.querys import CAQ
 from apirest.views import QuerysDb
 from datetime import datetime
 class StockView(generics.GenericAPIView):
@@ -327,6 +329,7 @@ class StockView(generics.GenericAPIView):
         
         return {'stock':stock,'genero':[],'linea':[],'modelo':[],'color':[],'temporada':[],'talla':[]}
 class StockReview(generics.GenericAPIView):
+    credencial : object = None
     def get(self,request,*args,**kwargs):
         
         host = kwargs['host']
@@ -438,6 +441,7 @@ class StockReview(generics.GenericAPIView):
                         AND b.ubi_codig2 = ?
                         AND b.ubi_codigo = ?
                         {' AND tal_codigo = ?' if talla!='x' else ''}
+                        
                         AND a.elimini = 0
                         AND b.ped_status IN (0, 1)
                         AND ped_statu2 IN (0, 1)
@@ -491,11 +495,177 @@ class StockReview(generics.GenericAPIView):
                     ) AS zzz;
 
                     """
+
         data = self.querys(conn,sql,params)
         respuesta['p_pendientes'] = round(data[0],2)
         conn.commit()
         conn.close()
         return Response(respuesta)
+    def post(self,request,*args,**kwagrs):
+ 
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            
+            pedido_numero = datos['pedido']
+            ubicacion = datos['ubicacion']
+            almacen = datos['almacen']
+            codigo = datos['codigo']
+            talla = datos['talla']
+            lote = datos['lote']
+            fecha = datos['fecha']
+            fecha_date = "-".join(i for i in reversed(fecha.split('/')))
+            anio = datetime.now().year
+            data = {}
+          
+            params = (codigo,almacen,ubicacion)
+
+
+            sql = f"""
+                    SELECT 'mom_cant' = ISNULL(
+                        SUM(
+                            CASE
+                                WHEN mom_tipmov = 'E' THEN mom_cant
+                                WHEN mom_tipmov = 'S' THEN mom_cant * -1
+                            END
+                        ), 0
+                    ) 
+                    FROM movm{datetime.now().year} 
+                    WHERE elimini = 0 
+                        AND art_codigo = ?
+                        AND ALM_CODIGO = ?
+                        AND UBI_COD1 = ? 
+                        {
+                            f"AND tal_codigo='{talla}' " if talla!='' else ''
+                        }
+
+                        {
+                            f"AND art_codadi='{lote}' " if lote!='' else ''
+                        }
+                        {
+                            f"AND mom_lote='{fecha_date}' " if fecha!='' else ''
+                        }
+                    """
+            s,date = CAQ.request(self.credencial,sql,params,'get',0)
+
+            if not s:
+                raise
+            data['stock_real'] = round(date[0],2)
+            sql = f"""
+                    SELECT 'mom_cant' = ISNULL(
+                        SUM(zzz.mom_cant), 0
+                    )
+                    FROM (
+                        SELECT 'mom_cant' = ISNULL(
+                                SUM(a.MOM_CANT), 0
+                            ) + (
+                                SELECT ISNULL(
+                                    SUM(
+                                        CASE
+                                            WHEN z.mov_pedido = '' THEN 0
+                                            WHEN z.mom_tipmov = 'E' THEN z.mom_cant
+                                            ELSE -z.mom_cant
+                                        END
+                                    ), 0
+                                )
+                                FROM movm{anio} z
+                                LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
+                                WHERE b.mov_compro = z.mov_pedido
+                                    AND a.art_codigo = z.art_codigo
+                                    AND a.tal_codigo = z.tal_codigo
+                                    AND b.ubi_codig2 = z.alm_codigo
+                                    AND b.ubi_codigo = z.ubi_cod1
+                                    AND z.elimini = 0
+                                    AND zz.elimini = 0
+                                    AND zz.ped_cierre = 0
+                            )
+                        FROM movipedido a
+                        INNER JOIN cabepedido b ON a.mov_compro = b.MOV_COMPRO
+                        WHERE a.art_codigo = ?
+                            AND b.ubi_codig2 = ?
+                            AND b.ubi_codigo = ?
+                            {
+                                f"AND a.tal_codigo ='{talla}' " if talla!='x' else ''
+                                
+                            }
+                            {
+                                f"AND a.mom_lote='{fecha}' " if fecha!='' else ''
+                                
+                            }
+                            {
+                                f"AND a.art_codadi ='{lote}' " if lote!='' else ''
+                                
+                            }
+                            AND a.elimini = 0
+                            AND b.ped_status = 2
+                            AND ped_statu2 = 2
+                            AND b.ped_cierre = 0
+                        GROUP BY b.mov_compro, a.art_codigo, a.tal_codigo, b.ubi_codig2, b.ubi_codigo
+                    ) AS zzz;
+
+                    """
+        
+        
+            s,date = CAQ.request(self.credencial,sql,params,'get',0)
+            if not s:
+                raise
+            data['p_aprobados'] = round(date[0],2)
+            sql = f"""
+                    SELECT 'mom_cant' = ISNULL(SUM(zzz.mom_cant), 0)
+                    FROM (
+                        SELECT 'mom_cant' = ISNULL(SUM(a.MOM_CANT), 0) + (
+                            SELECT ISNULL(SUM(
+                                    CASE
+                                        WHEN z.mov_pedido = '' THEN 0
+                                        WHEN z.mom_tipmov = 'E' THEN z.mom_cant
+                                        ELSE -z.mom_cant
+                                    END
+                                ), 0)
+                            FROM movm{anio} z
+                            LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
+                            WHERE b.mov_compro = z.mov_pedido
+                                AND a.art_codigo = z.art_codigo
+                                AND a.tal_codigo = z.tal_codigo
+                                AND b.ubi_codig2 = z.alm_codigo
+                                AND b.ubi_codigo = z.ubi_cod1
+                                AND z.elimini = 0
+                                AND zz.elimini = 0
+                                AND zz.ped_cierre = 0
+                        )
+                        FROM movipedido a
+                        INNER JOIN cabepedido b ON a.mov_compro = b.MOV_COMPRO
+                        WHERE a.art_codigo = ?
+                            AND b.ubi_codig2 = ?
+                            AND b.ubi_codigo = ?
+                            {
+                                f"AND b.mov_compro<>'{pedido_numero}' " if pedido_numero!='x' else ''
+                            }
+                            {
+                                f"AND tal_codigo ='{talla}' " if talla!='x' else ''
+                            }
+                            {
+                                f"AND a.mom_lote='{fecha}' " if fecha!='' else ''
+                            }
+                            {
+                                f"AND a.art_codadi='{lote}' " if lote!='' else ''
+                            }
+                            AND a.elimini = 0
+                            AND b.ped_status IN (0, 1)
+                            AND ped_statu2 IN (0, 1)
+                            AND b.ped_cierre = 0
+                        GROUP BY b.mov_compro, a.art_codigo, a.tal_codigo, b.ubi_codig2, b.ubi_codigo
+                    ) AS zzz;
+                """
+        
+        
+            s,date = CAQ.request(self.credencial,sql,params,'get',0)
+            print(date,3)
+            data['p_pendientes'] = round(date[0],2)
+
+
+        except Exception as e:
+            print(str(e))
+        return Response(data)
     def querys(self,conn,sql,params):
         cursor= conn.cursor()
         cursor.execute(sql,params)

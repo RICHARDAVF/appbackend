@@ -19,14 +19,12 @@ class ArticuloStock(GenericAPIView):
             if datos['ubicacion']=='':
                 data['error'] = 'Seleccione una ubicacion'
                 return Response(data)
-            if int(datos['credencial']['codigo']) in [1,2,3]:
-          
+            if datos['config']['separacion_pedido']:
                 sql = self.art_with_separacion()
             else:
                 
                 sql = self.art_off_separacion()
             params = (datos['almacen'],datos['ubicacion'])
-        
             s,result = CAQ.request(self.credencial,sql,params,'get',1)
             if not s:
                 data = result
@@ -54,7 +52,7 @@ class ArticuloStock(GenericAPIView):
 
     def art_with_separacion(self):
         codigo = self.request.data['codigo']
-       
+        caida_codigo = self.request.data['caida_codigo']
         sql = f"""
                 SELECT
                     a.art_codigo,
@@ -114,6 +112,9 @@ class ArticuloStock(GenericAPIView):
                     AND a.UBI_COD1=? 
                     {
                         f"AND ltrim(rtrim(a.mov_pedido))<>'{codigo.strip()}' " if codigo.strip()!='x' else ''
+                    }
+                    {
+                        f"AND b.PA1_CODIGO='{caida_codigo}' " if caida_codigo!='' else  ''
                     }
                 GROUP BY a.art_codigo, b.ART_NOMBRE, c.ume_nombre, a.ALM_CODIGO, a.UBI_COD1, b.art_peso, b.art_mansto, a.tal_codigo,b.ven_codigo
                 HAVING 
@@ -315,3 +316,54 @@ class ArticulosConTalla(GenericAPIView):
         return Response(data)
     def grouped_data(self):
         return
+class ArticuloLote(GenericAPIView):
+    credencial : object = None
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        codigo,lote,fecha_vencimiento = self.codigo_lote_fecha()
+       
+        try:
+            sql = f"""SELECT 
+                    art_codigo,
+                    art_nombre,
+                    'moneda'=ISNULL((SELECT par_moneda FROM t_parrametro WHERE par_anyo=YEAR(GETDATE())), ''),
+                    art_peso 
+                FROM t_articulo WHERE ART_CODIGO=? """
+            s,result = CAQ.request(self.credencial,sql,(codigo,),'get',0)
+  
+            if not s or result is None:
+                raise Exception('Articulo no encontrado')
+            data = {
+                    "codigo":result[0].strip(),
+                    "nombre":result[1].strip(),
+                    "moneda":result[2].strip(),
+                    "peso":result[3],
+                    "talla":"",
+                    "vendedor":"",
+                    "lote":lote,
+                    "fecha":fecha_vencimiento
+                    }         
+        except Exception as e:
+            
+            data['error'] = str(e)
+        return Response(data)
+    def codigo_lote_fecha(self):
+        codigo_qr = self.request.data['lote']
+        sql = f"""
+            SELECT  'longitud' = cre_long1+cre_long2+cre_long3+cre_long4+cre_long5+cre_long7+cre_long8 
+            FROM t_creacodigo 
+            WHERE alm_codigo=?"""
+
+        s,result = CAQ.request(self.credencial,sql,(self.request.data['almacen'],),'get',0)
+        if not s:
+            raise
+        try:
+            longitud = int(result[0])
+            codigo = codigo_qr[:longitud]
+            fecha_vencimiento = codigo_qr[-10:]
+            lote = codigo_qr[longitud:-10]
+        except:
+            raise Exception('Codigo QR no valido')
+        return (codigo,lote,fecha_vencimiento)

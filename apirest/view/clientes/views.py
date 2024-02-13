@@ -146,15 +146,24 @@ class TypeClienteView(generics.GenericAPIView):
 class ClientList(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
+        cadena = kwargs['cadena']
         try:
 
             params = ('C',)
   
-            sql = f"""SELECT 
+            sql = f"""SELECT {
+                "TOP 100 " if cadena=='x' else '' 
+            }
                             aux_razon,aux_clave,aux_docum,'direccion'=ISNULL(aux_direcc,''),aux_telef,aux_email ,'codigo_vendedor'=ISNULL(b.ven_codigo,''),'nombre_vendedor'=ISNULL(b.VEN_NOMBRE,''),a.aux_desac,
                             'distrio'=ISNULL(dis_codigo,''),'provincia'=ISNULL(pro_codigo,''),'region'=ISNULL(dep_codigo,'')
-                        FROM t_auxiliar AS  a LEFT JOIN t_vendedor AS b on a.VEN_CODIGO=b.VEN_CODIGO WHERE 
+                        FROM t_auxiliar AS  a LEFT JOIN t_vendedor AS b on a.VEN_CODIGO=b.VEN_CODIGO 
+                        WHERE 
                                 substring(aux_clave,1,1)=?
+                                {
+                                    f'''AND (
+                                        aux_docum LIKE '%{cadena}%'
+                                        OR aux_razon LIKE '%{cadena}%') ''' if cadena!='x' else ''
+                                } 
                         ORDER BY  aux_razon ASC"""
             result = Querys(kwargs).querys(sql,params,'get',1)
             data = [

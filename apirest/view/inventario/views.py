@@ -298,7 +298,6 @@ class InventarioWithLote(generics.GenericAPIView):
             codigo = datos['codigo'][:int(longitud)]
             lote_fecha = datos['codigo'][int(longitud):]
             fecha = datetime.strptime('1900-01-01','%Y-%m-%d')
-      
             lote = ''
             sql = "SELECT art_codigo FROM t_articulo WHERE art_codigo = ? OR art_provee=?"
             result1 = Querys(kwargs).querys(sql,(codigo,codigo),'get',0)

@@ -21,10 +21,10 @@ from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,M
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
-from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros
+from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros,CaidaCodigo
 from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga,JabaUbicacion
 from apirest.view.incidencias.views import RegistroIncidecias
-from apirest.view.articulos.views import ArticuloStock
+from apirest.view.articulos.views import ArticuloStock,ArticuloLote
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -45,6 +45,8 @@ urlpatterns = [
     path('v1/ubi/<str:host>/<str:db>/<str:user>/<str:password>/',Ubicaciones.as_view()),
     #PARAMETROS
     path('v1/list/par/<str:ruc>/',Parametros.as_view()),
+    path('v1/caida/cod/<str:ruc>/',CaidaCodigo.as_view()),
+
 
     #INCIDENCIAS
     path('v1/inc/<str:host>/<str:db>/<str:user>/<str:password>/',Incidencia.as_view()),
@@ -72,10 +74,12 @@ urlpatterns = [
     path('nota/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',Moneda.as_view()),
     path('v1/list/art/<str:ruc>/',ArticuloStock.as_view()),
     path('v1/nota/pedido/<str:ruc>/',NotaPedido.as_view()),
+    path('v1/art/lote/<str:ruc>/',ArticuloLote.as_view()),
+    
 
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
-    path('client/list/<str:host>/<str:db>/<str:user>/<str:password>/',ClientList.as_view()),
+    path('client/list/<str:host>/<str:db>/<str:user>/<str:password>/<str:cadena>/',ClientList.as_view()),
     path('client/new/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteCreateView.as_view()),
     path('client/type/<str:host>/<str:db>/<str:user>/<str:password>/',TypeClienteView.as_view()),
     #TIPO DE PAGO
@@ -117,6 +121,7 @@ urlpatterns = [
     #STOCK
     path('stock/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/<str:ubi>/<int:talla>/',StockView.as_view()),
     path('stock/view/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/<str:ubi>/<str:codigo>/<str:pedido>/<str:talla>/',StockReview.as_view()),
+    path('v1/stock/view/<str:ruc>/',StockReview.as_view()),
     #INVENTARIO
     path('inv/<str:host>/<str:db>/<str:user>/<str:password>/',InventarioView.as_view()),
     path('val/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ValidateView.as_view()),

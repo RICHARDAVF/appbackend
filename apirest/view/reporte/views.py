@@ -261,6 +261,7 @@ class PDFview1(generics.GenericAPIView):
         except Exception as e:
             res['error'] = f"Ocurrio un error: {str(e)}"
         return Response(res)
+
 class PDFGENERATEView(generics.GenericAPIView):
     def agrupar(self,datos):
         dates = {}
@@ -284,7 +285,7 @@ class PDFGENERATEView(generics.GenericAPIView):
             doc = SimpleDocTemplate(buffer, pagesize=A4)
             style = getSampleStyleSheet()
             story = []
-            titulo = Paragraph('GLOBAL BEAUTY CORPORATION LATAM S.A.C. - GBCORP LATAM S.A.C.',style['Title'])
+            titulo = Paragraph(f'{cred["razon_social"]}',style['Title'])
             story.append(titulo)
             ubi = Paragraph(f"<b>UBICACION</b>: {ubicacion}")
             story.append(ubi)

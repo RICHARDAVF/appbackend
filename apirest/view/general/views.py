@@ -129,3 +129,22 @@ class Parametros(GenericAPIView):
         except Exception as e:
             data['error'] = str(e)
         return Response(data)
+class CaidaCodigo(GenericAPIView):
+    credencial : object = None
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            sql = "FROM PA1_CODIGO,PA1_NOMBRE FROM t_parte1"
+            result = CAQ.request(self.credencial,sql,(),'get',1)
+            data = [
+                {
+                    "id":index,
+                    "value":value[0].strip(),
+                    "label":value[1].strip()
+                } for index,value in enumerate(result)
+            ]
+        except:
+            data['error'] = "Ocurrio un error al recuperar la familia"
+        return Response(data)
