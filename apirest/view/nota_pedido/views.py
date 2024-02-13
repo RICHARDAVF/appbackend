@@ -14,7 +14,9 @@ class NotaPedido(GenericAPIView):
             data['almacen'] = self.almacen()
             data['ubicacion'] = self.ubicacion()
             data['lista_precios'] = self.lista_precios()
-           
+            data['caida_codigo'] = self.caidaCodigo()
+
+       
         except:
             data['error'] = f"Ocurrio un error recuperar datos para la nota de pedido"
         return Response(data)
@@ -45,8 +47,8 @@ class NotaPedido(GenericAPIView):
                 FROM t_ubicacion 
                 WHERE modifica=1 ORDER BY ubi_codigo"""
         params = ()
-        
-        if datos['ubicacion']!='' and datos['credencial']['codigo']=='1':
+        if datos['ubicacion']!='' and datos['credencial']['codigo'] in ['1','2']:
+    
             sql = """
                     SELECT
                         ubi_codigo,ubi_nombre 
@@ -59,8 +61,8 @@ class NotaPedido(GenericAPIView):
         s,result = CAQ.request(self.credencial,sql,params,'get',1)
         
         if not s:
-            data['error'] = 'Ocurrio un error al recuperar las ubicaciones'
-            return Response(data)
+           
+            return []
         data = [
             {
                 "id":index,
@@ -76,8 +78,8 @@ class NotaPedido(GenericAPIView):
         sql = "SELECT lis_codigo,lis_nombre FROM t_tipolista ORDER BY lis_codigo"
         s,result = CAQ.request(self.credencial,sql,(),'get',1)
         if not s:
-            data['error'] = 'Ocurrio un error al intentar recuperar los precios'
-            return Response(data)
+            
+            return[]
         data = [
             {
                 "id":index,
@@ -87,3 +89,20 @@ class NotaPedido(GenericAPIView):
             for index,value in enumerate(result)
         ]
         return data
+    def caidaCodigo(self):
+        data = {}
+        sql = "SELECT PA1_CODIGO,PA1_NOMBRE FROM t_parte1 "
+        s,result = CAQ.request(self.credencial,sql,(),'get',1)
+  
+        if not s:
+            return []
+        data = [
+            {
+                "id":index,
+                'value':value[0].strip(),
+                'label':value[1].strip()
+            }
+            for index,value in enumerate(result)
+        ]
+
+        return data 
