@@ -290,6 +290,7 @@ class GuardarPedido(GenericAPIView):
             ope_codigo = Querys(kwargs).querys(sql,(),'get',0)        
             fecha = datetime.now().strftime('%Y-%m-%d')
             codigo_vendedor = self.validar_vendedor()
+            
             params = (cor,fecha,datos['cabeceras']['codigo'],datos['moneda'], datos['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
                     total,1,datos['ubicacion'],datos['tipo_pago'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,\
                     str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,\
@@ -354,10 +355,8 @@ class GuardarPedido(GenericAPIView):
 
     def sumaSDesc(self,datos):
         total = 0
-        
         for item in datos:
             total+=float(item['cantidad'])*float(item['precio'])
-        
         return total
     def validar_stock(self):
         data = {}

@@ -24,6 +24,7 @@ class ConfigCliente(models.Model):
     cliente = models.ForeignKey(UsuarioCredencial,on_delete=models.CASCADE)
     separacion_pedido = models.BooleanField(default=False,verbose_name="Separacion de pedido")
     cliente_user = models.BooleanField(verbose_name='Cliente asignado por usuario',default=False)
+    guid_lote = models.BooleanField(verbose_name='El campo Lote es string',default=False)
     class Meta:
         verbose_name = "ConfigClient"
         verbose_name_plural = "ConfigClients"

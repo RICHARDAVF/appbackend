@@ -16,15 +16,17 @@ from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,Orde
 from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
-from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList
+from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
 from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
-from apirest.view.general.views import Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros,CaidaCodigo
+from apirest.view.general.views import (Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros,
+                                        CaidaCodigo,Targetas)
 from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga,JabaUbicacion
 from apirest.view.incidencias.views import RegistroIncidecias
-from apirest.view.articulos.views import ArticuloStock,ArticuloLote
+from apirest.view.articulos.views import ArticuloStock,ArticuloLote,ArticulosFacturacion
+from apirest.view.facturacion.views import Facturacion
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -75,6 +77,7 @@ urlpatterns = [
     path('v1/list/art/<str:ruc>/',ArticuloStock.as_view()),
     path('v1/nota/pedido/<str:ruc>/',NotaPedido.as_view()),
     path('v1/art/lote/<str:ruc>/',ArticuloLote.as_view()),
+    path('v1/art/fact/<str:ruc>/',ArticulosFacturacion.as_view()),
     
 
     #CLIENTES
@@ -82,8 +85,16 @@ urlpatterns = [
     path('client/list/<str:host>/<str:db>/<str:user>/<str:password>/<str:cadena>/',ClientList.as_view()),
     path('client/new/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteCreateView.as_view()),
     path('client/type/<str:host>/<str:db>/<str:user>/<str:password>/',TypeClienteView.as_view()),
+    path('v1/valid/client/<str:ruc>/',ValidarCliente.as_view()),
+    path('v1/save/client/<str:ruc>/',RegisterSampleClient.as_view()),
+    #FACTURA
+    path('v1/factura/create/<str:ruc>/',Facturacion.as_view()),
+
     #TIPO DE PAGO
     path('tipo/pago/<str:host>/<str:db>/<str:user>/<str:password>/',TipoPago.as_view()),
+    path('v1/tipo/pago/<str:ruc>/',TipoPago.as_view()),
+    #TARGETAS
+    path('v1/medios/pago/<str:ruc>/',Targetas.as_view()),
 
     #FAMILIA
     path('familia/<str:host>/<str:db>/<str:user>/<str:password>/',FamiliaView.as_view()),
@@ -92,7 +103,7 @@ urlpatterns = [
     #PEDIDOS
     path('pedidos/<str:host>/<str:db>/<str:user>/<str:password>/<int:all>/',PedidosView.as_view()),
     path('pedidos/edit/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:action>/',EditPedidoView.as_view()),
-    path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/',EstadoPedido.as_view()),
+    path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/<str:key>/',EstadoPedido.as_view()),
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:empresa>/',PdfPedidoView.as_view()),
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),

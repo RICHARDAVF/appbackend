@@ -321,10 +321,13 @@ class ArticuloLote(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
-        self.credencial = Credencial(datos['credencial'])
-        codigo,lote,fecha_vencimiento = self.codigo_lote_fecha()
        
         try:
+            self.credencial = Credencial(datos['credencial'])
+            
+            if request.data['almacen']=='':
+                raise Exception('No existe almacen')
+            codigo,lote,fecha_vencimiento = self.codigo_lote_fecha()
             sql = f"""SELECT 
                     art_codigo,
                     art_nombre,
@@ -355,7 +358,7 @@ class ArticuloLote(GenericAPIView):
             SELECT  'longitud' = cre_long1+cre_long2+cre_long3+cre_long4+cre_long5+cre_long7+cre_long8 
             FROM t_creacodigo 
             WHERE alm_codigo=?"""
-
+  
         s,result = CAQ.request(self.credencial,sql,(self.request.data['almacen'],),'get',0)
         if not s:
             raise
@@ -367,3 +370,92 @@ class ArticuloLote(GenericAPIView):
         except:
             raise Exception('Codigo QR no valido')
         return (codigo,lote,fecha_vencimiento)
+class ArticulosFacturacion(GenericAPIView):
+    credencial : object = None
+    lote : str =  ''
+    fecha : str = ''
+    codigo : str = ''
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        ubicacion = datos['ubicacion']
+        qr_code = datos['qr_codigo'] if 'qr_codigo' in datos else ''
+        try:
+            if qr_code!='':
+                self.codigo_lote_fecha()
+            sql = f"""
+                    SELECT 
+                        a.art_codigo,
+                        a.art_nombre,
+                        'precio'=ISNULL(b.lis_pmino, ISNULL(c.lis_pmino, 0)),
+                        a.art_provee,
+                        'des_max'=ISNULL(b.lis_mindes, ISNULL(c.lis_mindes, 0)),
+                        'min_des'=ISNULL(b.lis_maxdes, ISNULL(c.lis_maxdes, 0)),
+                        a.pla_almain
+                    FROM 
+                        t_articulo a 
+                    LEFT JOIN 
+                        maelista_ubicacion b 
+                    ON 
+                        a.art_codigo = b.art_codigo 
+                        AND CAST(GETDATE() AS date) BETWEEN CAST(b.lis_fini AS date) AND CAST(b.lis_ffin AS date) 
+                        AND b.lis_tipo = 3 
+                        AND b.lis_moneda = 'S'
+                        AND b.lis_ubica = '{ubicacion}'
+                    LEFT JOIN 
+                        maelista c 
+                    ON 
+                        a.art_codigo = c.art_codigo 
+                        AND CAST(GETDATE() AS date) BETWEEN CAST(c.lis_fini AS date) AND CAST(c.lis_ffin AS date) 
+                        AND c.lis_tipo = 3 
+                        AND c.lis_moneda = 'S'
+                    {
+                        f"WHERE a.art_codigo={self.codigo}" if self.codigo!='' else ''
+                    }
+                    """
+            s,result = CAQ.request(self.credencial,sql,(),'get',1)
+            if not s:
+                raise Exception('Ocurrio un error al recuperar los articulos')
+            if result is None:
+                raise Exception('No hay articulos para mostrar')
+
+            data = [
+                {
+                    "id":index,
+                    "codigo":value[0].strip(),
+                    "nombre":value[1].strip(),
+                    "precio":round(float(value[2]),2),
+                    "codigo_ena":value[3].strip(),
+                    "des_max" :float(value[4]),
+                    "des_min" : float(value[5]),
+                    "cuenta":value[6].strip(),
+                    "lote":self.lote,
+                    "fecha":self.fecha
+
+                } for index,value in enumerate(result)
+            ]
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)
+    def codigo_lote_fecha(self):
+        codigo_qr = self.request.data['qr_codigo']
+        sql = f"""
+            SELECT  'longitud' = cre_long1+cre_long2+cre_long3+cre_long4+cre_long5+cre_long7+cre_long8 
+            FROM t_creacodigo 
+            WHERE alm_codigo=?"""
+  
+        s,result = CAQ.request(self.credencial,sql,(self.request.data['almacen'],),'get',0)
+        if not s:
+            raise
+        try:
+            longitud = int(result[0])
+            codigo = codigo_qr[:longitud]
+            fecha_vencimiento = codigo_qr[-10:]
+            lote = codigo_qr[longitud:-10]
+            self.fecha = fecha_vencimiento
+            self.lote = lote 
+            self.codigo= codigo
+        except:
+            raise Exception('Codigo QR no valido')
+        
