@@ -222,7 +222,7 @@ class GuiasView(generics.GenericAPIView):
             data = self.beforepost(datos,gui_serie,dir_alternativa)
             #USUARIOS DE PRUEBA
             self.query(f"INSERT INTO corret{anio}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
-            sql = f"SELECT numero FROM corret{anio} WHERE numero=(SELECT MAX(numero) FROM corret{anio} WHERE usuario=000)"
+            sql = f"SELECT numero FROM corret{anio} WHERE numero=(SELECT MAX(numero) FROM corret{anio} WHERE usuario='000')"
             result= self.query(sql,())
             
             fecha = date.today().strftime('%Y-%m-%d')

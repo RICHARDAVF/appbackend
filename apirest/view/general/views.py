@@ -148,3 +148,26 @@ class CaidaCodigo(GenericAPIView):
         except:
             data['error'] = "Ocurrio un error al recuperar la familia"
         return Response(data)
+class Targetas(GenericAPIView):
+    credencial : object = None
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            sql = "SELECT tar_codigo,tar_nombre FROM t_tarjetas"
+            s,result = CAQ.request(self.credencial,sql,(),'get',1)
+            if not s:
+                raise Exception('Ocurrio un error al consultar por las targetas')
+            if result is None:
+                raise Exception('No existe targetas para mostrar')
+            data = [{'id':-1,'value':'-1','label':'Ninguno'}]+ [
+                {
+                    "id":index,
+                    "value":value[0].strip(),
+                    "label":value[1].strip()
+                } for index,value in enumerate(result)
+            ]
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)

@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics,status
-from apirest.querys import Querys
+from apirest.crendeciales import Credencial
+from apirest.querys import CAQ, Querys
 from .models import ConfigCliente, UsuarioCredencial,VersionApp
 from .serializer import UsuarioSerializer,VersionAppSerialiser
 from rest_framework.response import Response
@@ -64,7 +65,8 @@ class UserView(generics.GenericAPIView):
                             a.usu_nimpap,
                             a.usu_perped,
                             a.usu_almace,
-                           'toma_invetario' = rtrim(ltrim(a.usu_doctom))+'-'+  rtrim(ltrim(a.usu_toma))
+                           'toma_invetario' = rtrim(ltrim(a.usu_doctom))+'-'+  rtrim(ltrim(a.usu_toma)),
+                           a.ori_codigo
                         FROM t_usuario AS a 
                         LEFT JOIN t_vendedor AS b 
                         ON a.ven_codigo=b.ven_codigo 
@@ -83,7 +85,7 @@ class UserView(generics.GenericAPIView):
                
                 d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],
                      "usuario":data[0][12].strip(),'aprobacion1':data[0][13],
-                     'aprobacion2':data[0][14],'almacen':data[0][19].strip(),'toma_inventario':data[0][20]}
+                     'aprobacion2':data[0][14],'almacen':data[0][19].strip(),'toma_inventario':data[0][20],'codigo_origen':data[0][21].strip()}
                       
                 datos['user'] = d
                 
@@ -675,8 +677,9 @@ class EstadoPedido(generics.GenericAPIView):
         db = kwargs['db']
         user = kwargs['user']
         password = kwargs['password']
-        sql = """
-         SELECT 
+        palabra = kwargs['key']
+        sql = f"""
+         SELECT {'TOP 100' if palabra=='x' else ''}
             a.MOV_COMPRO,
             a.MOV_FECHA,
             b.aux_razon,
@@ -684,9 +687,20 @@ class EstadoPedido(generics.GenericAPIView):
             ROU_IGV,rou_submon,a.ped_status,a.ped_statu2,a.ven_codigo,a.MOV_MONEDA,a.gui_exp001
 			
         FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX=b.aux_clave 
-		WHERE (a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)) AND a.ped_cierre=0 AND a.elimini=0
+		WHERE 
+            (a.ped_status IN (1,0) OR a.ped_statu2 IN (1,0)) 
+            AND a.ped_cierre=0 
+            AND a.elimini=0
+            {
+                f''' 
+                    AND a.mov_compro LIKE '%{palabra}%' 
+                    OR b.AUX_RAZON LIKE '%{palabra}%' 
+                ''' if palabra!='x' else ''
+            }
         ORDER BY MOV_FECHA DESC,MOV_COMPRO DESC
+        
         """
+     
         try:
             conn = QuerysDb.conexion(host,db,user,password)
             cursor = conn.cursor()
@@ -700,7 +714,7 @@ class EstadoPedido(generics.GenericAPIView):
            
             return Response({"states":estados})
         except Exception as e:
-            return Response({'message':str(e)})
+            return Response({'error':str(e)})
         
     def post(self,request,*args,**kwargs):
         data = {}
@@ -915,6 +929,7 @@ class LugarEntregaView(generics.GenericAPIView):
         conn.close()            
         return data
 class TipoPago(generics.GenericAPIView):
+    credencial : object = None
     def get(self,request,*args,**kwargs):
         data = {}
         try:
@@ -929,4 +944,25 @@ class TipoPago(generics.GenericAPIView):
             data['tipo_pago'] = types_paymonts
         except Exception as e:
             data['error'] = 'Ocurrio un error'
+        return Response(data)
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            sql = "SELECT pag_nombre,pag_codigo FROM t_maepago WHERE pag_tienda=1 ORDER BY pag_nombre"
+            s,result = CAQ.request(self.credencial,sql,(),'get',1)
+            if not s:
+                raise Exception('Ocurrio un error la consultar los tipos de pago')
+            if result is None:
+                raise Exception('No hay condiciones de pago para mostrar')
+            data = [
+                {
+                    'id':index,
+                    'value':value[1].strip(),
+                    'label':value[0].strip()
+                } for index,value in enumerate(result)
+            ]
+        except Exception as e:
+            data['error'] = str(e)
         return Response(data)

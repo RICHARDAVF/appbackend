@@ -59,7 +59,7 @@ class CAQ:
                                ';UID='+credenciales.user+
                                ';PWD=' + credenciales.password)
     @classmethod
-    def request(cls,credencial:object,sql:str,params:tuple,method:str,option:int):
+    def request(cls,credencial:object,sql:str,params:tuple,method:str,option:int=-1):
         """
         crendecial:Es un objeto que que atributos,host,name,user y passord
         sql:Consulta sql para sql server 2016 o superrior
