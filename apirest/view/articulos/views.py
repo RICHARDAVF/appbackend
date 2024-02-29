@@ -411,9 +411,10 @@ class ArticulosFacturacion(GenericAPIView):
                         AND c.lis_tipo = 3 
                         AND c.lis_moneda = 'S'
                     {
-                        f"WHERE a.art_codigo={self.codigo}" if self.codigo!='' else ''
+                        f"WHERE a.art_codigo='{self.codigo}' " if self.codigo!='' else ''
                     }
                     """
+          
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
             if not s:
                 raise Exception('Ocurrio un error al recuperar los articulos')
@@ -440,6 +441,8 @@ class ArticulosFacturacion(GenericAPIView):
         return Response(data)
     def codigo_lote_fecha(self):
         codigo_qr = self.request.data['qr_codigo']
+        if self.request.data['almacen']=='':
+            raise Exception('No tiene un almacen asignado')
         sql = f"""
             SELECT  'longitud' = cre_long1+cre_long2+cre_long3+cre_long4+cre_long5+cre_long7+cre_long8 
             FROM t_creacodigo 
@@ -447,15 +450,35 @@ class ArticulosFacturacion(GenericAPIView):
   
         s,result = CAQ.request(self.credencial,sql,(self.request.data['almacen'],),'get',0)
         if not s:
-            raise
+            raise Exception('Error al consultar con los datos proporcionados')
         try:
+           
             longitud = int(result[0])
             codigo = codigo_qr[:longitud]
             fecha_vencimiento = codigo_qr[-10:]
             lote = codigo_qr[longitud:-10]
-            self.fecha = fecha_vencimiento
+
+            self.fecha = self.convert_date_string(fecha_vencimiento)
+
             self.lote = lote 
             self.codigo= codigo
-        except:
-            raise Exception('Codigo QR no valido')
-        
+        except Exception as e:
+          
+            raise Exception(str(e))
+    def validar_fecha(self,date):
+      
+        try:
+            datetime.strptime(date,"%d/%m/%Y")
+            return True
+        except Exception as e:
+            print(str(e))
+            return False
+    def convert_date_string(self,fecha:str):
+        if self.validar_fecha(fecha):
+       
+            if self.request.data['config']['guid_lote']:
+                return fecha
+            else:
+                return '-'.join(i for i in reversed(fecha.split('/')))
+        else:
+            raise Exception('Formato de fecha de vencimiento invalida')

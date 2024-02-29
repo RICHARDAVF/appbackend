@@ -14,3 +14,4 @@ output.pdf
 token.txt
 .env
 peticiones.log
+media/json/
