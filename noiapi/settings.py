@@ -14,15 +14,13 @@ from pathlib import Path
 import django
 from django.core.management.utils import get_random_secret_key 
 import os
-from datetime import timedelta
+from dotenv import load_dotenv
+
 from urllib.parse import quote
-
 django.utils.http.urlquote = quote
-
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -31,7 +29,7 @@ SECRET_KEY = get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #Desarrollo
-DEBUG = True
+DEBUG = os.getenv('DEBUG_MODE')
 
 ALLOWED_HOSTS = ['*']
 
@@ -111,14 +109,14 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 # }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'app',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',  
-        'PORT': '',    
+        'ENGINE':os.getenv('BD_ENGINE'),
+        'NAME': os.getenv('BD_NAME'),
+        'USER': os.getenv('BD_USER'),
+        'PASSWORD': os.getenv('BD_PASSWORD'),
+        'HOST': os.getenv('BD_HOST'),  
+        'PORT': os.getenv('BD_POST'),    
         'OPTIONS': {
-            'sql_mode': 'STRICT_ALL_TABLES',
+            'sql_mode': os.getenv('BD_OPTIONS'),
         },       
     }
 }

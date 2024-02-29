@@ -122,8 +122,11 @@ class UserView(generics.GenericAPIView):
                         d.append(a)
                     datos['precios'] = d
                 serializer = self.serializer_class(user)
+ 
                 datos['creden'] = serializer.data
-                datos['config_client'] = {'separacion_pedido':config.separacion_pedido,'cliente_user':config.cliente_user}
+                datos['config_client'] = {'separacion_pedido':config.separacion_pedido,
+                                          'cliente_user':config.cliente_user,
+                                          'guid_lote':config.guid_lote}
                 return Response(datos,status=status.HTTP_200_OK)
             return Response({'error':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)           
         except Exception as e:

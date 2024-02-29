@@ -2,14 +2,14 @@ from datetime import datetime
 class ValidacionStock:
     def __init__(self,conn,item,almacen,ubicacion):
         self.conn = conn
+        self.item = item
         self.codigo = item['codigo']
         self.lote = item['lote']
         self.fecha = item['fecha']
-        self.talla = item['talla']
         self.ubicacion = ubicacion
         self.almacen = almacen
         self.estado : bool = False
-        self.validar()
+  
     def validar(self):
        
         sql = f"""
@@ -26,9 +26,6 @@ class ValidacionStock:
                     AND art_codigo = ?
                     AND ALM_CODIGO = ?
                     AND UBI_COD1 = ? 
-                    {
-                        f"AND tal_codigo='{self.talla}' " if self.talla!='' else ''
-                    }
 
                     {
                         f"AND art_codadi='{self.lote}' " if self.lote!='' else ''
@@ -37,12 +34,13 @@ class ValidacionStock:
                         f"AND mom_lote='{self.fecha}' " if self.fecha!='' else ''
                     }
                 """
+  
         cursor = self.conn.cursor()
         params = (self.codigo,self.almacen,self.ubicacion)
         cursor.execute(sql,params)
         data = cursor.fetchone()
+   
         self.conn.commit()
         self.conn.close()
         self.estado =  data[0]>float(self.item['cantidad'])
-    def __bool__(self):
-        return bool(self.estado)
+        return self.estado,data[0]

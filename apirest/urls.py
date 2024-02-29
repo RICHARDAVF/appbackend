@@ -27,6 +27,7 @@ from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga
 from apirest.view.incidencias.views import RegistroIncidecias
 from apirest.view.articulos.views import ArticuloStock,ArticuloLote,ArticulosFacturacion
 from apirest.view.facturacion.views import Facturacion
+from apirest.view.ticket.views import TicketFactura,TickeNP
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -89,6 +90,7 @@ urlpatterns = [
     path('v1/save/client/<str:ruc>/',RegisterSampleClient.as_view()),
     #FACTURA
     path('v1/factura/create/<str:ruc>/',Facturacion.as_view()),
+    path('v1/ticket/factura/<str:ruc>/',TicketFactura.as_view()),
 
     #TIPO DE PAGO
     path('tipo/pago/<str:host>/<str:db>/<str:user>/<str:password>/',TipoPago.as_view()),
@@ -109,6 +111,7 @@ urlpatterns = [
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
     path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
     path('v1/list/pedido/<str:ruc>/',ListPedidos.as_view()),
+    path('v1/ticket/pedido/<str:ruc>/',TickeNP.as_view()),
     
     #AGENCIAS
     path('agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
