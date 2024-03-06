@@ -89,17 +89,16 @@ class TicketFactura(GenericAPIView):
             formato+=f"[L]Moneda:{'SOLES' if result1[8].strip()=='S' else 'DOLARES'}\n"
             formato+=f"[L]Fecha Emision: {result1[4].strftime('%d/%m/%Y')}\n"
             formato+=f'{self.__item(result2)}'
-            formato+='[L]'+'-'*48+'\n'
+            formato+='[L]'+'-'*47+'\n'
 
             icon_moneda = 'S/' if result1[8].strip()=='S' else '$'
             if result1[7].strip()=='06':
-                formato+=f"[R]{'OP GRAVADA:'} {icon_moneda} {float(result1[15]):>6}\n"
-                formato+=f"[R]{'DESCUENTO:'} {icon_moneda} {float(result1[11]):>6}\n"
-                formato+=f"[R]SUB TOTAL: {icon_moneda} {float(result1[14]):>6}\n"
-                formato+=f"[R]IGV: {icon_moneda} {float(result1[10]):>6}\n"
-            formato+=f"[R]{'IMPORTE TOTAL: '}{icon_moneda} {float(result1[9]):>6}\n"
+                formato+=f"[R]{'OP GRAVADA:'} {icon_moneda} {float(result1[15]):>10}\n"
+                formato+=f"[R]{'DESCUENTO:'} {icon_moneda} {float(result1[11]):>10}\n"
+                formato+=f"[R]SUB TOTAL: {icon_moneda} {float(result1[14]):>10}\n"
+                formato+=f"[R]IGV: {icon_moneda} {float(result1[10]):>10}\n"
+            formato+=f"[R]{'IMPORTE TOTAL: '}{icon_moneda} {float(result1[9]):>10}\n"
             formato+='[L]'+'-'*48+'\n'
-
             formato+=f"[L]{self.numero_text(float(result1[9]))}\n"
             nombre_documento = 'boleta' if result1[7].strip()=='07' else 'factura'
 
@@ -119,19 +118,21 @@ class TicketFactura(GenericAPIView):
         return Response(data)
     
     def __item(self,items):
-        cadena = f"[L]<b>{'Descripcion':<48}</b>\n"
-        cadena+=f"[L]<b>{'Cant':<6}{'Precio':>8}{'Monto':>8}{'Dsto %':>8}{'Dsto V.':>8}{'Sub T.':>10}</b>\n"
+        cadena = f"[L]<b>{'Descripcion':<47}</b>\n"
+        cadena+=f"[L]<b>{'Cant':<6}{'Precio':>8}{'Monto':>8}{'Dsto %':>8}{'Dsto V.':>8}{'Sub T.':>9}</b>\n"
         cadena+='[L]'+'-'*48+'\n'
 
         for item in items:
-            if len(item[3].strip())>48:
+            if len(item[3].strip())>47:
                 des = item[3].strip()
-                for i in range(0,len(des),48):
-                        cadena+=f"[L]{des[i:i+48]}\n"    
+                for i in range(0,len(des),47):
+                        cadena+=f"[L]{des[i:i+47]}\n"    
             else:
                 cadena+=f"[L]{item[3].strip()}\n"
             total = float(item[0])*float(item[2])
-            cadena+=f"[L]<b>{str(int(item[0])):>6}{str(float(item[2])):>8}{round(total,2):>8}{str(float(item[4])):>8}{str(total*float(item[4])):>8}{str(float(item[1])):>10}</b>"
+            descuento_valor = round(abs(total-float(item[1])),2)
+
+            cadena+=f"[L]<b>{str(int(item[0])):<6}{str(float(item[2])):>8}{round(total,2):>8}{str(float(item[4])):>8}{str(descuento_valor):>8}{str(float(item[1])):>9}</b>"
         return cadena
 
     def numero_text(self,numero)->str:
@@ -193,8 +194,8 @@ class TickeNP(GenericAPIView):
             formato+=f"[L]<b>Fecha Emision: {result1[4].strftime('%Y-%m-%d')}  {datetime.now().strftime('%H:%M:%S')}</b>\n"
             formato+='[L]'+'-'*48+'\n'
             formato+=f"{self.__item(result2)}"
-            formato+='[L]'+'-'*48+'\n'
-            formato+=f"""[L]<b><font size='normal'>{f"IMPORTE TOTAL: {'S/' if result1[5].strip()=='S' else '$ '}{float(result1[1])}":>48}<font></b>\n"""
+            formato+='[L]'+'-'*47+'\n'
+            formato+=f"""[L]<b><font size='normal'>{f"IMPORTE TOTAL: {'S/' if result1[5].strip()=='S' else '$ '}{float(result1[1])}":>47}<font></b>\n"""
             formato+='[L]'+'-'*48+'\n'
             formato+=f'[L]{self.numero_text(float(result1[1]))}\n'
             formato+='[L]\n'
@@ -208,19 +209,18 @@ class TickeNP(GenericAPIView):
 
     
     def __item(self,items):
-        cadena = f"[L]<b>{'Descripcion':<48}</b>\n"
-        cadena+=f"[L]<b>{'Cant':<6}{'Precio':>8}{'Monto':>8}{'Dsto %':>8}{'Dsto V.':>8}{'Sub T.':>10}</b>\n"
+        cadena = f"[L]<b>{'Descripcion':<47}</b>\n"
+        cadena+=f"[L]<b>{'Cant':<6}{'Precio':>8}{'Monto':>8}{'Dsto %':>8}{'Dsto V.':>8}{'Sub T.':>9}</b>\n"
         cadena+='[L]'+'-'*48+'\n'
 
         for item in items:
-            if len(item[3].strip())>48:
+            if len(item[3].strip())>47:
                 des = item[3].strip()
-                for i in range(0,len(des),48):
-                        cadena+=f"[L]{des[i:i+48]}\n"
-                
-                   
+                for i in range(0,len(des),47):
+                        cadena+=f"[L]{des[i:i+47]}\n"
             else:
                 cadena+=f"[L]{item[3].strip()}\n"
             total = float(item[0])*float(item[2])
-            cadena+=f"[L]<b>{str(int(item[0])):>6}{str(float(item[2])):>8}{round(total,2):>8}{str(float(item[4])):>8}{str(total*float(item[4])):>8}{str(float(item[1])):>10}</b>"
+            descuento_valor = round(abs(total-float(item[1])),2)
+            cadena+=f"[L]<b>{str(int(item[0])):>6}{str(float(item[2])):>8}{round(total,2):>8}{str(float(item[4])):>8}{str(descuento_valor):>8}{str(float(item[1])):>9}</b>"
         return cadena
