@@ -5,13 +5,14 @@ import requests
 import os
 import json
 from datetime import date,datetime
+from apirest.querys import Querys
 from apirest.views import QuerysDb
 from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 import base64
 load_dotenv()
-class Facturacion(generics.GenericAPIView):
+class Guia(generics.GenericAPIView):
     # authentication_classes = [TokenAuthentication]
     # permission_classes = [IsAuthenticated]
     def validfecha(self,fecha):
@@ -24,14 +25,23 @@ class Facturacion(generics.GenericAPIView):
         return len(datos['num_pedido'].strip())!=8 or datos['num_pedido'][0]!='T'
     def guia_venta(self,datos):
         return len(datos['num_pedido'].strip())== 0 or datos['num_pedido'][0]=='T'
-    # def valid_importe(self,datos):
-    #     if datos['codigo_operacion'] =='18':
-    #         for item in datos['items']:
-    #             if item['precio']!=0:
-    #                 return False
-    #     return True
+    def get_tipo_cambio(self):
+        data = {}
+        try:
+            sql = "SELECT TC_COMPRA FROM t_tcambio WHERE TC_FECHA=?"
+            fecha =datetime.now().strftime('%Y-%m-%d')
+            params =(fecha,)
+            result = self.query(sql,params,'get')
+            if result is None:
+                data['error'] = f'No hay registros para tipo de cambio en la base de datos para la fecha {fecha}'
+            else:
+                data['compra'] = result[0]
+        except:
+            data['error'] = 'Error en la conexion con la base de datos para obtener tipo de cambio'
+        return data
     def post(self,request,*args,**kwargs):
         data = {}
+        anio = datetime.now().year
         try:
             datos = request.data
             if datos['tipodoc'] not in [1,4,6]:
@@ -57,10 +67,7 @@ class Facturacion(generics.GenericAPIView):
                 data['error'] = 'El campo correo admite solo 100 caracteres'
                 data['status'] = 400
                 return Response(data)
-            # if not self.valid_importe(datos):
-            #     data['error'] = "Error en el importe para una guia de traslado"
-            #     data['status'] = 400
-            #     return Response(data,status=status.HTTP_200_OK)
+
             tipodoc = "ruc" if datos['tipodoc']==6 else ("dni" if datos['tipodoc']==1 else 'CE')
             if len(datos['doc'])==0:
                 data['error'] = "Error en el numero de documento"
@@ -76,7 +83,7 @@ class Facturacion(generics.GenericAPIView):
                 if not res['success']:
                     data[f'{tipodoc}'] = f"Numero de {tipodoc} invalido"
                     return Response(data)
-            sql = f"SELECT gui_serie,gui_docum FROM GUIC{datetime.now().year} WHERE gui_ordenc=?"
+            sql = f"SELECT gui_serie,gui_docum FROM GUIC{anio} WHERE gui_ordenc=?"
             band = False
             gui_serie = self.query(sql,(datos['num_pedido']))
             sql = "SELECT doc_docum,doc_serie FROM t_documento WHERE DOC_CODIGO=? AND doc_serie=?"
@@ -167,7 +174,6 @@ class Facturacion(generics.GenericAPIView):
                                 date.today().strftime('%Y-%m-%d'),
                                 datos['doc'],
                                 datos['correo']
-
                                )
                 else:
                     params=(maa.strip(),str(codigo).zfill(6),f"{maa.strip()}{str(codigo).zfill(6)}",
@@ -190,7 +196,6 @@ class Facturacion(generics.GenericAPIView):
                             date.today().strftime('%Y-%m-%d'),
                             '',
                             datos['correo']
-
                             )
                 if datos['tipodoc']!=4:
                     dir_alternativa = f"{ res['data']['direccion']} {res['data']['distrito']} {res['data']['provincia']}"
@@ -213,20 +218,21 @@ class Facturacion(generics.GenericAPIView):
                 dir_alternativa = f"{dates[1].strip()} {dates[2].strip()} {dates[3].strip()}"
             data = self.beforepost(datos,gui_serie,dir_alternativa)
             #USUARIOS DE PRUEBA
-            self.query(f"INSERT INTO corret{datetime.now().year}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
-            sql = f"SELECT numero FROM corret{datetime.now().year} WHERE numero=(SELECT MAX(numero) FROM corret{datetime.now().year} WHERE usuario=000)"
+            self.query(f"INSERT INTO corret{anio}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
+            sql = f"SELECT numero FROM corret{anio} WHERE numero=(SELECT MAX(numero) FROM corret{datetime.now().year} WHERE usuario=000)"
             result= self.query(sql,())
             
             fecha = date.today().strftime('%Y-%m-%d')
             response = requests.get(f'https://api.apis.net.pe/v1/tipo-cambio-sunat?fecha={fecha}')
             tipo_c = ''
-            if response.status_code ==200:
-                tc = response.json()
-                tipo_c = tc['compra']
+            if 'compra' in self.get_tipo_cambio():
+                tipo_c = self.get_tipo_cambio()['compra']
+            elif 'error' in self.get_tipo_cambio():
+                if response.status_code ==200:
+                    tc = response.json()
+                    tipo_c = tc['compra']
             else:
                 return Response({'error':'Errores en la conexion para tipo de cambio'})
-            
-
             if  band:
                 for item in datos['items']:
                    

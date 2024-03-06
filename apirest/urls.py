@@ -15,7 +15,7 @@ from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockVie
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
 from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView
 from apirest.view.apis.views import SearchDNIRUC
-from apirest.view.guias.views import Facturacion,PDFFACTView,AnulacionGuiaView
+from apirest.view.guias.views import Guia,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
 from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
@@ -111,7 +111,9 @@ urlpatterns = [
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
     path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
     path('v1/list/pedido/<str:ruc>/',ListPedidos.as_view()),
+    #TICKET
     path('v1/ticket/pedido/<str:ruc>/',TickeNP.as_view()),
+
     
     #AGENCIAS
     path('agencias/<str:host>/<str:db>/<str:user>/<str:password>/',AgenciaView.as_view()),
@@ -158,7 +160,7 @@ urlpatterns = [
     path('reporte3/',PDFGENERATEView.as_view()),
 
     #GUIA ELECTRONICA DE VENTA Y TRASLADO
-    path("fact/",Facturacion.as_view()),
+    path("fact/",Guia.as_view()),
     path('fact/pdf/<str:serie>/<str:num>/',PDFFACTView.as_view(),name='generate_pdf'),
     path('guia/anulacion/<str:serie>/<str:numero>/',AnulacionGuiaView.as_view(),name='anulacion'),
     #VALIDACION DE DOCUMENTOS
