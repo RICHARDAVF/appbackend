@@ -5,7 +5,7 @@ import requests
 import os
 import json
 from datetime import date,datetime
-from apirest.querys import Querys
+
 from apirest.views import QuerysDb
 from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
@@ -28,10 +28,10 @@ class GuiasView(generics.GenericAPIView):
     def get_tipo_cambio(self):
         data = {}
         try:
-            sql = "select TC_COMPRA from t_tcambio where TC_FECHA=?"
+            sql = "SELECT TC_COMPRA FROM t_tcambio WHERE TC_FECHA=?"
             fecha =datetime.now().strftime('%Y-%m-%d')
             params =(fecha,)
-            result = Querys(self.kwargs).querys(sql,params,'get',0)
+            result = self.query(sql,params,'get')
             if result is None:
                 data['error'] = f'No hay registros para tipo de cambio en la base de datos para la fecha {fecha}'
             else:
@@ -67,10 +67,7 @@ class GuiasView(generics.GenericAPIView):
                 data['error'] = 'El campo correo admite solo 100 caracteres'
                 data['status'] = 400
                 return Response(data)
-            # if not self.valid_importe(datos):
-            #     data['error'] = "Error en el importe para una guia de traslado"
-            #     data['status'] = 400
-            #     return Response(data,status=status.HTTP_200_OK)
+
             tipodoc = "ruc" if datos['tipodoc']==6 else ("dni" if datos['tipodoc']==1 else 'CE')
             if len(datos['doc'])==0:
                 data['error'] = "Error en el numero de documento"

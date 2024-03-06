@@ -50,6 +50,7 @@ class Validation:
             data['error'] = res['message']
         else:
             data = res
+        
         return data
 class CAQ:
     def conexion(self,credenciales:object):

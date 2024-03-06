@@ -130,6 +130,7 @@ class Facturacion(GenericAPIView):
             instance.enviar()
             documento = 'boleta' if self.request.data['tipo_documento']==1 else 'factura'
             data['success'] = f"La {documento} se genero exitosamente"
+            data['codigo'] = self.mov_compro
         except Exception as e:
             data['error'] = str(e)
         return Response(data)
