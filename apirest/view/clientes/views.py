@@ -228,9 +228,10 @@ class RegisterSampleClient(generics.GenericAPIView):
                 WHERE MAA_CODIGO=?
                 """
             s,result = CAQ.request(self.credencial,sql,(maa_codigo,),'get',0)
+   
             if not s:
                 raise Exception('Error al obtener correlativo para el cliente')
-            if result is None:
+            if result[0] is None:
                 result = ['0']
 
             tipo_persona = 2 if (len(datos['documento'])==11 and datos['documento'][:2]=='20') else 1

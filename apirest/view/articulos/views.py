@@ -427,7 +427,7 @@ class ArticulosFacturacion(GenericAPIView):
                     "codigo":value[0].strip(),
                     "nombre":value[1].strip(),
                     "precio":round(float(value[2]),2),
-                    "codigo_ena":value[3].strip(),
+                    "codigo_ean":value[3].strip(),
                     "des_max" :float(value[4]),
                     "des_min" : float(value[5]),
                     "cuenta":value[6].strip(),
