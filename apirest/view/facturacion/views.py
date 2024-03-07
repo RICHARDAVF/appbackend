@@ -1,6 +1,6 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from dataclasses import dataclass
+
 from datetime import datetime
 from apirest.crendeciales import Config, Credencial
 from apirest.querys import CAQ
