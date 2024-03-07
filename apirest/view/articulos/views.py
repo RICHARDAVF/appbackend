@@ -414,14 +414,14 @@ class ArticulosFacturacion(GenericAPIView):
                         f"WHERE a.art_codigo='{self.codigo}' " if self.codigo!='' else ''
                     }
                     """
-            print(sql)
+
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
             if not s:
                 raise Exception('Ocurrio un error al recuperar los articulos')
             if result is None:
                 raise Exception('No hay articulos para mostrar')
 
-            data = [
+            data['articulo'] = [
                 {
                     "id":index,
                     "codigo":value[0].strip(),
@@ -436,6 +436,15 @@ class ArticulosFacturacion(GenericAPIView):
 
                 } for index,value in enumerate(result)
             ]
+            sql = "SELECT ubi_acbapp FROM T_ubicacion WHERE ubi_codigo=?"
+            s,result = CAQ.request(self.credencial,sql,(datos['ubicacion'],),'get',0)
+   
+            if not s:
+                data['active'] = True
+            if result[0] is None:
+                data['active'] = True
+            else:
+                data["active"] = int(result[0])==0
         except Exception as e:
             data['error'] = str(e)
         return Response(data)

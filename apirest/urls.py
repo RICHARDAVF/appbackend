@@ -28,6 +28,8 @@ from apirest.view.incidencias.views import RegistroIncidecias
 from apirest.view.articulos.views import ArticuloStock,ArticuloLote,ArticulosFacturacion
 from apirest.view.facturacion.views import Facturacion
 from apirest.view.ticket.views import TicketFactura,TickeNP
+
+from apirest.view.ubicacion.views import UbicacionesCondicionados
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -46,6 +48,7 @@ urlpatterns = [
     path('v1/tra/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',Trabajador.as_view()),
     #UBICACIONES
     path('v1/ubi/<str:host>/<str:db>/<str:user>/<str:password>/',Ubicaciones.as_view()),
+    path('v1/ubicacion/condicionado/<str:ruc>/',UbicacionesCondicionados.as_view()),
     #PARAMETROS
     path('v1/list/par/<str:ruc>/',Parametros.as_view()),
     path('v1/caida/cod/<str:ruc>/',CaidaCodigo.as_view()),
