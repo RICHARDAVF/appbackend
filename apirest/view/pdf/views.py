@@ -1,4 +1,4 @@
-from weasyprint import HTML,CSS
+# from weasyprint import HTML,CSS
 from django.template.loader import get_template
 from django.http import HttpResponse
 from rest_framework.generics import GenericAPIView
@@ -11,10 +11,10 @@ def pdf_generate(request):
     context = {}
     context['images'] = data
     render_html = html_template.render(context)
-    pdf_file = HTML(string=render_html,base_url=request.build_absolute_uri()).write_pdf()
-    response = HttpResponse(pdf_file,content_type='application/pdf')
-    response['Content_Disposition'] = 'filename="home.pdf"'
-    return response
+    # pdf_file = HTML(string=render_html,base_url=request.build_absolute_uri()).write_pdf()
+    # response = HttpResponse(pdf_file,content_type='application/pdf')
+    # response['Content_Disposition'] = 'filename="home.pdf"'
+    # return response
 class GeneratedPDF(GenericAPIView):
     def get(self,request,*args,**kwargs):
         lista_ubicaciones = request.GET.getlist('arreglo[]',[])
@@ -32,7 +32,7 @@ class GeneratedPDF(GenericAPIView):
         context = {}
         context['images'] = data
         render_html = html_template.render(context)
-        pdf_file = HTML(string=render_html,base_url=request.build_absolute_uri()).write_pdf()
-        response = HttpResponse(pdf_file,content_type='application/pdf')
-        response['Content_Disposition'] = 'filename="home.pdf"'
-        return response
+        # pdf_file = HTML(string=render_html,base_url=request.build_absolute_uri()).write_pdf()
+        # response = HttpResponse(pdf_file,content_type='application/pdf')
+        # response['Content_Disposition'] = 'filename="home.pdf"'
+        # return response

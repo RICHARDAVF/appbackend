@@ -85,7 +85,7 @@ class UserView(generics.GenericAPIView):
                
                 d = {"cod":data[0][0],'codigo':data[0][1],"is_admin":data[0][2],'ubicacion':data[0][5].strip(),'apro_oc1':data[0][7],'apro_oc2':data[0][8],'apro_oc3':data[0][9],
                      "usuario":data[0][12].strip(),'aprobacion1':data[0][13],
-                     'aprobacion2':data[0][14],'almacen':data[0][19].strip(),'toma_inventario':data[0][20],'codigo_origen':data[0][21].strip()}
+                     'aprobacion2':data[0][14],'impresion':data[0][17],'almacen':data[0][19].strip(),'toma_inventario':data[0][20],'codigo_origen':data[0][21].strip()}
                       
                 datos['user'] = d
                 

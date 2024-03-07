@@ -84,7 +84,7 @@ class Factura:
             self.json['importeTotal'] = self.guic.importe_total
             self.json['tipoMoneda'] = 'PEN' if self.guic.moneda == 'S' else 'USD'
             data = json.dumps(self.json,indent=4)
-            ruta = os.path.join(settings.BASE_DIR,'media/json/')
+            ruta = os.path.join(settings.BASE_DIR,'media/json/factura')
             with open(ruta+f"{self.guic.ruc}.json",'w') as file:
                 file.write(data)
         except Exception as e:
