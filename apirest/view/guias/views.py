@@ -5,7 +5,7 @@ import requests
 import os
 import json
 from datetime import date,datetime
-from apirest.querys import Querys
+from django.conf import settings
 from apirest.views import QuerysDb
 from apirest.view.guias.factappi import RequestAPI
 from rest_framework.authentication import TokenAuthentication
@@ -44,6 +44,7 @@ class Guia(generics.GenericAPIView):
         anio = datetime.now().year
         try:
             datos = request.data
+            
             if datos['tipodoc'] not in [1,4,6]:
                 data['error'] = "Tipo de documento no permitido"
                 data['status'] = 400
@@ -216,6 +217,7 @@ class Guia(generics.GenericAPIView):
             else:
                 codigo_cliente=dates[0]
                 dir_alternativa = f"{dates[1].strip()} {dates[2].strip()} {dates[3].strip()}"
+            self.save_file_json('T003',gui_serie)
             data = self.beforepost(datos,gui_serie,dir_alternativa)
             #USUARIOS DE PRUEBA
             self.query(f"INSERT INTO corret{anio}(usuario,fechausu) VALUES(?,?)",('000',datetime.now().strftime('%Y-%m-%d')),'post')
@@ -382,6 +384,11 @@ class Guia(generics.GenericAPIView):
         conn.commit()
         conn.close()
         return data
+    def save_file_json(self,serie,numero):
+        data = json.dumps(self.request.data,indent=4)
+        file_path = os.path.join(settings.BASE_DIR,'media/json/guias')
+        with open(file_path+f'/{serie}-{numero}.json','w') as file:
+            file.write(data)
     def valid(self,codigo):
         sql =  "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
         return self.query(sql,(codigo,))

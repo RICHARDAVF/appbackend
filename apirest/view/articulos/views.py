@@ -414,7 +414,7 @@ class ArticulosFacturacion(GenericAPIView):
                         f"WHERE a.art_codigo='{self.codigo}' " if self.codigo!='' else ''
                     }
                     """
-          
+            print(sql)
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
             if not s:
                 raise Exception('Ocurrio un error al recuperar los articulos')

@@ -89,7 +89,7 @@ class Facturacion(GenericAPIView):
         self.config = Config(self.credencial)
         self.parametros = Parametros(self.credencial)
         self.cliente = Cliente(datos['numero_documento'],self.credencial)
-        self.codigo_documento = '03'
+        self.codigo_documento = '03' if datos['tipo_documento']==1 else '01'
         try:
             for item in datos['detalle']:
                 s,cant = ValidacionStock(CAQ().conexion(self.credencial),item,datos['almacen'],datos['ubicacion']).validar()
@@ -160,7 +160,7 @@ class Facturacion(GenericAPIView):
             vuelto = abs(sum(float(item['subtotal']) for item in datos['detalle'])-self.vuelto())
             tarjeta1 = datos['tarjeta1'] if datos['tarjeta1']!='-1' else ''
             tarjeta2 = datos['tarjeta2'] if datos['tarjeta2']!='-1' else ''
-            params = (str(self.mov_compro).zfill(11),self.date.strftime('%Y-%m-%d'),self.cliente.codigo,self.codigo_documento,self.config.moneda,tipo_cambio,user['cod'],self.date.strftime('%Y-%m-%d'),
+            params = (str(self.mov_compro).zfill(11),self.date.strftime('%Y-%m-%d'),self.cliente.codigo,'03',self.config.moneda,tipo_cambio,user['cod'],self.date.strftime('%Y-%m-%d'),
                       base_imponible,'18',ivg,total,self.suma_subtotal(),1,1,1,self.serie,self.numero,ubicacion,datos['tipo_pago'],self.cliente.direccion,
                       '01',codigo_tipo_documento,user['codigo'],almacen,self.date.strftime('%m'),'01',self.cliente.razon_social,self.date.strftime('%Y-%m-%d'),
                       self.cliente.ruc,'04',descuento,1,vuelto,tarjeta1,datos['num1_tarjeta'],datos['monto1'],tarjeta2,datos['num2_tarjeta'],datos['monto2'],float(datos['efectivo']),
@@ -205,7 +205,7 @@ class Facturacion(GenericAPIView):
 
         try:
             for item in items:
-                params = (almacen,self.date.strftime('%m'),str(self.mov_compro).zfill(11),self.codigo_documento,self.date.strftime('%Y-%m-%d'),item['codigo'],'S','04',
+                params = (almacen,self.date.strftime('%m'),str(self.mov_compro).zfill(11),'03',self.date.strftime('%Y-%m-%d'),item['codigo'],'S','04',
                           ubicacion,ubicacion,item['cantidad'],float(item['subtotal']),self.config.moneda,self.tipo_cambio(),item['precio'],user['cod'],
                           self.date.strftime('%Y-%m-%d'),codigo_tipo_documento,'S','',float(item['descuento']),1,item['lote'],item['fecha'])
                 
@@ -219,6 +219,7 @@ class Facturacion(GenericAPIView):
                 if not s:
                     raise Exception('Ocurrio un error al grabar la factura')
                 params = list(params)
+                params[3] = self.codigo_documento
                 params[11] = 0
                 params[12] = ''
                 params[13] = 0
