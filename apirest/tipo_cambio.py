@@ -2,7 +2,7 @@ from datetime import datetime
 
 import requests
 
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 class TipoCambio:
     date : datetime = datetime.now()

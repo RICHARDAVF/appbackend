@@ -1,7 +1,7 @@
 from datetime import datetime
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from apirest.querys import CAQ, Querys
 class Almacenes(GenericAPIView):
     def get(self,request,*args,**kwargs):

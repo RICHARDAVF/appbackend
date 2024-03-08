@@ -2,7 +2,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from datetime import datetime
-from apirest.crendeciales import Config, Credencial
+from apirest.credenciales import Config, Credencial
 from apirest.querys import CAQ
 from apirest.tipo_cambio import TipoCambio
 from apirest.view.facturacion.factura import Factura

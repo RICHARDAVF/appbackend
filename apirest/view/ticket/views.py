@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from datetime import datetime
 from apirest.querys import CAQ
 from num2words import num2words

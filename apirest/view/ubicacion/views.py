@@ -1,6 +1,6 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 class UbicacionesCondicionados(GenericAPIView):
     credencial : object = None

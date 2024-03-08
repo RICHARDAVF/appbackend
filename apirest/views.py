@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics,status
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from apirest.querys import CAQ, Querys
 from .models import ConfigCliente, UsuarioCredencial,VersionApp
 from .serializer import UsuarioSerializer,VersionAppSerialiser
@@ -659,6 +659,7 @@ class PedidosView(generics.GenericAPIView):
 		ORDER BY MOV_FECHA DESC, MOV_COMPRO DESC
 
         """
+   
         datos = Querys(kwargs).querys(sql,(),'get',1)
         estados = []
         for index,value in enumerate(datos):
@@ -703,7 +704,7 @@ class EstadoPedido(generics.GenericAPIView):
         ORDER BY MOV_FECHA DESC,MOV_COMPRO DESC
         
         """
-     
+       
         try:
             conn = QuerysDb.conexion(host,db,user,password)
             cursor = conn.cursor()

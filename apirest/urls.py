@@ -111,6 +111,7 @@ urlpatterns = [
     path('pedidos/state/<str:host>/<str:db>/<str:user>/<str:password>/<str:key>/',EstadoPedido.as_view()),
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:empresa>/',PdfPedidoView.as_view()),
+    path('v1/pedidos/pdf/<str:ruc>/',PdfPedidoView.as_view()),
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
     path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
     path('v1/list/pedido/<str:ruc>/',ListPedidos.as_view()),
