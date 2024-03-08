@@ -1,7 +1,7 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from datetime import datetime
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 
 from apirest.querys import CAQ
 class ArticuloStock(GenericAPIView):
@@ -25,11 +25,13 @@ class ArticuloStock(GenericAPIView):
                 
                 sql = self.art_off_separacion()
             params = (datos['almacen'],datos['ubicacion'])
+       
             s,result = CAQ.request(self.credencial,sql,params,'get',1)
+            print(sql)
             if not s:
                 data = result
                 return Response(data)
-        
+         
             data= [
                 {
                     'id':index,
@@ -39,7 +41,7 @@ class ArticuloStock(GenericAPIView):
                     'nombre':item[3].strip(),
                     'moneda':item[4].strip(),
                     'peso':item[5],
-                    'vendedor':item[6].strip()
+                    'vendedor':item[8].strip()
 
                 }
                 for index,item in enumerate(result)
@@ -169,6 +171,8 @@ class ArticuloStock(GenericAPIView):
                         'mom_cant' = SUM(CASE WHEN a.mom_tipmov = 'E' THEN a.mom_cant WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1 END),
                         b.ART_NOMBRE,        
                         'lis_moneda' = ISNULL((SELECT par_moneda FROM t_parrametro WHERE par_anyo = DATEPART(YEAR, GETDATE())), ''),   
+                        a.ALM_CODIGO,
+						a.UBI_COD1,
                         b.art_peso,
                         b.ven_codigo
                     FROM

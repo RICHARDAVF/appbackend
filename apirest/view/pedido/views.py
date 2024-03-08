@@ -7,11 +7,12 @@ import base64
 import io
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from apirest.querys import CAQ, Querys
 from datetime import datetime
-
 from apirest.view.apis.views import TipoCambio
+from dataclasses import dataclass
+from apirest.view.pdf.views import PDF
 def agrupar(datos):
     datos_agrupados = {}
     for item in datos:
@@ -28,7 +29,24 @@ def agrupar(datos):
         else:
             datos_agrupados[nombre] = {'codigo': codigo, 'nombre': nombre, 'talla': [talla], 'cantidad': [cantidad],'precio':precio,'total':[total]}
     return datos_agrupados
+@dataclass
+class CABECERA:
+    numero_pedido : str = None
+    fecha_emision : datetime = None
+    direccion : str = None
+    documento : str = None
+    vendedor : str = None
+    observacion : str = None
+    subtotal : float = None
+    descuento : float = None
+    base_imponible : float = None
+    igv : float = None
+    venta_total : float = None
+    cliente : str = None
+    moneda : str = None
+    p_igv : float = None
 class PdfPedidoView(GenericAPIView):
+    credencial : object = None
     def order(self):
         
         sql = """SELECT 
@@ -76,6 +94,84 @@ class PdfPedidoView(GenericAPIView):
             else:
                 partes[parte] = [item]
         return partes
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            sql = "SELECT emp_razon FROM t_empresa"
+            s,result = CAQ.request(self.credencial,sql,(),'get',0)
+            if not s:
+                raise Exception('No se pudo recuperar el nombre de la empresa')
+            empresa = result[0].strip()
+            sql = """SELECT 
+                        a.MOV_FECHA,
+                        a.gui_direc,
+                        a.gui_ruc,
+                        'vendedor'=(SELECT USU_NOMBRE FROM t_usuario WHERE usu_codigo=a.USUARIO ),
+                        a.gui_exp001,
+                        a.rou_submon,
+                        a.rou_dscto,
+                        a.ROU_BRUTO,
+                        a.ROU_IGV,
+                        a.ROU_TVENTA,
+                        b.AUX_NOMBRE,
+                        a.MOV_MONEDA,
+                        a.ROU_PIGV
+                    FROM cabepedido AS a INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE WHERE MOV_COMPRO=?"""
+            s,result = CAQ.request(self.credencial,sql,(datos['numero_pedido'],),'get',0)
+            if not s:
+                raise Exception('No se pudo recuperar datos del cliente')
+            cabecera = CABECERA(
+                numero_pedido=self.request.data['numero_pedido'],
+                fecha_emision=result[0].strftime('%Y-%m-%d'),
+                direccion=result[1].strip(),
+                documento=result[2].strip(),
+                vendedor=result[3].strip(),
+                observacion=result[4].strip(),
+                subtotal=float(result[5]),
+                descuento=float(result[6]),
+                base_imponible=float(result[7]),
+                igv=float(result[8]),
+                venta_total=float(result[9]),
+                cliente=result[10].strip(),
+                moneda=result[11].strip(),
+                p_igv=float(result[12])
+
+            )
+            sql = """SELECT 
+                        a.ART_CODIGO,
+                        a.MOM_CANT,
+                        a.MOM_PUNIT,
+                        b.ART_NOMBRE,
+                        a.mom_valor,
+                        a.mom_dscto1
+                    FROM movipedido AS a 
+                    INNER JOIN t_articulo AS b ON a.ART_CODIGO=b.art_CODIGO WHERE MOV_COMPRO=?
+                    ORDER BY b.ART_NOMBRE"""
+            s,result = CAQ.request(self.credencial,sql,(datos['numero_pedido'],),'get',1)
+            if not s:
+                raise Exception('Error al consultar a la base de datos')
+            data['pdf'] = PDF(empresa,cabecera,self.items(result)).generate()
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)
+    def items(self,detalle):
+        data = []
+        for item in detalle:
+            d = {
+                'codigo':item[0].strip(),
+                'cantidad':float(item[1]),
+                'precio':float(item[2]),
+                'nombre':item[3].strip(),
+                'subtotal':float(item[4]),
+                'descuento':float(item[5])
+            }
+            data.append(d)
+        return data
+
+
+      
     def get(self,request,*args,**kwargs):
         try:
             partes = self.order()
@@ -165,7 +261,6 @@ class PdfPedidoView(GenericAPIView):
                 ['BASE IMPONIBLE',moneda,round(dates[8], 2)],
                 [f'IGV {dates[12]:.0f}%',moneda,round(dates[7], 2)],
                 ['TOTAL VENTA',moneda,round(dates[10], 2)],
-
                 ]
 
             table= Table(data,repeatRows=1)
@@ -241,14 +336,15 @@ class Moneda(GenericAPIView):
             data['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
 class GuardarPedido(GenericAPIView):
-    crendecial = None
+    credencial = None
     message = 'El pedido se guardo con exito'
     bk_message = 'NUEVO(APPV1)'
     anio = datetime.now().year
+
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
-        self.crendecial = Credencial(datos['credencial'])
+        self.credencial = Credencial(datos['credencial'])
         try:
             if datos['config']['separacion_pedido']:
                 status,message = self.validar_stock()
@@ -338,11 +434,12 @@ class GuardarPedido(GenericAPIView):
                 if 'error' in res:
                     data['error'] = 'Ocurrio un error el grabar el pedido'
                     return Response(data)
+            self.aprobacion_automatica(cor)
             data['success'] = self.message
             
         except Exception as e:
-            print(str(e),'agregando nuevo pedido')
-            data['error'] = 'Ocurrio un error a grabar el pedido'
+            
+            data['error'] = str(e)
         return Response(data)
     def data_update(self,):
         datos = self.request.data
@@ -358,6 +455,25 @@ class GuardarPedido(GenericAPIView):
         for item in datos:
             total+=float(item['cantidad'])*float(item['precio'])
         return total
+    def aprobacion_automatica(self,numero_pedido):
+        if self.request.data['credencial']['codigo'] != '6':
+            return
+        try:
+            datos = self.request.data
+            user = datos['vendedor']
+            sql = "SELECT usu_apraut FROM t_usuario where usu_codigo=? and ven_codigo=?"
+            s,result = CAQ.request(self.credencial,sql,(user['cod'],user['codigo']),'get',0)
+            if not s:
+                raise Exception("Error al consultar si es vendedor tiene aprobacion automatica")
+            if int(result[0]) == 0:
+                return
+            sql = "UPDATE cabepedido SET ped_status=?,ped_fecapr=?,ped_usuapr=?,ped_statu2=?,ped_usuap2=? WHERE mov_compro=?"
+            params = (2,datetime.now(),user['cod'],2,user['cod'],numero_pedido)
+            s,_ = CAQ.request(self.credencial,sql,params,'post')
+            if not s:
+                raise Exception('No se pudo realizar la aprobacion automatica')
+        except Exception as e:
+            raise Exception(str(e))
     def validar_stock(self):
         data = {}
         try:
@@ -414,7 +530,7 @@ class GuardarPedido(GenericAPIView):
             params = (codigo,almacen,ubicacion)
             data = Querys(self.kwargs).querys(sql,params,'get',0)
         except Exception as e:
-            print(str(e))
+           
             data['error'] = 'error'
         return data
     def pedidos_pendientes(self,codigo,talla,ubicacion,almacen,pedido,lote,fecha):
@@ -540,7 +656,10 @@ class GuardarPedido(GenericAPIView):
             for item in self.request.data['detalle']:
                 codigo_vendedor = item['vendedor']
         if codigo_vendedor=='':
-            codigo_vendedor = self.request.data['vendedor']['codigo']
+            codigo_vendedor = self.request.data['vendedor']['codigo'].strip()
+    
+            if codigo_vendedor=='':
+                raise Exception('El usuario no tiene codigo de vendedor')
         return codigo_vendedor  
     def auditoria_cabepedido(self,params:tuple,state:str):
         parametros = list(params)
@@ -582,7 +701,7 @@ class GuardarPedido(GenericAPIView):
             datos = self.request.data
             
             sql = "SELECT pag_nvallc FROM t_maepago WHERE pag_codigo=?"
-            s,result = CAQ.request(self.crendecial,sql,(datos['tipo_pago'],),'get',0)
+            s,result = CAQ.request(self.credencial,sql,(datos['tipo_pago'],),'get',0)
             
             if int(result[0])==1:
                 return True,''
@@ -591,7 +710,7 @@ class GuardarPedido(GenericAPIView):
                     FROM t_auxiliar 
                     WHERE 
                         AUX_CLAVE=?"""
-            _,result = CAQ.request(self.crendecial,sql,(datos['cabeceras']['codigo'],),'get',0)
+            _,result = CAQ.request(self.credencial,sql,(datos['cabeceras']['codigo'],),'get',0)
             linea_credito = float(result[0])
            
             if int(linea_credito)==0:
@@ -615,7 +734,7 @@ class GuardarPedido(GenericAPIView):
                         AND SUBSTRING(pla_cuenta,1,2)<='13' 
                         AND mov_elimin=0 
                     GROUP BY mov_moned"""
-            s,result=CAQ.request(self.crendecial,sql,(datos['cabeceras']['codigo'],),'get',0)
+            s,result=CAQ.request(self.credencial,sql,(datos['cabeceras']['codigo'],),'get',0)
             
             if not s :
                 return False,'Ocurrio un error al consultar por la deuda del cliente'
@@ -641,7 +760,7 @@ class GuardarPedido(GenericAPIView):
         return self.tipo_cambio()*total
     def tipo_cambio(self):
         sql = f"SELECT tc_venta FROM t_tcambio where TC_FECHA={datetime.now().strftime('%Y-%m-%d')}"
-        s,result = CAQ.request(self.crendecial,sql,(),'get',0)
+        s,result = CAQ.request(self.credencial,sql,(),'get',0)
         if result is None:
             tipo_cambio = TipoCambio.tipo_cambio()
         else:
@@ -650,11 +769,11 @@ class GuardarPedido(GenericAPIView):
 
 
 class EditPedido(GenericAPIView):
-    crendecial = None
+    credencial = None
     def post(self,request,*args,**kwargs):
         data = {}
         datos  = request.data
-        self.crendecial = Credencial(datos['credencial'])
+        self.credencial = Credencial(datos['credencial'])
         try:
             sql = """SELECT 
                         a.MOV_CODAUX, a.gui_ruc, a.gui_direc, b.AUX_NOMBRE,
@@ -666,7 +785,7 @@ class EditPedido(GenericAPIView):
                         FROM cabepedido AS a
                         INNER JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
                         WHERE a.MOV_COMPRO = ? """
-            s,result = CAQ.request(self.crendecial,sql,(datos['codigo']),'get',0)
+            s,result = CAQ.request(self.credencial,sql,(datos['codigo']),'get',0)
             if not s:
                 data['error'] = result['error']
                 return Response(data)
@@ -700,7 +819,7 @@ class EditPedido(GenericAPIView):
                         FROM movipedido AS a 
                         INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
                         WHERE a.mov_compro = ?"""
-            s,result = CAQ.request(self.crendecial,sql,(datos['codigo'],),'get',1)
+            s,result = CAQ.request(self.credencial,sql,(datos['codigo'],),'get',1)
             if not s:
                 data['error'] = result['error']
                 return Response(data)

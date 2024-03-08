@@ -1,6 +1,6 @@
 from rest_framework import generics
 from rest_framework.response import Response
-from apirest.crendeciales import Credencial
+from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 from apirest.views import QuerysDb
 from datetime import datetime
