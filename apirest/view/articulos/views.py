@@ -27,7 +27,7 @@ class ArticuloStock(GenericAPIView):
             params = (datos['almacen'],datos['ubicacion'])
        
             s,result = CAQ.request(self.credencial,sql,params,'get',1)
-            print(sql)
+         
             if not s:
                 data = result
                 return Response(data)
@@ -420,9 +420,10 @@ class ArticulosFacturacion(GenericAPIView):
                     """
 
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
+   
             if not s:
                 raise Exception('Ocurrio un error al recuperar los articulos')
-            if result is None:
+            if result[0] is None:
                 raise Exception('No hay articulos para mostrar')
 
             data['articulo'] = [
@@ -442,14 +443,14 @@ class ArticulosFacturacion(GenericAPIView):
             ]
             sql = "SELECT ubi_acbapp FROM T_ubicacion WHERE ubi_codigo=?"
             s,result = CAQ.request(self.credencial,sql,(datos['ubicacion'],),'get',0)
-   
             if not s:
-                data['active'] = True
-            if result[0] is None:
-                data['active'] = True
+                data['active'] = False
+            if result is None:
+                data['active'] = False
             else:
                 data["active"] = int(result[0])==0
         except Exception as e:
+            print(str(e))
             data['error'] = str(e)
         return Response(data)
     def codigo_lote_fecha(self):
