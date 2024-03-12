@@ -64,15 +64,15 @@ class PDF:
         story = []
         story.append(Paragraph(self.empresa,style_heading))
         story.append(Spacer(1,12))
-        story.append(Paragraph(f"NUMERo PEDIDO: {self.cabecera.numero_pedido}",custom_style))
+        story.append(Paragraph(f"NUMERO PEDIDO: {self.cabecera.numero_pedido}",custom_style))
         story.append(Paragraph(f"EMISIÓN: {self.cabecera.fecha_emision}",custom_style))
         story.append(Paragraph(f"DIRECCIÓN: {self.cabecera.direccion}",custom_style))
         story.append(Paragraph(f"DOCUMENTO: {self.cabecera.documento}",custom_style))
-        story.append(Paragraph(f"{self.cabecera.vendedor}",custom_style))
+        story.append(Paragraph(f"VENDEDOR: {self.cabecera.vendedor}",custom_style))
         header = ['CODIGO','ARTICULO','CANTIDAD','P. UNIT','TOTAL']
         data = [header]
         for item in self.detalle:
-            items = [item['codigo'],item['nombre'],item['cantidad'],item['precio'],item['subtotal']]
+            items = [item['codigo'],Paragraph(item['nombre']),item['cantidad'],item['precio'],item['subtotal']]
             data.append(items)
         story.append(Spacer(0,20))
         w,h = A4

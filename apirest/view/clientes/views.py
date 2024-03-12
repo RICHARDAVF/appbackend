@@ -193,14 +193,17 @@ class ValidarCliente(generics.GenericAPIView):
         datos = request.data
         self.credencial = Credencial(datos['credencial'])
         try:
-            sql = "SELECT AUX_DOCUM FROM t_auxiliar WHERE AUX_DOCUM=? AND MAA_CODIGO='CT' "
+            sql = "SELECT AUX_NOMBRE FROM t_auxiliar WHERE AUX_DOCUM=? AND MAA_CODIGO='CT' "
             s,result = CAQ.request(self.credencial,sql,(datos['documento'],),'get',0)
         
             if not s:
+                data['crear'] = 1
                 raise Exception('Error en la busqueda del cliente')
             if result is None:
+                data['crear'] = 2 
                 raise Exception('El cliente no esta en la base de datos,registrarlo por favor')
-            data['success'] = True
+            data['cliente'] = result[0].strip()
+            data['crear'] = 3
         except Exception as e:
             data['error'] = str(e)
         return Response(data)

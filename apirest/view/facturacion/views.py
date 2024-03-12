@@ -79,7 +79,13 @@ class Facturacion(GenericAPIView):
         return round(monto,2) 
 
 
+    def validar_condicion_pago(self):
         
+            condicion_pago = self.request.data['tipo_pago']
+            sql = "SELECT pag_tippag FROM t_maepago where pag_codigo=?"
+            _,result = CAQ.request(self.credencial,sql(condicion_pago,),'get',0)
+            return result[0].strip()
+       
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
@@ -120,6 +126,8 @@ class Facturacion(GenericAPIView):
                 raise Exception(f'Error, la serie no es de boletas {self.serie}')
             if datos['tipo_documento']==2 and self.serie[0]!='F':
                 raise Exception(f'Error, la serie no es de facturacion {self.serie}')
+            if self.validar_condicion_pago()!='CO':
+                raise Exception('La condicion de pago debe ser al contado')
 
             self.save_guic()
             self.save_guid()
