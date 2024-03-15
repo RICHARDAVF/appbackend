@@ -62,6 +62,8 @@ class Facturacion(GenericAPIView):
     numero : str = None 
     mov_compro : str = None
     codigo_origen : str = None
+    fecha_string : str = ''
+    fecha_datetime : datetime = None
     def tipo_cambio(self):
         return float(TipoCambio(self.request.data['credencial'],self.request.data['usuario']))
     def base_imponible(self):
@@ -83,13 +85,13 @@ class Facturacion(GenericAPIView):
         
             condicion_pago = self.request.data['tipo_pago']
             sql = "SELECT pag_tippag FROM t_maepago where pag_codigo=?"
-            _,result = CAQ.request(self.credencial,sql(condicion_pago,),'get',0)
+            _,result = CAQ.request(self.credencial,sql,(condicion_pago,),'get',0)
+      
             return result[0].strip()
        
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
-       
         user = datos['usuario']
         self.credencial = Credencial(datos['credencial'])
         self.config = Config(self.credencial)
@@ -98,9 +100,11 @@ class Facturacion(GenericAPIView):
         self.codigo_documento = '03' if datos['tipo_documento']==1 else '01'
         try:
             for item in datos['detalle']:
-                s,cant = ValidacionStock(CAQ().conexion(self.credencial),item,datos['almacen'],datos['ubicacion']).validar()
+                self.convert_date_string(item['fecha'])
+                s,cant = ValidacionStock(CAQ().conexion(self.credencial),item,user['almacen'],user['ubicacion'],self.fecha_datetime).validar()
                 if not s:
                     raise Exception(f'El articulo {item["nombre"]} no tiene stock\nStock disponible : {cant}\nCantidad ingresada: {item["cantidad"]}')
+           
                 
             sql = f"""SELECT b.doc_serie,b.doc_docum,a.ori_codigo FROM t_usuario AS a
                     INNER JOIN  t_documento AS b ON 
@@ -116,7 +120,7 @@ class Facturacion(GenericAPIView):
                     """
 
             s,result = CAQ.request(self.credencial,sql,(user['cod'],),'get',0)
-  
+         
             if not s:
                 raise Exception('Error al consultar por tipo de documento')
             if result is None:
@@ -126,6 +130,7 @@ class Facturacion(GenericAPIView):
                 raise Exception(f'Error, la serie no es de boletas {self.serie}')
             if datos['tipo_documento']==2 and self.serie[0]!='F':
                 raise Exception(f'Error, la serie no es de facturacion {self.serie}')
+   
             if self.validar_condicion_pago()!='CO':
                 raise Exception('La condicion de pago debe ser al contado')
 
@@ -133,10 +138,13 @@ class Facturacion(GenericAPIView):
             self.save_guid()
             self.update_documento()
             self.save_mova()
+
             instance = Factura(self.credencial,self.serie,self.numero)
+         
             instance.generate_json()
             instance.enviar()
             documento = 'boleta' if self.request.data['tipo_documento']==1 else 'factura'
+          
             data['success'] = f"La {documento} se genero exitosamente"
             data['codigo'] = self.mov_compro
         except Exception as e:
@@ -189,19 +197,21 @@ class Facturacion(GenericAPIView):
         except:
             raise
     def validar_fecha(self,date):
+       
         try:
-            datetime.strptime(date,'%d/%m%/%Y')
+            print(date,1)
+            datetime.strptime(date,'%d/%m/%Y')
             return True
-        except:
+        except Exception as e:
+            print(str(e))
             return False
-    def convert_date_string(self,fecha:str):
-        if self.validar_fecha(fecha):
-            if self.request.data['config']['guid_lote']:
-                return fecha
-            else:
-                return '-'.join(i for i in reversed(fecha.split('/')))
+    
+    def convert_date_string(self,fecha):
+        self.fecha_string = fecha
+        if(self.validar_fecha(fecha)):
+            self.fecha_datetime = '-'.join(i for i in reversed(fecha.split('/')))
         else:
-            raise Exception('Formato de fecha invalida')
+            raise Exception('Error en el formato de la fecha de vencimiento')
     def save_guid(self):
         items = self.request.data['detalle']
         datos = self.request.data
@@ -212,10 +222,12 @@ class Facturacion(GenericAPIView):
         ubicacion = self.parametros.ubicacion if datos['ubicacion']=='' else datos['ubicacion']
 
         try:
+
             for item in items:
+                self.convert_date_string(item['fecha'])
                 params = (almacen,self.date.strftime('%m'),str(self.mov_compro).zfill(11),'03',self.date.strftime('%Y-%m-%d'),item['codigo'],'S','04',
                           ubicacion,ubicacion,item['cantidad'],float(item['subtotal']),self.config.moneda,self.tipo_cambio(),item['precio'],user['cod'],
-                          self.date.strftime('%Y-%m-%d'),codigo_tipo_documento,'S','',float(item['descuento']),1,item['lote'],item['fecha'])
+                          self.date.strftime('%Y-%m-%d'),codigo_tipo_documento,'S','',float(item['descuento']),1,item['lote'],self.fecha_string)
                 
                 sql = f"""
                             INSERT INTO guid{self.date.year} (ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,mom_fecha,art_codigo,mom_tipmov,ope_codigo,
@@ -236,7 +248,7 @@ class Facturacion(GenericAPIView):
                 params.pop(-7)
                 params.pop()
                 params.pop()
-                params = (*params,f"{self.serie}-{self.numero}",self.cliente.codigo,'03',item['lote'],item['fecha'])
+                params = (*params,f"{self.serie}-{self.numero}",self.cliente.codigo,'03',item['lote'],self.fecha_datetime)
            
                 sql = f""" INSERT INTO movm{self.date.year}(
                             ALM_CODIGO,MOM_MES,mom_d_int,mom_retip2,mom_fecha,art_codigo,mom_tipmov,ope_codigo,

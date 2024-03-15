@@ -1,6 +1,7 @@
 from rest_framework import routers
 from django.urls import path,include
 
+from apirest.view.cuadre_caja.views import CuadreCajaView,SaveCuadreCaja
 from apirest.view.nota_pedido.views import NotaPedido
 
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
@@ -28,7 +29,7 @@ from apirest.view.incidencias.views import RegistroIncidecias
 from apirest.view.articulos.views import ArticuloStock,ArticuloLote,ArticulosFacturacion
 from apirest.view.facturacion.views import Facturacion
 from apirest.view.ticket.views import TicketFactura,TickeNP
-
+from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
@@ -93,7 +94,10 @@ urlpatterns = [
     path('v1/save/client/<str:ruc>/',RegisterSampleClient.as_view()),
     #FACTURA
     path('v1/factura/create/<str:ruc>/',Facturacion.as_view()),
+    path('v1/list/documentos/<str:ruc>/',EmisionDocumentos.as_view()),
     path('v1/ticket/factura/<str:ruc>/',TicketFactura.as_view()),
+    path('v1/enviar/documento/<str:ruc>/',EnviarDocumento.as_view()),
+    path('v1/verificar/documento/<str:ruc>/',VerificarEstado.as_view()),
 
     #TIPO DE PAGO
     path('tipo/pago/<str:host>/<str:db>/<str:user>/<str:password>/',TipoPago.as_view()),
@@ -147,6 +151,10 @@ urlpatterns = [
     path('val/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ValidateView.as_view()),
     path('del/<str:host>/<str:db>/<str:user>/<str:password>/<str:identi>/<str:mom_d_int>/',DeleteInventario.as_view()),
     path('val/lote/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',InventarioWithLote.as_view()),
+
+    #CUADRE DE CAJA
+    path('v1/cuadre/caja/<str:ruc>/',CuadreCajaView.as_view()),
+    path('v1/save/caja/<str:ruc>/',SaveCuadreCaja.as_view()),
 
 
     #LIQUIDACION DE REGALOS
