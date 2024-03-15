@@ -1,15 +1,22 @@
 from datetime import datetime
 class ValidacionStock:
-    def __init__(self,conn,item,almacen,ubicacion):
+    def __init__(self,conn,item,almacen,ubicacion,fecha=None):
         self.conn = conn
         self.item = item
         self.codigo = item['codigo']
         self.lote = item['lote']
-        self.fecha = item['fecha']
+        self.fecha_ = item['fecha'] if fecha is None else fecha
+        self.fecha = self.convert_fecha(self.fecha_)
         self.ubicacion = ubicacion
         self.almacen = almacen
         self.estado : bool = False
-  
+    def convert_fecha(self,date):
+        fecha = ''
+        try:
+            fecha = '-'.join(i for i in reversed(date.split('/')))
+        except:
+            fecha = date
+        return fecha
     def validar(self):
        
         sql = f"""
@@ -34,12 +41,13 @@ class ValidacionStock:
                         f"AND mom_lote='{self.fecha}' " if self.fecha!='' else ''
                     }
                 """
-  
+     
         cursor = self.conn.cursor()
         params = (self.codigo,self.almacen,self.ubicacion)
+       
         cursor.execute(sql,params)
         data = cursor.fetchone()
-   
+
         self.conn.commit()
         self.conn.close()
         self.estado =  data[0]>float(self.item['cantidad'])

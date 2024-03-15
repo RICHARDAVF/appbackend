@@ -472,7 +472,7 @@ class ArticulosFacturacion(GenericAPIView):
             fecha_vencimiento = codigo_qr[-10:]
             lote = codigo_qr[longitud:-10]
 
-            self.fecha = self.convert_date_string(fecha_vencimiento)
+            self.fecha = fecha_vencimiento# self.convert_date_string(fecha_vencimiento)
 
             self.lote = lote 
             self.codigo= codigo

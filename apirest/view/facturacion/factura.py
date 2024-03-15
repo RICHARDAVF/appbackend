@@ -66,7 +66,6 @@ class Factura:
         self.guic = GUIC(self.credencial,self.serie,self.numero)
         self.json = {}
     def generate_json(self):
-      
         try:
             self.json['tipoOperacion'] = '0101'
             self.json['serie'] = self.serie
@@ -90,7 +89,6 @@ class Factura:
         except Exception as e:
             raise Exception(str(e))
     def receptor(self):
-
         data = {
             'tipo':1 if len(self.guic.ruc)==8 else 6,
             'nro':self.guic.ruc,
@@ -165,10 +163,10 @@ class Factura:
         sql = "SELECT  TOP 1 par_url,par_acekey,par_seckey FROM fe_parametro"
         s,result = CAQ.request(self.credencial,sql,(),'get',0)
         url = result[0].strip()
-        # access_key = result[1].strip()
-        # secret_key = result[2].strip()
-        access_key = os.getenv('ACCESS_KEY')
-        secret_key=os.getenv('SECRET_KEY')
+        access_key = result[1].strip()
+        secret_key = result[2].strip()
+        # access_key = os.getenv('ACCESS_KEY')
+        # secret_key=os.getenv('SECRET_KEY')
         token,timestap = GenerateToken(access_key=access_key,secret_key=secret_key).encryptdates()
         ruta = 'boleta' if self.serie[0]=='B' else ('factura' if self.serie[0]=='F' else 'error')
         if ruta=='error':
@@ -192,5 +190,6 @@ class Factura:
             s,_ =  CAQ.request(self.credencial,sql,params,'post')
             if not s:
                 raise Exception('Error al actualizar el estado de la recepcion')
+            
         except Exception as e:
             raise Exception(str(e))
