@@ -14,15 +14,19 @@ class EmisionDocumentos (GenericAPIView):
         data = {}
         datos = request.data
         self.credencial = Credencial(datos['credencial'])
+        self.desde = ''
+        self.hasta = ''
         s,desde,hasta = self.range_years(datos['desde'],datos['hasta'])
+        self.desde = desde
+        self.hasta = hasta
         try:
             resultados = []
             if  s:
                 raise Exception('Error en el rango de fecha')
             for y in range(int(desde[:4]),int(hasta[:4])+1,1):
                 sql = self.command_sql(y)
-                
-                s,res = CAQ.request(self.credencial,sql,(desde,hasta),'get',1)
+                print(sql)
+                s,res = CAQ.request(self.credencial,sql,(),'get',1)
               
                 if not s:
                     raise Exception ('Error el sonsultar pro los documentos')
@@ -61,10 +65,11 @@ class EmisionDocumentos (GenericAPIView):
                 FROM GUIC{year} AS a 
                 LEFT JOIN t_auxiliar AS b ON a.mov_codaux=b.aux_clave 
                 WHERE 
-                    a.MOV_FECHA BETWEEN ? AND ? 
-                    AND a.doc_codigo='01' 
-                    --AND a.elimini=0 
-                    --AND a.gui_cdrfe=0 
+                    a.MOV_FECHA BETWEEN '{self.desde}' AND '{self.hasta}'
+                    AND a.doc_codigo='03' 
+                    AND a.elimini=0 
+                    AND a.gui_cdrfe=0
+                     
                     AND a.doc_compro IN ('01','06','07','08','20') 
                     AND LEFT(a.fac_serie,1) IN ('B','F')
                 ORDER BY a.mov_fecha DESC 
