@@ -1,7 +1,7 @@
 from rest_framework import routers
 from django.urls import path,include
 
-from apirest.view.cuadre_caja.views import CuadreCajaView,SaveCuadreCaja
+from apirest.view.cuadre_caja.views import CuadreCajaView, ListCuadreCaja,SaveCuadreCaja
 from apirest.view.nota_pedido.views import NotaPedido
 
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
@@ -28,7 +28,7 @@ from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga
 from apirest.view.incidencias.views import RegistroIncidecias
 from apirest.view.articulos.views import ArticuloStock,ArticuloLote,ArticulosFacturacion
 from apirest.view.facturacion.views import Facturacion
-from apirest.view.ticket.views import TicketFactura,TickeNP
+from apirest.view.ticket.views import TicketCuadreCaja, TicketFactura,TicketNP
 from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
@@ -120,7 +120,7 @@ urlpatterns = [
     path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
     path('v1/list/pedido/<str:ruc>/',ListPedidos.as_view()),
     #TICKET
-    path('v1/ticket/pedido/<str:ruc>/',TickeNP.as_view()),
+    path('v1/ticket/pedido/<str:ruc>/',TicketNP.as_view()),
 
     
     #AGENCIAS
@@ -155,6 +155,8 @@ urlpatterns = [
     #CUADRE DE CAJA
     path('v1/cuadre/caja/<str:ruc>/',CuadreCajaView.as_view()),
     path('v1/save/caja/<str:ruc>/',SaveCuadreCaja.as_view()),
+    path('v1/list/caja/<str:ruc>/',ListCuadreCaja.as_view()),
+    path('v1/ticket/caja/<str:ruc>/',TicketCuadreCaja.as_view()),
 
 
     #LIQUIDACION DE REGALOS
