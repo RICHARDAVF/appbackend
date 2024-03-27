@@ -1,7 +1,5 @@
 from datetime import datetime
-
 import requests
-
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 class TipoCambio:
