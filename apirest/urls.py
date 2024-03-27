@@ -31,6 +31,7 @@ from apirest.view.facturacion.views import Facturacion
 from apirest.view.ticket.views import TicketCuadreCaja, TicketFactura,TicketNP
 from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
+from apirest.view.cotizacion.views import Cotizacion
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -84,6 +85,9 @@ urlpatterns = [
     path('v1/art/lote/<str:ruc>/',ArticuloLote.as_view()),
     path('v1/art/fact/<str:ruc>/',ArticulosFacturacion.as_view()),
     
+    # COTIZACION
+    path('v1/list/cotiza/<str:ruc>/',Cotizacion.as_view()),
+
 
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
