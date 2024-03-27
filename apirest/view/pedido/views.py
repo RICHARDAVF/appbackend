@@ -340,7 +340,6 @@ class GuardarPedido(GenericAPIView):
     message = 'El pedido se guardo con exito'
     bk_message = 'NUEVO(APPV1)'
     anio = datetime.now().year
-
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
