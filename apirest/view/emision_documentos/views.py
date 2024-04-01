@@ -125,7 +125,6 @@ class VerificarEstado(GenericAPIView):
                 data['msg'] = values['descripcion']
             elif ('codigo' in values) and (values['codigo']!='0'):
                 data['msg'] = values['descripcion']
-
                 self.update_documento(int(values['fechaEmision'][:4]),datos['serie'],datos['numero'])
             else:
                 data['error'] = values['message']
@@ -134,13 +133,25 @@ class VerificarEstado(GenericAPIView):
         return Response(data)
     def update_documento(self,year,serie,numero):
         try:
-            sql = f"""UPDATE guic{year} SET gui_recefe=1,gui_cdrfe=1 
+            sql = f"""UPDATE guic{year} SET gui_recefe=1,gui_cdrfe=1,
+            elimini=1  OUTPUT inserted.MOV_COMPRO 
             WHERE 
                 fac_serie=?
                 AND fac_docum=?"""
-            s,_ = CAQ.request(self.credencial,sql,(serie,numero),'post')
-            print(s,_)
-            if not s:
-                raise Exception('Error al actualizar estado de recepcion')
+            conn = CAQ().conexion(self.credencial)
+            cursor = conn.cursor()
+          
+            params = (serie,numero)
+            cursor.execute(sql,params)
+            mov_compro = cursor.fetchone()[0]
+            sql = f"""UPDATE guid{year} SET ELIMINI=1 WHERE mov_compro=?"""
+            cursor.execute(sql,(mov_compro,))
+            sql = f""" UPDATE mova{year} SET MOV_ELIMIN=1 WHERE mov_serie=? AND mov_docum=?"""
+            cursor.execute(sql,(serie,numero))
+            sql = f"DELETE FROM movm{year} WHERE mom_redoc2=?"
+            cursor.execute(sql,(f"{serie}-{numero}",))
+            conn.commit()
+            conn.close()
         except Exception as e:
+            print(str(e))
             raise Exception(str(e))
