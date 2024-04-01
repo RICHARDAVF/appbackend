@@ -29,7 +29,7 @@ SECRET_KEY = get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #Desarrollo
-DEBUG = os.getenv('DEBUG_MODE')
+DEBUG = os.getenv('DEBUG_MODE')!="False"
 
 ALLOWED_HOSTS = ['*']
 
