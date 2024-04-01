@@ -120,7 +120,6 @@ class VerificarEstado(GenericAPIView):
                 'Content-Type':'application/json'
             })
             values = res.json()
-            print(values)
             if ('codigo' in values) and (values['codigo']=='0'):
                 data['msg'] = values['descripcion']
             elif ('codigo' in values) and (values['codigo']!='0'):

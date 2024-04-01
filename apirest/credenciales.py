@@ -1,6 +1,4 @@
 from apirest.querys import CAQ
-
-
 class Credencial:
     host:str = None
     name:str = None
