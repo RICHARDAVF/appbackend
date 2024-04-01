@@ -15,8 +15,6 @@ class NotaPedido(GenericAPIView):
             data['ubicacion'] = self.ubicacion()
             data['lista_precios'] = self.lista_precios()
             data['caida_codigo'] = self.caidaCodigo()
-
-       
         except:
             data['error'] = f"Ocurrio un error recuperar datos para la nota de pedido"
         return Response(data)
