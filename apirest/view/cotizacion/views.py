@@ -8,7 +8,8 @@ class Cotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
-
+        desde = '-'.join(datos['desde'].split('-')[::-1])
+        hasta = '-'.join(datos['hasta'].split('-')[::-1])
         self.credencial = Credencial(datos['credencial'])
         try:
             sql = f"""
@@ -52,7 +53,7 @@ class Cotizacion(GenericAPIView):
                                 a.identi,a.elimini,
                                 'ot_fac_bol'=ISNULL(STUFF((SELECT char(10)+rtrim(z23.fac_serie)+'-'+rtrim(z23.fac_docum)+' ' FROM guic2024 z23, guid2024 z24 
                                                                                 WHERE z23.MOV_COMPRO=z24.mov_compro 
-                                                                                    AND z24.mov_ot=(SELECT TOP 1 y3.mov_compro FROM cabetecnico y3 
+                                                                                    AND z24.mov_ot in(SELECT y3.mov_compro FROM cabetecnico y3 
                                                                                                     WHERE y3.mov_cotiza=a.mov_compro 
                                                                                                     AND y3.elimini=0) 
                                                                                                     AND z23.elimini=0
@@ -60,7 +61,7 @@ class Cotizacion(GenericAPIView):
                                                                                                     GROUP BY z23.fac_serie,z23.fac_docum for xml path('')),1,1,''),''),
                                 'ot_f_facbo'=ISNULL((SELECT TOP 1 z233.mov_fecha FROM guic2024 z233, guid2024 z243 
                                                     WHERE z233.MOV_COMPRO=z243.mov_compro 
-                                                    AND z243.mov_ot=(SELECT TOP 1 y33.mov_compro FROM cabetecnico y33 
+                                                    AND z243.mov_ot in(SELECT y33.mov_compro FROM cabetecnico y33 
                                                                         WHERE y33.mov_cotiza=a.mov_compro 
                                                                             AND y33.elimini=0) 
                                                                             AND z233.elimini=0 
@@ -73,45 +74,45 @@ class Cotizacion(GenericAPIView):
                                                          AND z2333.fac_docum<>''),0),
                                 a.rou_igv,a.rou_bruto,
                                 'gui_ot'=ISNULL((SELECT TOP 1 rtrim(z5.gui_serie)+'-'+rtrim(z5.gui_docum) FROM guic2024 z5 
-                                                WHERE z5.tec_devol=(SELECT TOP 1 y5.mov_compro FROM cabetecnico y5 
+                                                WHERE z5.tec_devol in(SELECT y5.mov_compro FROM cabetecnico y5 
                                                                     WHERE y5.mov_cotiza=a.MOV_COMPRO 
                                                                     AND y5.elimini=0) 
                                                                     AND z5.elimini=0 
                                                                     AND z5.gui_docum<>''),''),
                                 'oguia_fb'=ISNULL((SELECT TOP 1 rtrim(z222.ser_vargui)+'-'+rtrim(z222.fac_vargui) FROM guic2024 z222 
-                                                    WHERE z222.tec_devol=(SELECT TOP 1 yyy.mov_compro FROM cabetecnico yyy 
+                                                    WHERE z222.tec_devol in(SELECT yyy.mov_compro FROM cabetecnico yyy 
                                                                         WHERE yyy.mov_cotiza=a.mov_compro 
                                                                         AND yyy.elimini=0) 
                                                                         AND z222.elimini=0 
                                                                         AND z222.gui_docum<>'' 
                                                                         AND z222.fac_vargui<>''),''),
                                 'oguia_f_fb'=ISNULL((SELECT TOP 1 z2222.fec_vargui FROM guic2024 z2222 
-                                                    WHERE z2222.tec_devol=(SELECT TOP 1 yyyy.mov_compro FROM cabetecnico yyyy 
+                                                    WHERE z2222.tec_devol in(SELECT yyyy.mov_compro FROM cabetecnico yyyy 
                                                                             WHERE yyyy.mov_cotiza=a.mov_compro 
                                                                             AND yyyy.elimini=0) AND z2222.elimini=0 
                                                                             AND z2222.gui_docum<>'' 
                                                                             AND z2222.fac_vargui<>''),''),
                                 'oguia_m_fb'=ISNULL((SELECT TOP 1 z2222.rou_tventa FROM guic2024 z2222 
-                                                    WHERE z2222.tec_devol=(SELECT TOP 1 yyyy.mov_compro FROM cabetecnico yyyy 
+                                                    WHERE z2222.tec_devol in(SELECT yyyy.mov_compro FROM cabetecnico yyyy 
                                                                             WHERE yyyy.mov_cotiza=a.mov_compro 
                                                                             AND yyyy.elimini=0) 
                                                                             AND z2222.elimini=0 
                                                                             AND z2222.gui_docum<>'' 
                                                                             AND z2222.fac_vargui<>''),0),
                                 'ofb_bol'=ISNULL((SELECT TOP 1 rtrim(z2.fac_serie)+'-'+rtrim(z2.fac_docum) FROM guic2024 z2 
-                                                    WHERE z2.tec_devol=(SELECT TOP 1 y.mov_compro FROM cabetecnico y 
+                                                    WHERE z2.tec_devol in(SELECT y.mov_compro FROM cabetecnico y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z2.elimini=0 
                                                                         AND z2.fac_docum<>''),''),
                                 'ofb_fecha'=ISNULL((SELECT TOP 1 z.mov_fecha FROM guic2024 z 
-                                                    WHERE z.tec_devol=(SELECT TOP 1 y.mov_compro FROM cabetecnico y 
+                                                    WHERE z.tec_devol in(SELECT y.mov_compro FROM cabetecnico y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z.elimini=0 
                                                                         AND z.fac_docum<>''),''),
                                 'ofb_monto'=ISNULL((SELECT TOP 1 z.rou_tventa FROM guic2024 z 
-                                                    WHERE z.tec_devol=(SELECT TOP 1 y.mov_compro FROM cabetecnico y 
+                                                    WHERE z.tec_devol in(SELECT y.mov_compro FROM cabetecnico y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z.elimini=0 
@@ -148,10 +149,11 @@ class Cotizacion(GenericAPIView):
                             LEFT JOIN t_colores j on a.cot_color=j.col_codigo 
                             LEFT JOIN movicotiza pp on a.MOV_COMPRO=pp.mov_compro 
                             LEFT JOIN t_articulo qq on pp.ART_CODIGO=qq.ART_CODIGO 
-                            WHERE YEAR(a.mov_fecha)='2024' 
-                                AND a.mov_fecha>='2024-01-01' 
-                                AND a.mov_fecha<='2024-03-23' 
+                            WHERE YEAR(a.mov_fecha)='{datetime.now().year}'
+                                AND a.mov_fecha>='{desde}'
+                                AND a.mov_fecha<='{hasta}'
                     """
+        
             estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPADO','3':'RECHAZADO'} 
             servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS'}
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
@@ -172,6 +174,7 @@ class Cotizacion(GenericAPIView):
                 } for index,value in enumerate(result)
             ]
             data = [data[i:i+100] for i in range(0,len(data),100) ]
+            print(data)
         except Exception as e:
             data['error'] = str(e)
 
@@ -179,6 +182,7 @@ class Cotizacion(GenericAPIView):
 class GuardarCotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         self.datos = request.data
+        self.usuario = self.datos['usuario']
         print(self.datos)
         self.fecha = datetime.now()
         self.credencial = Credencial(self.datos['credencial'])
@@ -186,21 +190,45 @@ class GuardarCotizacion(GenericAPIView):
         self.codigo_operacion = ''
         data = {}
         try:
-            sql = f"""SELECT TOP 1 mov_compro FROM cabepedido WHERE SUBSTRING(mov_compro,1,3)=? ORDER BY mov_compro DESC"""
-            params = (self.datos['vendedor']['codigo'],)
+            sql = f"""SELECT TOP 1 mov_compro FROM cabecotiza WHERE SUBSTRING(mov_compro,1,3)=? ORDER BY mov_compro DESC"""
+            params = (self.usuario['codigo'],)
             s,result = CAQ.request(self.credencial,sql,params,'get',0)
+          
             if not s:
                 raise Exception('No se pudo recuperar el correlativo anterio')
             if result is None:
-                result = ['1']
-            self.numero_cotizacion = str(self.datos['vendedor']['codigo'])+'-'+str(int(result[0].split('-')[-1])+1).zfill(7)
+                result = ['0-0']
+            self.numero_cotizacion = str(self.usuario['codigo'])+'-'+str(int(result[0].split('-')[-1])+1).zfill(7)
+    
             sql = f""" SELECT ope_codigo FROM t_parrametro WHERE par_anyo='{self.fecha.year}'"""
             s,result = CAQ.request(self.credencial,sql,(),'get',0)
             if not s:
                 raise Exception('Error al recuperar el codigo de operacion')
             self.codigo_operacion = result[0].strip()
-            params = (self.numero_cotizacion,)
-            sql = f"""INSERT INTO cabecotiza() VALUES({','.join('?' for i in params)})"""
+            params = (self.numero_cotizacion,self.fecha.strftime('%Y-%m-%d'),self.datos['codigo'],'F1',self.datos['moneda'],self.usuario['cod'],
+                      self.fecha.strftime('%Y-%m-%d'),0,18,0,0,1,self.datos['ubicacion'],self.datos['tipo_pago'],self.datos['direccion'],
+                      self.usuario['codigo'],0,'05',self.datos['ubicacion'],self.datos['ruc'],1,self.datos['modelo_codigo'],self.datos['placa'],
+                      self.datos['chasis'],self.datos['year'],self.datos['color_codigo'],self.datos['operacion'],self.datos['orden_compra'],
+                      self.datos['vehiculos'],self.datos['servicio'],self.datos['dias_validez'],self.datos['contacto'])
+          
+            sql = f"""INSERT INTO cabecotiza(MOV_COMPRO,mov_fecha,MOV_CODAUX,DOC_CODIGO,MOV_MONEDA,USUARIO,FECHAUSU,
+            ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,rou_export,ubi_codigo,pag_codigo,gui_direc,ven_codigo,rou_submon,
+            ope_codigo,ubi_codig2,gui_ruc,gui_inclu,cot_modelo,cot_placa,cot_chasis,cot_anyo,cot_color,cot_flota,gui_ordenc,
+            gui_diaofe,cot_chk01,cot_chk07,aux_contac) VALUES({','.join('?' for i in params)})"""
+            s,_ = CAQ.request(self.credencial,sql,params,'post')
+            if not s:
+                raise Exception('Error al guardar los datos de cotizacion')
+            for item in self.datos['detalle']:
+                params = (self.datos['almacen'],str(self.fecha.month).zfill(2),self.numero_cotizacion,'F1',self.fecha.strftime('%Y-%m-%d'),
+                          item['codigo'],'S','04',item['cantidad'],0,item['precio'],self.usuario['cod'],self.fecha.strftime('%Y-%m-%d'),
+                          'S',1) 
+                sql = f"""
+            INSERT INTO movicotiza(ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,MOM_FECHA,ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,MOM_CANT,
+            mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,gui_inclu) VALUES ({','.join('?' for i in params)})"""
+                s,_ = CAQ.request(self.credencial,sql,params,'post')
+                if not s:
+                    raise Exception('Error al guardar los articulos de la cotizacion')
+            data['msg'] = 'La cotizacion se guardo con exito'
         except Exception as e:
             data['error'] = str(e)
         return Response(data)

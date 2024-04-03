@@ -16,13 +16,14 @@ class Cliente:
     direccion : str = None
     codigo : str = None
     documento : str = None
+    telefono: str = None
     def __init__(self,documento:str,credencial:object):
         self.documento = documento
         self.credencial = credencial
         self.get_cliente()
     def get_cliente(self):
         try:
-            sql = f"""SELECT AUX_DOCUM,AUX_RAZON,aux_cuenta,aux_cuentd,aux_direcc,aux_clave FROM t_auxiliar WHERE AUX_DOCUM=?"""
+            sql = f"""SELECT AUX_DOCUM,AUX_RAZON,aux_cuenta,aux_cuentd,aux_direcc,aux_clave,aux_telef FROM t_auxiliar WHERE AUX_DOCUM=?"""
             _,result = CAQ.request(self.credencial,sql,(self.documento,),'get',0)
     
             self.ruc = result[0].strip()
@@ -31,6 +32,7 @@ class Cliente:
             self.cuenta_dolares = result[3].strip()
             self.direccion = result[4].strip()
             self.codigo = result[5].strip()
+            self.telefono = result[6].strip()
         except :
             raise
 class Parametros:
@@ -176,11 +178,12 @@ class Facturacion(GenericAPIView):
             vuelto = abs(sum(float(item['subtotal']) for item in datos['detalle'])-self.vuelto())
             tarjeta1 = datos['tarjeta1'] if datos['tarjeta1']!='-1' else ''
             tarjeta2 = datos['tarjeta2'] if datos['tarjeta2']!='-1' else ''
+            obs = datos['obs']+self.cliente.telefono if  datos['credencial']['codigo']== '2' else datos['obs']
             params = (str(self.mov_compro).zfill(11),self.date.strftime('%Y-%m-%d'),self.cliente.codigo,'03',self.config.moneda,tipo_cambio,user['cod'],self.date.strftime('%Y-%m-%d'),
                       base_imponible,'18',ivg,total,self.suma_subtotal(),1,1,1,self.serie,self.numero,ubicacion,datos['tipo_pago'],self.cliente.direccion,
                       '01',codigo_tipo_documento,user['codigo'],almacen,self.date.strftime('%m'),'01',self.cliente.razon_social,self.date.strftime('%Y-%m-%d'),
                       self.cliente.ruc,'04',descuento,1,vuelto,tarjeta1,datos['num1_tarjeta'],datos['monto1'],tarjeta2,datos['num2_tarjeta'],datos['monto2'],float(datos['efectivo']),
-                      datos['obs'],self.codigo_origen,round(self.vuelto(),2))
+                      obs,self.codigo_origen,round(self.vuelto(),2))
             sql = f"""
                     INSERT INTO guic{self.date.year} (
                         MOV_COMPRO,mov_fecha,MOV_CODAUX,DOC_CODIGO,MOV_MONEDA,mov_t_c,usuario,FECHAUSU,
@@ -199,11 +202,11 @@ class Facturacion(GenericAPIView):
     def validar_fecha(self,date):
        
         try:
-            print(date,1)
+           
             datetime.strptime(date,'%d/%m/%Y')
             return True
         except Exception as e:
-            print(str(e))
+
             return False
     
     def convert_date_string(self,fecha):
