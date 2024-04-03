@@ -19,7 +19,7 @@ from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Guia,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
 from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido
-from apirest.view.apps.views import DownloadAppView,DownloadAppMapring
+from apirest.view.apps.views import DownloadAppView,DownloadAppMapring,DownloadAppV1
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
 from apirest.view.general.views import (Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros,
@@ -31,7 +31,7 @@ from apirest.view.facturacion.views import Facturacion
 from apirest.view.ticket.views import TicketCuadreCaja, TicketFactura,TicketNP
 from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
-from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion
+from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion,CotizacionVars
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -88,6 +88,7 @@ urlpatterns = [
     # COTIZACION
     path('v1/list/cotiza/<str:ruc>/',Cotizacion.as_view()),
     path('v1/save/cotiza/<str:ruc>/',GuardarCotizacion.as_view()),
+    path('v1/vars/cotiza/<str:ruc>/',CotizacionVars.as_view()),
 
 
     #CLIENTES
@@ -187,6 +188,7 @@ urlpatterns = [
     #VERSION DE LA APLICACION MOVIL ANDROID
     path('check/version/app/',VersionAppView.as_view()),
     path('download/app/',DownloadAppView.as_view()),
+    path('v2/download/app/',DownloadAppV1.as_view()),
 
     #APLICACION MAPRING 
     path('v1/download/app/',DownloadAppMapring.as_view()),
