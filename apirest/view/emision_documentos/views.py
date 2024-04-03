@@ -139,7 +139,6 @@ class VerificarEstado(GenericAPIView):
                 AND fac_docum=?"""
             conn = CAQ().conexion(self.credencial)
             cursor = conn.cursor()
-          
             params = (serie,numero)
             cursor.execute(sql,params)
             mov_compro = cursor.fetchone()[0]
