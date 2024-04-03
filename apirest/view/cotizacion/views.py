@@ -204,3 +204,41 @@ class GuardarCotizacion(GenericAPIView):
         except Exception as e:
             data['error'] = str(e)
         return Response(data)
+
+class CotizacionVars(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        data = {}
+        action = datos["action"]
+        try:
+            if action == 'modelo':
+                sql = "SELECT det_codigo,det_nombre FROM t_detalle"
+                s,result = CAQ.request(self.credencial,sql,(),"get",1)
+               
+                if not s:
+                    raise Exception("Error al recuperar los modelos de vehiculos")
+                data=[
+                    {
+                        "id":index,
+                        "codigo":value[0].strip(),
+                        "modelo":value[1].strip()
+                    } for index,value in enumerate(result)
+                ]
+            elif action == "color":
+                sql = "SELECT col_codigo,col_nombre FROM t_colores"
+                s,result = CAQ.request(self.credencial,sql,(),'get',1)
+                if not s:
+                    raise Exception("Error al recuperar colores de los vehiculos")
+                data = [
+                    {
+                        "id":index,
+                        "codigo":value[0].strip(),
+                        "color":value[1].strip()
+                    } for index,value in enumerate(result)
+                ] 
+            else:
+                data['error'] = "Opcion valida"
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)
