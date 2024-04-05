@@ -1,11 +1,11 @@
 from datetime import datetime
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 class Cotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
+        self.fecha = datetime.now()
         data = {}
         datos = request.data
         desde = '-'.join(datos['desde'].split('-')[::-1])
@@ -22,7 +22,7 @@ class Cotizacion(GenericAPIView):
 
                                 'guia'=ISNULL(
                                         (SELECT TOP 1 rtrim(z22.gui_serie)+'-'+rtrim(z22.gui_docum) 
-                                        FROM guic2024 z22 WHERE z22.mov_pedido=(
+                                        FROM guic{self.fecha.year} z22 WHERE z22.mov_pedido=(
                                                             SELECT TOP 1 yy.mov_compro FROM cabepedido yy 
                                                             WHERE yy.mov_cotiza=a.mov_compro 
                                                                 AND yy.elimini=0) 
@@ -36,102 +36,101 @@ class Cotizacion(GenericAPIView):
                                 'ope_nombre'=ISNULL(c.ope_nombre,''),
                                 'pedido'=ISNULL((SELECT TOP 1 z.mov_compro FROM cabepedido z WHERE z.mov_cotiza=a.mov_compro 
                                                                                                 AND z.elimini=0),''),
-                                'fac_bol'=ISNULL((SELECT TOP 1 rtrim(z2.fac_serie)+'-'+rtrim(z2.fac_docum) FROM guic2024 z2     
+                                'fac_bol'=ISNULL((SELECT TOP 1 rtrim(z2.fac_serie)+'-'+rtrim(z2.fac_docum) FROM guic{self.fecha.year} z2     
                                                 where z2.mov_pedido=(SELECT TOP 1 y.mov_compro FROM cabepedido y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z2.elimini=0                                                                                                                                         AND z2.fac_docum<>''),''),
-                                'fac_fecha'=ISNULL((SELECT TOP 1 z.mov_fecha FROM guic2024 z 
+                                'fac_fecha'=ISNULL((SELECT TOP 1 z.mov_fecha FROM guic{self.fecha.year} z 
                                                     WHERE z.mov_pedido=(SELECT TOP 1 y.mov_compro FROM cabepedido y 
                                                                         WHERE y.mov_cotiza=a.mov_compro and y.elimini=0) 
                                                                         AND z.elimini=0 and z.fac_docum<>''),''),
-                                'fac_monto'=ISNULL((SELECT TOP 1 z.rou_tventa FROM guic2024 z 
+                                'fac_monto'=ISNULL((SELECT TOP 1 z.rou_tventa FROM guic{self.fecha.year} z 
                                                     WHERE z.mov_pedido=(SELECT TOP 1 y.mov_compro FROM cabepedido y 
                                                     WHERE y.mov_cotiza=a.mov_compro 
                                                         AND y.elimini=0) 
                                                         AND z.elimini=0 and z.fac_docum<>''),0),
                                 a.identi,a.elimini,
-                                'ot_fac_bol'=ISNULL(STUFF((SELECT char(10)+rtrim(z23.fac_serie)+'-'+rtrim(z23.fac_docum)+' ' FROM guic2024 z23, guid2024 z24 
+                                'ot_fac_bol'=ISNULL(STUFF((SELECT char(10)+rtrim(z23.fac_serie)+'-'+rtrim(z23.fac_docum)+' ' FROM guic{self.fecha.year} z23, guid{self.fecha.year} z24 
                                                                                 WHERE z23.MOV_COMPRO=z24.mov_compro 
                                                                                     AND z24.mov_ot in(SELECT y3.mov_compro FROM cabetecnico y3 
                                                                                                     WHERE y3.mov_cotiza=a.mov_compro 
-                                                                                                    AND y3.elimini=0) 
-                                                                                                    AND z23.elimini=0
+                                                                                                    AND y3.elimini=0)                                                              AND z23.elimini=0
                                                                                                     AND z23.fac_docum<>'' 
                                                                                                     GROUP BY z23.fac_serie,z23.fac_docum for xml path('')),1,1,''),''),
-                                'ot_f_facbo'=ISNULL((SELECT TOP 1 z233.mov_fecha FROM guic2024 z233, guid2024 z243 
+                                'ot_f_facbo'=ISNULL((SELECT TOP 1 z233.mov_fecha FROM guic{self.fecha.year} z233, guid{self.fecha.year} z243 
                                                     WHERE z233.MOV_COMPRO=z243.mov_compro 
                                                     AND z243.mov_ot in(SELECT y33.mov_compro FROM cabetecnico y33 
                                                                         WHERE y33.mov_cotiza=a.mov_compro 
                                                                             AND y33.elimini=0) 
                                                                             AND z233.elimini=0 
                                                                             AND z233.fac_docum<>''),''),
-                                'ot_m_facbo'=ISNULL((SELECT sum(z2433.mom_valor) FROM guic2024 z2333, guid2024 z2433, cabetecnico y3331 
+                                'ot_m_facbo'=ISNULL((SELECT sum(z2433.mom_valor) FROM guic{self.fecha.year} z2333, guid{self.fecha.year} z2433, cabetecnico y3331 
                                                         WHERE z2333.MOV_COMPRO=z2433.mov_compro 
                                                          AND z2433.mov_ot=y3331.mov_compro 
                                                          AND y3331.mov_cotiza=a.mov_compro 
                                                          AND z2333.elimini=0 
                                                          AND z2333.fac_docum<>''),0),
                                 a.rou_igv,a.rou_bruto,
-                                'gui_ot'=ISNULL((SELECT TOP 1 rtrim(z5.gui_serie)+'-'+rtrim(z5.gui_docum) FROM guic2024 z5 
+                                'gui_ot'=ISNULL((SELECT TOP 1 rtrim(z5.gui_serie)+'-'+rtrim(z5.gui_docum) FROM guic{self.fecha.year} z5 
                                                 WHERE z5.tec_devol in(SELECT y5.mov_compro FROM cabetecnico y5 
                                                                     WHERE y5.mov_cotiza=a.MOV_COMPRO 
                                                                     AND y5.elimini=0) 
                                                                     AND z5.elimini=0 
                                                                     AND z5.gui_docum<>''),''),
-                                'oguia_fb'=ISNULL((SELECT TOP 1 rtrim(z222.ser_vargui)+'-'+rtrim(z222.fac_vargui) FROM guic2024 z222 
+                                'oguia_fb'=ISNULL((SELECT TOP 1 rtrim(z222.ser_vargui)+'-'+rtrim(z222.fac_vargui) FROM guic{self.fecha.year} z222 
                                                     WHERE z222.tec_devol in(SELECT yyy.mov_compro FROM cabetecnico yyy 
                                                                         WHERE yyy.mov_cotiza=a.mov_compro 
                                                                         AND yyy.elimini=0) 
                                                                         AND z222.elimini=0 
                                                                         AND z222.gui_docum<>'' 
                                                                         AND z222.fac_vargui<>''),''),
-                                'oguia_f_fb'=ISNULL((SELECT TOP 1 z2222.fec_vargui FROM guic2024 z2222 
+                                'oguia_f_fb'=ISNULL((SELECT TOP 1 z2222.fec_vargui FROM guic{self.fecha.year} z2222 
                                                     WHERE z2222.tec_devol in(SELECT yyyy.mov_compro FROM cabetecnico yyyy 
                                                                             WHERE yyyy.mov_cotiza=a.mov_compro 
                                                                             AND yyyy.elimini=0) AND z2222.elimini=0 
                                                                             AND z2222.gui_docum<>'' 
                                                                             AND z2222.fac_vargui<>''),''),
-                                'oguia_m_fb'=ISNULL((SELECT TOP 1 z2222.rou_tventa FROM guic2024 z2222 
+                                'oguia_m_fb'=ISNULL((SELECT TOP 1 z2222.rou_tventa FROM guic{self.fecha.year} z2222 
                                                     WHERE z2222.tec_devol in(SELECT yyyy.mov_compro FROM cabetecnico yyyy 
                                                                             WHERE yyyy.mov_cotiza=a.mov_compro 
                                                                             AND yyyy.elimini=0) 
                                                                             AND z2222.elimini=0 
                                                                             AND z2222.gui_docum<>'' 
                                                                             AND z2222.fac_vargui<>''),0),
-                                'ofb_bol'=ISNULL((SELECT TOP 1 rtrim(z2.fac_serie)+'-'+rtrim(z2.fac_docum) FROM guic2024 z2 
+                                'ofb_bol'=ISNULL((SELECT TOP 1 rtrim(z2.fac_serie)+'-'+rtrim(z2.fac_docum) FROM guic{self.fecha.year} z2 
                                                     WHERE z2.tec_devol in(SELECT y.mov_compro FROM cabetecnico y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z2.elimini=0 
                                                                         AND z2.fac_docum<>''),''),
-                                'ofb_fecha'=ISNULL((SELECT TOP 1 z.mov_fecha FROM guic2024 z 
+                                'ofb_fecha'=ISNULL((SELECT TOP 1 z.mov_fecha FROM guic{self.fecha.year} z 
                                                     WHERE z.tec_devol in(SELECT y.mov_compro FROM cabetecnico y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z.elimini=0 
                                                                         AND z.fac_docum<>''),''),
-                                'ofb_monto'=ISNULL((SELECT TOP 1 z.rou_tventa FROM guic2024 z 
+                                'ofb_monto'=ISNULL((SELECT TOP 1 z.rou_tventa FROM guic{self.fecha.year} z 
                                                     WHERE z.tec_devol in(SELECT y.mov_compro FROM cabetecnico y 
                                                                         WHERE y.mov_cotiza=a.mov_compro 
                                                                         AND y.elimini=0) 
                                                                         AND z.elimini=0 
                                                                         AND z.fac_docum<>''),0),
-                                'guia_fact'=ISNULL((SELECT TOP 1 rtrim(z222.ser_vargui)+'-'+rtrim(z222.fac_vargui) FROM guic2024 z222 
+                                'guia_fact'=ISNULL((SELECT TOP 1 rtrim(z222.ser_vargui)+'-'+rtrim(z222.fac_vargui) FROM guic{self.fecha.year} z222 
                                                     WHERE z222.mov_pedido=(SELECT TOP 1 yyy.mov_compro FROM cabepedido yyy 
                                                                             WHERE yyy.mov_cotiza=a.mov_compro 
                                                                             AND yyy.elimini=0) 
                                                                             AND z222.elimini=0 
                                                                             AND z222.gui_docum<>'' 
                                                                             AND z222.fac_vargui<>''),''),
-                                'guia_f_fac'=ISNULL((SELECT TOP 1 z2222.fec_vargui FROM guic2024 z2222 
+                                'guia_f_fac'=ISNULL((SELECT TOP 1 z2222.fec_vargui FROM guic{self.fecha.year} z2222 
                                                     WHERE z2222.mov_pedido=(SELECT TOP 1 yyyy.mov_compro FROM cabepedido yyyy 
                                                                             WHERE yyyy.mov_cotiza=a.mov_compro 
                                                                             AND yyyy.elimini=0) 
                                                                             AND z2222.elimini=0 
                                                                             AND z2222.gui_docum<>'' 
                                                                             AND z2222.fac_vargui<>''),''),
-                                'guia_m_fac'=ISNULL((SELECT TOP 1 z2222.rou_tventa FROM guic2024 z2222 
+                                'guia_m_fac'=ISNULL((SELECT TOP 1 z2222.rou_tventa FROM guic{self.fecha.year} z2222 
                                                     WHERE z2222.mov_pedido=(SELECT TOP 1 yyyy.mov_compro FROM cabepedido yyyy 
                                                                             WHERE yyyy.mov_cotiza=a.mov_compro 
                                                                             AND yyyy.elimini=0) 
@@ -152,9 +151,10 @@ class Cotizacion(GenericAPIView):
                             WHERE YEAR(a.mov_fecha)='{datetime.now().year}'
                                 AND a.mov_fecha>='{desde}'
                                 AND a.mov_fecha<='{hasta}'
+                                
                     """
         
-            estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPADO','3':'RECHAZADO'} 
+            estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPTADO','3':'RECHAZADO'} 
             servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS'}
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
             if not s:
@@ -165,11 +165,31 @@ class Cotizacion(GenericAPIView):
                     "id":index,
                     "estado":estados[f"{int(value[0])}"],
                     "numero_cotizacion":value[1].strip(),
-                    "order_compra":value[2].strip(),
+                    "orden_compra":value[2].strip(),
                     "documento":value[3].strip(),
                     "razon_social":value[4].strip(),
-                    # "fecha_emision":value[3].strftime('%d/%m/%Y'),
-                    # "moneda":value[4].strip(),
+                    "fecha_emision":value[5].strftime('%d/%m/%Y'),
+                    "moneda":value[6].strip(),
+                    "importe":f"{float(value[7]):.2f}",
+                    "placa":value[8].strip(),
+                    "chasis":value[9].strip(),
+                    "year":value[10].strip(),
+                    "modelo":value[11].strip(),
+                    "color":value[12].strip(),
+                    "operacion":value[13].strip(),
+                    "vehiculos":int(value[14]),
+                    "servicio":servicios[f"{int(value[15])}"],
+                    "guia_remision":value[16].strip(),
+                    "ot":value[17].strip(),
+                    "contacto":value[18].strip(),
+                    "vendedor":value[19].strip(),
+                    "condicion_pago":value[20].strip(),
+                    "motivo":value[21].strip(),
+                    "pedido":value[22].strip(),
+                    "factura_boleta":self.factura_boleta(value[23].strip(),value[40].strip(),value[28].strip(),value[37].strip(),value[34].strip()),
+                    "fecha":self.fecha_(value[24],value[41],value[29],value[38],value[35]),
+                    "monto":f"{self.monto(value[25],value[42],value[30],value[39],value[36]):.2f}"
+
                     
                 } for index,value in enumerate(result)
             ]
@@ -179,6 +199,37 @@ class Cotizacion(GenericAPIView):
             data['error'] = str(e)
 
         return Response(data)
+    def factura_boleta(self,fac_bol,guia_fact,ot_fac_bol,ofb_bol,oguia_fb):
+        if fac_bol!='':
+            return fac_bol
+        elif guia_fact!='':
+            return guia_fact
+        elif ot_fac_bol!='':
+            return ot_fac_bol,
+        elif ofb_bol!='':
+            return ofb_bol
+        return oguia_fb
+    def fecha_(self,fac_fecha,guia_f_fac,ot_f_facbo,ofb_fecha,oguia_f_fb):
+        if fac_fecha.strftime('%Y')!='1900':
+            return fac_fecha.strftime('%d/%m/%Y')
+        elif guia_f_fac.strftime('%Y')!='1900':
+            return guia_f_fac.strftime('%d/%m/%Y')
+        elif ot_f_facbo.strftime('%Y')!='1900':
+            return ot_f_facbo.strftime('%d/%m/%Y')
+        elif ofb_fecha.strftime('%Y')!='1900':
+            return ofb_fecha.strftime('%d/%m/%Y')
+        return oguia_f_fb.strftime('%d/%m/%Y')
+    def monto(self,fac_monto,guia_m_fac,ot_m_facbo,ofb_monto,oguia_m_fb):
+        if float(fac_monto)!=0:
+            return float(fac_monto)
+        elif  float(guia_m_fac)!=0:
+            return float(guia_m_fac)
+        elif  float(ot_m_facbo)!=0:
+            return float(ot_m_facbo)
+        elif  float(ofb_monto)!=0:
+            return float(ofb_monto)
+        return float(oguia_m_fb)
+
 class GuardarCotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         self.datos = request.data
@@ -219,7 +270,7 @@ class GuardarCotizacion(GenericAPIView):
                       self.usuario['codigo'],total_sin_descuento,descuento,'05',self.datos['ubicacion'],self.datos['ruc'],1,self.datos['modelo_codigo'],self.datos['placa'],
                       self.datos['chasis'],self.datos['year'],self.datos['color_codigo'],self.datos['operacion'],self.datos['orden_compra'],
                       self.datos['vehiculos'],self.datos['servicio'],self.datos['dias_validez'],self.datos['contacto'])
-            print(params)
+
             sql = f"""INSERT INTO cabecotiza(MOV_COMPRO,mov_fecha,MOV_CODAUX,DOC_CODIGO,MOV_MONEDA,USUARIO,FECHAUSU,
             ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,rou_export,ubi_codigo,pag_codigo,gui_direc,ven_codigo,rou_submon,rou_dscto,
             ope_codigo,ubi_codig2,gui_ruc,gui_inclu,cot_modelo,cot_placa,cot_chasis,cot_anyo,cot_color,cot_flota,gui_ordenc,
