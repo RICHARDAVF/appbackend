@@ -174,7 +174,7 @@ class Cotizacion(GenericAPIView):
                 } for index,value in enumerate(result)
             ]
             data = [data[i:i+100] for i in range(0,len(data),100) ]
-            print(data)
+           
         except Exception as e:
             data['error'] = str(e)
 
@@ -182,8 +182,8 @@ class Cotizacion(GenericAPIView):
 class GuardarCotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         self.datos = request.data
+      
         self.usuario = self.datos['usuario']
-        print(self.datos)
         self.fecha = datetime.now()
         self.credencial = Credencial(self.datos['credencial'])
         self.numero_cotizacion = ''
@@ -205,33 +205,54 @@ class GuardarCotizacion(GenericAPIView):
             if not s:
                 raise Exception('Error al recuperar el codigo de operacion')
             self.codigo_operacion = result[0].strip()
+            total = sum([float(item['subtotal']) for item in self.datos['detalle']])
+            if self.datos['incluye_igv']:
+                base_imponible = round(total/1.18,2)
+            else:
+                base_imponible = total
+                total = round(base_imponible*1.18,2)
+            igv = round(total-base_imponible,2)
+            total_sin_descuento = self.total_sin_descuento()
+            descuento = abs(total_sin_descuento-total)
             params = (self.numero_cotizacion,self.fecha.strftime('%Y-%m-%d'),self.datos['codigo'],'F1',self.datos['moneda'],self.usuario['cod'],
-                      self.fecha.strftime('%Y-%m-%d'),0,18,0,0,1,self.datos['ubicacion'],self.datos['tipo_pago'],self.datos['direccion'],
-                      self.usuario['codigo'],0,'05',self.datos['ubicacion'],self.datos['ruc'],1,self.datos['modelo_codigo'],self.datos['placa'],
+                      self.fecha.strftime('%Y-%m-%d'),base_imponible,18,igv,total,1,self.datos['ubicacion'],self.datos['tipo_pago'],self.datos['direccion'],
+                      self.usuario['codigo'],total_sin_descuento,descuento,'05',self.datos['ubicacion'],self.datos['ruc'],1,self.datos['modelo_codigo'],self.datos['placa'],
                       self.datos['chasis'],self.datos['year'],self.datos['color_codigo'],self.datos['operacion'],self.datos['orden_compra'],
                       self.datos['vehiculos'],self.datos['servicio'],self.datos['dias_validez'],self.datos['contacto'])
-          
+            print(params)
             sql = f"""INSERT INTO cabecotiza(MOV_COMPRO,mov_fecha,MOV_CODAUX,DOC_CODIGO,MOV_MONEDA,USUARIO,FECHAUSU,
-            ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,rou_export,ubi_codigo,pag_codigo,gui_direc,ven_codigo,rou_submon,
+            ROU_BRUTO,ROU_PIGV,ROU_IGV,ROU_TVENTA,rou_export,ubi_codigo,pag_codigo,gui_direc,ven_codigo,rou_submon,rou_dscto,
             ope_codigo,ubi_codig2,gui_ruc,gui_inclu,cot_modelo,cot_placa,cot_chasis,cot_anyo,cot_color,cot_flota,gui_ordenc,
-            gui_diaofe,cot_chk01,cot_chk07,aux_contac) VALUES({','.join('?' for i in params)})"""
+            cot_diaofe,cot_chk01,cot_chk07,aux_contac) VALUES({','.join('?' for i in params)})"""
             s,_ = CAQ.request(self.credencial,sql,params,'post')
             if not s:
+                print(_)
                 raise Exception('Error al guardar los datos de cotizacion')
             for item in self.datos['detalle']:
+
+                total = float(item['cantidad'])*float(item['precio'])*float(self.datos['vehiculos']) if int(item['autos'])==0 else float(item['cantidad'])*float(item['precio'])*float(self.datos['autos'])
                 params = (self.datos['almacen'],str(self.fecha.month).zfill(2),self.numero_cotizacion,'F1',self.fecha.strftime('%Y-%m-%d'),
-                          item['codigo'],'S','04',item['cantidad'],0,item['precio'],self.usuario['cod'],self.fecha.strftime('%Y-%m-%d'),
-                          'S',1) 
+                          item['codigo'],'S','04',item['cantidad'],total,item['precio'],self.usuario['cod'],self.fecha.strftime('%Y-%m-%d'),
+                          'S',1,self.datos['vehiculos'],item['autos'],item['descuento']) 
                 sql = f"""
             INSERT INTO movicotiza(ALM_CODIGO,MOM_MES,mov_compro,doc_codigo,MOM_FECHA,ART_CODIGO,MOM_TIPMOV,OPE_CODIGO,MOM_CANT,
-            mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,gui_inclu) VALUES ({','.join('?' for i in params)})"""
+            mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,gui_inclu,MOM_B_P_R,mom_bruto,mom_dscto1) VALUES ({','.join('?' for i in params)})"""
                 s,_ = CAQ.request(self.credencial,sql,params,'post')
                 if not s:
                     raise Exception('Error al guardar los articulos de la cotizacion')
             data['msg'] = 'La cotizacion se guardo con exito'
         except Exception as e:
+            print(str(e))
             data['error'] = str(e)
         return Response(data)
+    def total_sin_descuento(self):
+        total = 0
+        for item in self.datos['detalle']:
+            if int(item['autos'])==0:
+                total+= float(item['cantidad'])*float(item['precio'])*int(self.datos['vehiculos'])
+            else:
+                total+= float(item['cantidad'])*float(item['precio'])*int(item['autos'])
+        return round(total,2)
 
 class CotizacionVars(GenericAPIView):
     def post(self,request,*args,**kwargs):

@@ -127,10 +127,13 @@ class UserView(generics.GenericAPIView):
                 datos['config_client'] = {'separacion_pedido':config.separacion_pedido,
                                           'cliente_user':config.cliente_user,
                                           'guid_lote':config.guid_lote}
+                sql = "SELECT emp_inclu FROM t_empresa"
+                conn = QuerysDb.conexion(user.bdhost,user.bdname,user.bduser,user.bdpassword)
+                igv = self.querys(conn,sql,())[0][0]
+                datos['incluye_igv'] = int(igv)==1
                 return Response(datos,status=status.HTTP_200_OK)
             return Response({'error':'Error de servidor '},status=status.HTTP_424_FAILED_DEPENDENCY)           
         except Exception as e:
-            print(str(e))
             return Response({'error':'Esta empresa no esta resgitrado'}, status=status.HTTP_404_NOT_FOUND)
     def querys(self,conn,sql,params=()):
         cursor = conn.cursor()
@@ -151,7 +154,6 @@ class ProductoView(generics.GenericAPIView):
         alm = kwargs['u']
         local = kwargs['l']
         tallas = kwargs['tallas']
-        lote = kwargs['lote']
         if int(p)==1:
             p = ''
         else:
