@@ -17,7 +17,7 @@ from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,Orde
 from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Guia,PDFFACTView,AnulacionGuiaView
-from apirest.view.clientes.views import FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
+from apirest.view.clientes.views import  FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
 from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring,DownloadAppV1
 from apirest.view.permisos.views import PermisosView
@@ -31,7 +31,7 @@ from apirest.view.facturacion.views import Facturacion
 from apirest.view.ticket.views import TicketCuadreCaja, TicketFactura,TicketNP
 from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
-from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion,CotizacionVars
+from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion,CotizacionVars,CotizacionFilter
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -89,7 +89,7 @@ urlpatterns = [
     path('v1/list/cotiza/<str:ruc>/',Cotizacion.as_view()),
     path('v1/save/cotiza/<str:ruc>/',GuardarCotizacion.as_view()),
     path('v1/vars/cotiza/<str:ruc>/',CotizacionVars.as_view()),
-
+    path('v1/dates/filter/<str:ruc>/',CotizacionFilter.as_view()),
 
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
@@ -98,6 +98,7 @@ urlpatterns = [
     path('client/type/<str:host>/<str:db>/<str:user>/<str:password>/',TypeClienteView.as_view()),
     path('v1/valid/client/<str:ruc>/',ValidarCliente.as_view()),
     path('v1/save/client/<str:ruc>/',RegisterSampleClient.as_view()),
+
     #FACTURA
     path('v1/factura/create/<str:ruc>/',Facturacion.as_view()),
     path('v1/list/documentos/<str:ruc>/',EmisionDocumentos.as_view()),
