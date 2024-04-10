@@ -152,36 +152,57 @@ class Cotizacion(GenericAPIView):
                                 AND a.mov_fecha>='{desde}'
                                 AND a.mov_fecha<='{hasta}'
                                 {
-                                    f"AND b.aux_clave='{datos["cliente"]}'" if datos["cliente"]!='' else ''
+                                    f"AND b.aux_clave='{datos['cliente']}'" if datos['cliente']!='' else ''
                                 }
                                 {
-                                    f"AND e.ven_codigo='{datos["vendedor"]}'" if datos["vendedor"]!='' else ''
+                                    f"AND a.mov_compro='{datos['cotizacion']}'" if datos['cotizacion']!='' else ''
                                 }
                                 {
-                                    f"AND d.pag_codigo='{datos["condicion_pago"]}'" if datos["condicion_pago"]!='' else ''
+                                    f"AND a.gui_ordenc='{datos['orden_compra']}'" if datos['orden_compra']!='' else ''
                                 }
                                 {
-                                    f"AND c.ope_codigo='{datos["motivo"]}'" if datos["motivo"]!='' else ''
+                                    f"AND e.ven_codigo='{datos['vendedor']}'" if datos['vendedor']!='' else ''
                                 }
                                 {
-                                    f"AND j.col_codigo='{datos["color"]}'" if datos["color"]!='' else ''
+                                    f"AND d.pag_codigo='{datos['condicion_pago']}'" if datos['condicion_pago']!='' else ''
                                 }
                                 {
-                                    f"AND i.det_codigo='{datos["modelo"]}'" if datos["modelo"]!='' else ''
+                                    f"AND c.ope_codigo='{datos['motivo']}'" if datos['motivo']!='' else ''
                                 }
                                 {
-                                    f"AND a.ped_status='{datos["estado"]}'" if datos["estado"]!='' else ''
+                                    f"AND a.ope_codigo='{datos['operacion']}'" if datos['operacion']!='' else ''
+                                }
+                                {
+                                    f"AND i.det_codigo='{datos['modelo']}'" if datos['modelo']!='' else ''
+                                }
+                                {
+                                    f"AND a.cot_placa='{datos['placa']}'" if datos['placa']!='' else ''
+                                }
+                                {
+                                    f"AND a.cot_chasis='{datos['chasis']}'" if datos['chasis']!='' else ''
+                                }
+                                {
+                                    f"AND a.cot_chk01='{datos['servicio']}'" if datos['servicio']!='' else ''
+                                }
+                                {
+                                    f"AND a.cot_anyo='{datos['year']}'" if datos['year']!='' else ''
+                                }
+                                {
+                                    f"AND j.col_codigo='{datos['color']}'" if datos['color']!='' else ''
+                                }
+                                {
+                                    f"AND a.ped_status='{datos['estado']}'" if datos['estado']!='' else ''
                                 }
                                 
                                 
                     """
             print(sql)
             estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPTADO','3':'RECHAZADO'} 
-            servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS'}
+            servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS','0':'NS'}
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
             if not s:
                 raise Exception('Error al recuperar las cotizaciones')
-         
+          
             data = [
                 {
                     "id":index,
@@ -299,12 +320,13 @@ class GuardarCotizacion(GenericAPIView):
             cot_diaofe,cot_chk01,cot_chk07,aux_contac) VALUES({','.join('?' for i in params)})"""
             s,_ = CAQ.request(self.credencial,sql,params,'post')
             if not s:
-                print(_)
+               
                 raise Exception('Error al guardar los datos de cotizacion')
+         
             for item in self.datos['detalle']:
-
-                total = float(item['cantidad'])*float(item['precio'])*float(self.datos['vehiculos']) if int(item['autos'])==0 else float(item['cantidad'])*float(item['precio'])*float(self.datos['autos'])
-                params = (self.datos['almacen'],str(self.fecha.month).zfill(2),self.numero_cotizacion,'F1',self.fecha.strftime('%Y-%m-%d'),
+           
+                total = float(item['cantidad'])*float(item['precio'])*float(self.datos['vehiculos']) if int(item['autos'])==0 else float(item['cantidad'])*float(item['precio'])*float(item['cantidad_vehiculos'])
+                params = (53,str(self.fecha.month).zfill(2),self.numero_cotizacion,'F1',self.fecha.strftime('%Y-%m-%d'),
                           item['codigo'],'S','04',item['cantidad'],total,item['precio'],self.usuario['cod'],self.fecha.strftime('%Y-%m-%d'),
                           'S',1,self.datos['vehiculos'],item['autos'],item['descuento']) 
                 sql = f"""
@@ -312,6 +334,7 @@ class GuardarCotizacion(GenericAPIView):
             mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,gui_inclu,MOM_B_P_R,mom_bruto,mom_dscto1) VALUES ({','.join('?' for i in params)})"""
                 s,_ = CAQ.request(self.credencial,sql,params,'post')
                 if not s:
+                   
                     raise Exception('Error al guardar los articulos de la cotizacion')
             data['msg'] = 'La cotizacion se guardo con exito'
         except Exception as e:
