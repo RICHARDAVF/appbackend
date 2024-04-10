@@ -151,9 +151,31 @@ class Cotizacion(GenericAPIView):
                             WHERE YEAR(a.mov_fecha)='{datetime.now().year}'
                                 AND a.mov_fecha>='{desde}'
                                 AND a.mov_fecha<='{hasta}'
+                                {
+                                    f"AND b.aux_clave='{datos["cliente"]}'" if datos["cliente"]!='' else ''
+                                }
+                                {
+                                    f"AND e.ven_codigo='{datos["vendedor"]}'" if datos["vendedor"]!='' else ''
+                                }
+                                {
+                                    f"AND d.pag_codigo='{datos["condicion_pago"]}'" if datos["condicion_pago"]!='' else ''
+                                }
+                                {
+                                    f"AND c.ope_codigo='{datos["motivo"]}'" if datos["motivo"]!='' else ''
+                                }
+                                {
+                                    f"AND j.col_codigo='{datos["color"]}'" if datos["color"]!='' else ''
+                                }
+                                {
+                                    f"AND i.det_codigo='{datos["modelo"]}'" if datos["modelo"]!='' else ''
+                                }
+                                {
+                                    f"AND a.ped_status='{datos["estado"]}'" if datos["estado"]!='' else ''
+                                }
+                                
                                 
                     """
-        
+            print(sql)
             estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPTADO','3':'RECHAZADO'} 
             servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS'}
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
@@ -339,6 +361,87 @@ class CotizacionVars(GenericAPIView):
                 ] 
             else:
                 data['error'] = "Opcion valida"
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)
+class CotizacionFilter(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        self.datos = request.data
+        self.credencial = Credencial(self.datos['credencial'])
+        try:
+            conn = CAQ().conexion(self.credencial)
+            cursor = conn.cursor()
+            sql = f"SELECT aux_razon,aux_clave FROM t_auxiliar"
+            cursor.execute(sql,())
+            result = cursor.fetchall()
+            if result is None:
+                raise Exception("NO hay clientes a mostrar")
+            data['clientes'] = [
+                {
+                    "id":index,
+                    "value":value[1].strip(),
+                    "label":value[0].strip()
+                } for index,value in enumerate(result)
+            ]
+            sql = "SELECT pag_nombre,pag_codigo from t_maepago"
+            cursor.execute(sql,())
+            result = cursor.fetchall()
+            if result is None:
+                raise Exception("No se pudo recuperar la lista de pago")
+            data['condiciones_pago'] = [
+                {
+                    "id":index,
+                    "label":value[0].strip(),
+                    "value":value[1].strip()
+                } for index,value in enumerate(result)
+                ]
+            sql = "SELECT col_codigo,col_nombre FROM t_colores"
+            cursor.execute(sql,())
+            result = cursor.fetchall()
+            if result is None:
+                raise Exception("No se pudo recuperar la lista de colores")
+            data['colores'] = [
+                {
+                    "id":index,
+                    "label":value[1].strip(),
+                    "value":value[0].strip()
+                } for index,value in enumerate(result)
+                ]
+            sql = "SELECT VEN_CODIGO,VEN_NOMBRE FROM t_vendedor"
+            cursor.execute(sql,())
+            result = cursor.fetchall()
+            if result is None:
+                raise Exception("No se pudo recuperar la lista de vendedores")
+            data['vendedores'] = [
+                {
+                    "id":index,
+                    "value":value[0].strip(),
+                    "label":value[1].strip(),
+                } for index,value in enumerate(result)
+                ]
+            sql = "SELECT ope_codigo,ope_nombre FROM t_operacion"
+            cursor.execute(sql,())
+            result = cursor.fetchall()
+            data['motivos'] = [
+                {
+                    "id":index,
+                    "value":value[0].strip(),
+                    "label":value[1].strip(),
+                } for index,value in enumerate(result)
+                ]
+            sql = "SELECT det_codigo,det_nombre FROM t_detalle"
+            cursor.execute(sql,())
+            result = cursor.fetchall()
+            data['modelos'] = [
+                {
+                    "id":index,
+                    "label":value[1].strip(),
+                    "value":value[0].strip()
+                } for index,value in enumerate(result)
+                ]
+            conn.commit()
+            conn.close()
         except Exception as e:
             data['error'] = str(e)
         return Response(data)
