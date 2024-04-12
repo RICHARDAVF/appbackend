@@ -1,49 +1,64 @@
 # from weasyprint import HTML,CSS
 import base64
 import io
-from django.template.loader import get_template
+
 from rest_framework.generics import GenericAPIView
-from apirest.credenciales import Credencial
-from apirest.querys import Querys
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
 from reportlab.platypus.flowables import PageBreak
-from reportlab.lib.enums import TA_RIGHT
-def pdf_generate(request):
-    html_template = get_template('mi_template_pdf.html')
-    sql = "select art_codigo from t_articulo_imagen"
-    images = Querys({'host':'192.168.1.40','db':'siia_demo_denim_art','user':'sa','password':'Noi2011'}).querys(sql,(),'get',1)
-    data = [{'img':f"{img[0].strip()}A.JPG"} for img in images]
-    context = {}
-    context['images'] = data
-    render_html = html_template.render(context)
-    # pdf_file = HTML(string=render_html,base_url=request.build_absolute_uri()).write_pdf()
-    # response = HttpResponse(pdf_file,content_type='application/pdf')
-    # response['Content_Disposition'] = 'filename="home.pdf"'
-    # return response
+from django.http import HttpResponse
+import os
+from django.conf import settings
+
+from apirest.credenciales import Credencial
+from apirest.querys import CAQ
+from reportlab.pdfgen.canvas import Canvas
+
 class GeneratedPDF(GenericAPIView):
-    def get(self,request,*args,**kwargs):
-        lista_ubicaciones = request.GET.getlist('arreglo[]',[])
-        almacen = request.GET.get('almacen')
-        linea = request.GET.get('linea')
-        genero = request.GET.get('genero')
-        modelo = request.GET.get('modelo')
-        color = request.GET.get('color')
-        temporada = request.GET.get('temporada')
-        talla = request.GET.get('talla')
-        html_template = get_template('mi_template_pdf.html')
-        sql = "select top 100 art_codigo from t_articulo_imagen"
-        images = Querys(kwargs).querys(sql,(),'get',1)
-        data = [{'img':f"{img[0].strip()}A.JPG"} for img in images]
-        context = {}
-        context['images'] = data
-        render_html = html_template.render(context)
-        # pdf_file = HTML(string=render_html,base_url=request.build_absolute_uri()).write_pdf()
-        # response = HttpResponse(pdf_file,content_type='application/pdf')
-        # response['Content_Disposition'] = 'filename="home.pdf"'
-        # return response
+
+    def post(self, request, *args, **kwargs):
+      
+        self.datos = request.data
+        self.credencial = Credencial(self.datos['credencial'])
+        try:
+            sql = "SELECT emp_razon,emp_ruc,emp_direc,emp_telef FROM t_empresa"
+
+            s,result = CAQ.request(self.credencial,sql,(),"get",0)
+            if not s:
+                raise Exception("No se pudo recuperar datos de la empresa")
+
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="three_columns_with_image.pdf"'
+            c = Canvas(response, pagesize=A4)
+
+            # Definir estilo de texto en negrita
+            style = getSampleStyleSheet()["Normal"]
+            style.fontName = "Helvetica-Bold"
+            style.fontSize = 10
+
+            # Dibujar imagen
+            image = os.path.join(settings.BASE_DIR, 'static/img/kasac.jpg')
+            c.drawImage(image=image, x=13, y=750, width=100, height=50)
+
+            # Dibujar texto con estilo de fuente en negrita usando Paragraph
+            p = Paragraph(text=f" N° COTIZACION {self.datos['numero_cotizacion']}", style=style)
+            c.drawText(p)
+            # Dibujar texto adicional con drawString()
+            c.drawString(x=150, y=810, text=result[0].strip())
+            c.drawString(x=150, y=790, text=result[1].strip())
+            c.drawString(x=150, y=770, text=result[2].strip())
+            c.drawString(x=150, y=750, text=result[3].strip())
+
+            c.save()
+
+            return response
+           
+        except Exception as e:
+            print(str(e))
+            return HttpResponse({"error": str(e)})
 class PDF:
     def __init__(self,empresa,cabecera,detalle) -> None:
         self.empresa = empresa
