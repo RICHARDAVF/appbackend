@@ -3,6 +3,7 @@ from django.urls import path,include
 
 from apirest.view.cuadre_caja.views import CuadreCajaView, ListCuadreCaja,SaveCuadreCaja
 from apirest.view.nota_pedido.views import NotaPedido
+from apirest.view.pdf.views import GeneratedPDF
 
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
                     EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView,TipoPago)
@@ -195,6 +196,6 @@ urlpatterns = [
     path('v1/download/app/',DownloadAppMapring.as_view()),
     #GENERACION DE PDF
     # path('generate/pdf/',pdf_generate),
-    # path('pdf/<str:host>/<str:db>/<str:user>/<str:password>/',GeneratedPDF.as_view())
+    path('v1/pdf/',GeneratedPDF.as_view())
 
 ]

@@ -192,11 +192,8 @@ class Cotizacion(GenericAPIView):
                                 }
                                 {
                                     f"AND a.ped_status='{datos['estado']}'" if datos['estado']!='' else ''
-                                }
-                                
-                                
+                                }                
                     """
-            print(sql)
             estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPTADO','3':'RECHAZADO'} 
             servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS','0':'NS'}
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
