@@ -4,61 +4,46 @@ import io
 
 from rest_framework.generics import GenericAPIView
 
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4,letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate,Paragraph,Table,Spacer,TableStyle
+from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
 from reportlab.platypus.flowables import PageBreak
 from django.http import HttpResponse
 import os
 from django.conf import settings
-
+from django.template.loader import render_to_string
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 from reportlab.pdfgen.canvas import Canvas
-
+from weasyprint import HTML,CSS
 class GeneratedPDF(GenericAPIView):
-
     def post(self, request, *args, **kwargs):
-      
         self.datos = request.data
         self.credencial = Credencial(self.datos['credencial'])
         try:
-            sql = "SELECT emp_razon,emp_ruc,emp_direc,emp_telef FROM t_empresa"
-
-            s,result = CAQ.request(self.credencial,sql,(),"get",0)
+            sql = "SELECT emp_razon,emp_ruc,emp_direc FROM t_empresa"
+            s, result = CAQ.request(self.credencial,sql,(),'get',0)
             if not s:
-                raise Exception("No se pudo recuperar datos de la empresa")
-
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="three_columns_with_image.pdf"'
-            c = Canvas(response, pagesize=A4)
-
-            # Definir estilo de texto en negrita
-            style = getSampleStyleSheet()["Normal"]
-            style.fontName = "Helvetica-Bold"
-            style.fontSize = 10
-
-            # Dibujar imagen
-            image = os.path.join(settings.BASE_DIR, 'static/img/kasac.jpg')
-            c.drawImage(image=image, x=13, y=750, width=100, height=50)
-
-            # Dibujar texto con estilo de fuente en negrita usando Paragraph
-            p = Paragraph(text=f" N° COTIZACION {self.datos['numero_cotizacion']}", style=style)
-            c.drawText(p)
-            # Dibujar texto adicional con drawString()
-            c.drawString(x=150, y=810, text=result[0].strip())
-            c.drawString(x=150, y=790, text=result[1].strip())
-            c.drawString(x=150, y=770, text=result[2].strip())
-            c.drawString(x=150, y=750, text=result[3].strip())
-
-            c.save()
-
+                raise Exception("Error al generar el pdf")
+            if result is None:
+                raise Exception('La configuracion de la empresa esta incompleta')
+            context = {
+                "empresa":{
+                    "razon_social":result[0].strip(),
+                    "ruc":result[1].strip(),
+                    "direccion":result[2].strip()
+                }
+            }
+            html_string = render_to_string(template_name="mi_template_pdf.html",context=context)
+            html = HTML(string=html_string,base_url=request.build_absolute_uri())
+            pdf = html.write_pdf(stylesheets=[CSS(settings.STATIC_ROOT+'css/styles.css')],presentational_hints=True)
+            response = HttpResponse(pdf,content_type="application/pdf")
+            response['Content-Disposition'] = "inline;filename='reporte.pdf'"
             return response
-           
         except Exception as e:
             print(str(e))
-            return HttpResponse({"error": str(e)})
+            return HttpResponse({"error":str(e)})
 class PDF:
     def __init__(self,empresa,cabecera,detalle) -> None:
         self.empresa = empresa

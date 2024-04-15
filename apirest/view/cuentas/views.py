@@ -11,6 +11,7 @@ class CuentasView(generics.GenericAPIView):
         passsword = kwargs['password']
         filtro = kwargs['filter']
       
+        sql1 = f"SELECT tc_venta FROM t_tcambio WHERE tc_fecha='{datetime.now().strftime('%Y-%m-%d')}'"
         
         sql = f"""
         
@@ -22,8 +23,11 @@ class CuentasView(generics.GenericAPIView):
                 'letra_s' = SUM(CASE WHEN a.mov_moned = 'S' AND a.DOC_CODIGO = '50' THEN a.mov_d - a.MOV_H ELSE 0 END),
                 'letra_d' = SUM(CASE WHEN a.mov_moned = 'D' AND a.DOC_CODIGO = '50' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
                 'total_s' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d - a.MOV_H ELSE 0 END),
+              
                 'total_d' = SUM(CASE WHEN a.mov_moned = 'D' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
-                a.ven_codigo
+                b.aux_limite
+                
+               
             FROM
                 MOVA{datetime.now().year} a
                 INNER JOIN t_auxiliar b ON a.aux_clave = b.aux_clave
@@ -36,7 +40,8 @@ class CuentasView(generics.GenericAPIView):
             GROUP BY
                 a.aux_clave,
                 b.aux_razon,
-                a.ven_codigo
+                b.aux_limite
+              
             {
                 '''HAVING
                 SUM(CASE WHEN a.mov_moned = 'S' AND a.DOC_CODIGO <> '50' THEN a.mov_d - a.MOV_H ELSE 0 END) <> 0
@@ -51,20 +56,37 @@ class CuentasView(generics.GenericAPIView):
                 b.aux_razon;
 
             """
-        # print(filtro)
+      
         data = {}
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
             result = self.querys(conn,sql,(),'get')
+            tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
             data = [
-                {'id':index,'codigo':value[0].strip(),'razon_social':value[1].strip(),'monto_soles':value[2],'monto_dolares':value[3],'letra_soles':value[4],\
-                    'letra_dolares':value[5],'total_soles':value[6],'total_dolares':value[7],'filtro':filtro,'usuario':value[8].strip()}
-                    for index,value in enumerate(result)]
-            
+                {
+                    'id':index,
+                    'codigo':value[0].strip(),
+                    'razon_social':value[1].strip(),
+                    'monto_soles':f"{value[2]:,.2f}",
+                    'monto_dolares':f"{value[3]:,.2f}",
+                    'letra_soles':f"{value[4]:,.2f}",
+                    'letra_dolares':f"{value[5]:,.2f}",
+                    'total_soles':f"{value[6]:,.2f}",
+                    'total_dolares':f"{value[7]:,.2f}", #Formateo de la
+                    'filtro':filtro,
+                    "linea_credito":float(value[8]),
+                    "saldo_soles":f"{self.saldo(value[6],value[7],value[8],tipo_cambio):,.2f}",
+                    "saldo_dolares":f"{self.saldo(value[6],value[7],value[8],tipo_cambio)*tipo_cambio:,.2f}"
+                    
+                }    for index,value in enumerate(result)]
+            conn.commit()
+            conn.close()
         except Exception as e:
             print(str(e))
             data['error'] = 'Ocurrio un error al recuperar las cuentas'
         return Response(data)
+    def saldo(self,soles,dolares,linea,tipo_cambio):
+        return round(linea-(soles/tipo_cambio+dolares),2)
     def querys(self,conn,sql,params,request):
         cursor = conn.cursor()
         cursor.execute(sql,params)
@@ -72,8 +94,7 @@ class CuentasView(generics.GenericAPIView):
             data = cursor.fetchall()
         elif request == "post":
             data = 'succes'
-        conn.commit()
-        conn.close()            
+               
         return data
 class ReadCuentasView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
@@ -87,10 +108,17 @@ class ReadCuentasView(generics.GenericAPIView):
         sql = f"""
             SELECT
                 b.ven_codigo,
-                a.*,
+                a.DOC_NOMBRE,
+				a.mvc_serie,
+				a.mvc_docum,
+				a.MOV_MONED,
+				a.mvc_debe,
+				a.mvc_haber,
                 'mvc_debes' = a.mvc_debe - a.mvc_haber,
                 b.mov_femisi,
-                b.MOV_FVENC
+                b.MOV_FVENC,
+                a.ban_nombre
+        
             FROM (
                 SELECT
                     'DOC_NOMBRE' = COALESCE(b.DOC_NOMBRE, a.DOC_CODIGO),
@@ -98,7 +126,8 @@ class ReadCuentasView(generics.GenericAPIView):
                     'mvc_docum' = a.mov_docum,
                     a.mov_moned,
                     'mvc_debe' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d ELSE a.mov_d_d END),
-                    'mvc_haber' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_h ELSE a.mov_h_d END)
+                    'mvc_haber' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_h ELSE a.mov_h_d END),
+                    a.ban_nombre
                 FROM
                     MOVA{datetime.now().year} a
                     LEFT JOIN t_documento b ON a.DOC_CODIGO = b.DOC_CODIGO AND a.MOV_SERIE = b.doc_serie
@@ -115,7 +144,8 @@ class ReadCuentasView(generics.GenericAPIView):
                     a.mov_docum,
                     a.mov_moned,
                     a.aux_clave,
-                    a.DOC_CODIGO
+                    a.DOC_CODIGO,
+                    a.ban_nombre
             ) a
             INNER JOIN MOVA{datetime.now().year} b ON a.mvc_docum = b.mov_docum AND a.mvc_serie = b.MOV_SERIE
             LEFT JOIN t_origen c ON b.ORI_CODIGO = c.ori_codigo
@@ -132,22 +162,35 @@ class ReadCuentasView(generics.GenericAPIView):
                 AND SUBSTRING(b.pla_cuenta, 1, 2) <= '13'
             ORDER BY
                 b.MOV_FVENC DESC;
-
             """
-        
+        print(sql)
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
         
             result = self.querys(conn,sql,(codigo,),'get')
             data = []
             for index,value in enumerate(result):
-                d = {'id':index,'codigo_vendedor':value[0],'documento':value[1],'serie':value[2].strip(),'numero':value[3].strip(),'moneda':value[4].strip(),'monto_debe':value[5],\
-                     'monto_haber':value[6],'monto_debes':value[7],'emision':value[8].strftime('%Y-%m-%d'),'vencimiento':value[9].strftime('%Y-%m-%d')}
+                d = {
+                    'id':index,
+                    'codigo_vendedor':value[0],
+                    'documento':value[1],
+                    'serie':value[2].strip(),
+                    'numero':value[3].strip(),
+                    'moneda':value[4].strip(),
+                    'monto_debe':value[5],
+                    'monto_haber':value[6],
+                    'monto_debes':value[7],
+                    'emision':value[8].strftime('%Y-%m-%d'),
+                    'vencimiento':value[9].strftime('%Y-%m-%d'),
+                    'estado':value[10].strip(),
+                   
+                    }
                 data.append(d)
 
         except Exception as e:
             data = str(e)
         return Response({'message':data})
+
     def querys(self,conn,sql,params,request):
         cursor = conn.cursor()
         cursor.execute(sql,params)
