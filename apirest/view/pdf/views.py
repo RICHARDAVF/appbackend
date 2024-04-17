@@ -229,11 +229,16 @@ class CustomPDF:
         self.data =  data
         self.custom_header = custom_header
     def generate(self):
-
+       
         self.data.insert(0,self.header)
-        table = Table(self.data,repeatRows=1)
+        col_widths = [220,50,60,60,50,60,80]
+        table = Table(self.data,repeatRows=1,colWidths=col_widths)
+
+
         table.setStyle(TableStyle([
-            ("FONTSIZE",(1,0),(-1,-1),8)
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ("FONTSIZE",(0,0),(-1,-1),10),
+            ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
         ]))
         content = [Spacer(1,.16*inch),table]
         file = SimpleDocTemplate(self.filename,pagesize=letter,title="REPORTE",author="RICHARD AVILES FERRO")
