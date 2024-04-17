@@ -1,5 +1,8 @@
 from reportlab.pdfgen import canvas
 from django.conf import settings
+from apirest.credenciales import Credencial
+from apirest.querys import CAQ
+from apirest.view.pdf.views import CustomPDF
 from apirest.views import QuerysDb
 import os
 from reportlab.lib.pagesizes import A4
@@ -11,10 +14,12 @@ from datetime import datetime
 from PIL import Image
 from itertools import groupby
 from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle,Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
 from reportlab.platypus import Image as img
 from django.http import HttpResponse
 from django.http import FileResponse
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
 def decode_and_save_image(base64_img, filename):
     try:
         image_data = base64.b64decode(base64_img)
@@ -328,3 +333,69 @@ class PDFGENERATEView(generics.GenericAPIView):
             res['error'] = f'Ocurrio un error: f{str(e)}'
             
         return Response(res)
+class  LetraUbicacion(generics.GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        self.datos = request.data
+        self.credencial = Credencial(self.datos['credencial'])
+        self.fecha = datetime.now()
+        sql = f"""SELECT 
+                    b.AUX_RAZON,
+                    a.MOV_DOCUM,
+                    a.mov_femisi,
+                    a.MOV_FVENC,
+                    a.MOV_MONED,
+                    a.MOV_H_D,
+                    a.fac_docref
+                FROM mova{self.fecha.year} AS a
+                LEFT JOIN t_auxiliar AS b ON a.AUX_CLAVE=b.AUX_CLAVE
+                WHERE 
+                    a.ven_codigo=?
+                    AND (a.ban_codigo=? OR a.ban_codigo=?)
+                    AND a.MOV_ELIMIN=0
+                    {
+                    f" AND a.aux_clave = '{self.datos["cliente"]}' " if self.datos['cliente']!='' else ""
+                    }
+
+                """
+        params = (self.datos['vendedor'],self.datos['banco1'],self.datos['banco2'])
+        s,res = CAQ.request(self.credencial,sql,params,"get",1)
+
+        data = [[item[0].strip(),item[1].strip(),item[2].strftime('%d/%m/%Y'),item[3].strftime('%d/%m/%Y'),item[4].strip(),f"{float(item[5]):,.2f}",item[6].strip()] for item in res]
+        def pie_pagina(canvas:Canvas,nombre):
+          
+            canvas.saveState()
+            style = getSampleStyleSheet()
+
+            razon_social = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
+            razon_social = Paragraph(self.datos['credencial']["razon_social"],style=razon_social)
+            razon_social.wrap(nombre.width,nombre.topMargin)
+            razon_social.drawOn(canvas,nombre.leftMargin,750)
+
+            user = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
+            user = Paragraph(f"USUARIO:{self.datos['user']}",style=user)
+            user.wrap(nombre.width,nombre.topMargin)
+            user.drawOn(canvas,nombre.leftMargin,735)
+
+            fecha = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
+            fecha = Paragraph(f"Fecha: {datetime.now().strftime('%d/%m/%Y')}",style=fecha)
+            fecha.wrap(nombre.width,nombre.topMargin)
+            fecha.drawOn(canvas,nombre.leftMargin,750)
+
+            hora = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
+            hora = Paragraph(f"Hora: {datetime.now().strftime('%H:%M:%S')}",style=hora)
+            hora.wrap(nombre.width,nombre.topMargin)
+            hora.drawOn(canvas,nombre.leftMargin,735)
+
+            hora = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
+            hora = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=hora)
+            hora.wrap(nombre.width,nombre.topMargin)
+            hora.drawOn(canvas,60,735)
+            canvas.restoreState()
+        header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
+        response = HttpResponse(content_type="application/pdf")
+        response['Content-Disposition'] = 'attachment;filename="REPORTE.pdf"'
+        file = CustomPDF(response,"richard",header,data,custom_header=pie_pagina)
+        file.generate()
+        return response
+        # except Exception as e:
+        #     return Response({"error":str(e)})

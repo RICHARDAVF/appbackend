@@ -17,6 +17,8 @@ from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 from reportlab.pdfgen.canvas import Canvas
 from weasyprint import HTML,CSS
+from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
+from reportlab.lib.units import inch,mm
 class GeneratedPDF(GenericAPIView):
     def post(self, request, *args, **kwargs):
         self.datos = request.data
@@ -215,3 +217,40 @@ class PDF:
                                     
                                 ]))
         return table
+    
+
+class CustomPDF:
+    def __init__(self,filename,title:str,header:list,data:list,custom_header) -> None:
+        super(CustomPDF,self).__init__()
+        self.filename = filename
+        self.title = title
+        self.style = getSampleStyleSheet()
+        self.header = header
+        self.data =  data
+        self.custom_header = custom_header
+    def generate(self):
+
+        self.data.insert(0,self.header)
+        table = Table(self.data,repeatRows=1)
+        table.setStyle(TableStyle([
+            ("FONTSIZE",(1,0),(-1,-1),8)
+        ]))
+        content = [Spacer(1,.16*inch),table]
+        file = SimpleDocTemplate(self.filename,pagesize=letter,title="REPORTE",author="RICHARD AVILES FERRO")
+        file.build(content,onFirstPage=self.custom_header,onLaterPages=self.custom_header,canvasmaker=Numeracion)
+class Numeracion(Canvas):
+    def __init__(self,*args,**kwargs):
+        Canvas.__init__(self,*args,**kwargs)
+        self.paginas = []
+    def showPage(self):
+        self.paginas.append(dict(self.__dict__))
+        self._startPage()
+    def save(self):
+        paginas = len(self.paginas)
+        for state in self.paginas:
+            self.__dict__.update(state)
+            self.numeracion(paginas)
+            Canvas.showPage(self)
+        Canvas.save(self)
+    def numeracion(self,numeros_pagina):
+        self.drawRightString(204*mm,15*mm+(.2*inch),f"Pagina {self._pageNumber} de {numeros_pagina}")
