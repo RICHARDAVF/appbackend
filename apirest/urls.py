@@ -15,7 +15,7 @@ from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
-from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView
+from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView,LetraUbicacion
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Guia,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import  FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
@@ -24,7 +24,7 @@ from apirest.view.apps.views import DownloadAppView,DownloadAppMapring,DownloadA
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
 from apirest.view.general.views import (Almacenes,Operaciones,Proveedores,Articulos,Trabajador,Ubicaciones,Incidencia,Parametros,
-                                        CaidaCodigo,Targetas)
+                                        CaidaCodigo,Targetas,DatosCombobox)
 from apirest.view.carga.views import Carga,RegistroPeso,ProcessData,ListadoCarga,JabaUbicacion
 from apirest.view.incidencias.views import RegistroIncidecias
 from apirest.view.articulos.views import ArticuloStock,ArticuloLote,ArticulosFacturacion
@@ -196,6 +196,10 @@ urlpatterns = [
     path('v1/download/app/',DownloadAppMapring.as_view()),
     #GENERACION DE PDF
     # path('generate/pdf/',pdf_generate),
-    path('v1/pdf/',GeneratedPDF.as_view())
+    path('v1/pdf/',GeneratedPDF.as_view()),
+    path('v2/pdf/',LetraUbicacion.as_view()),
+
+    #DATOS GENERALES PARA EL COMBOBOX
+    path("v1/dates/general/<str:ruc>/",DatosCombobox.as_view())
 
 ]

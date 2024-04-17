@@ -104,7 +104,7 @@ class ReadCuentasView(generics.GenericAPIView):
         passsword = kwargs['password']
         codigo = kwargs['codigo']
         filtro = kwargs['filter']
-     
+ 
         sql = f"""
             SELECT
                 b.ven_codigo,
@@ -158,12 +158,12 @@ class ReadCuentasView(generics.GenericAPIView):
                 )
                 OR (b.ORI_CODIGO = '00' AND b.MOV_MES = '00'))
                 {'AND a.mvc_debe <> a.mvc_haber' if filtro==0 else ''}
+                {'AND a.mvc_debe<>0' if filtro==0 else ''}
                 AND SUBSTRING(b.pla_cuenta, 1, 2) >= '12'
                 AND SUBSTRING(b.pla_cuenta, 1, 2) <= '13'
             ORDER BY
-                b.MOV_FVENC DESC;
+                a.mvc_docum ASC;
             """
-        print(sql)
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
         
@@ -177,9 +177,9 @@ class ReadCuentasView(generics.GenericAPIView):
                     'serie':value[2].strip(),
                     'numero':value[3].strip(),
                     'moneda':value[4].strip(),
-                    'monto_debe':value[5],
-                    'monto_haber':value[6],
-                    'monto_debes':value[7],
+                    'monto_debe':f"{value[5]:,.2f}",
+                    'monto_haber':f"{value[6]:,.2f}",
+                    'monto_debes':f"{value[7]:,.2f}",
                     'emision':value[8].strftime('%Y-%m-%d'),
                     'vencimiento':value[9].strftime('%Y-%m-%d'),
                     'estado':value[10].strip(),
@@ -243,16 +243,16 @@ class ReadDocumentoView(generics.GenericAPIView):
        
             data['articulos'] = [
                 {
-                    'id':index,'codigo':value[0].strip(),'nombre':value[1].strip(),'precio':value[2],
-                                'cantidad':value[3],'monto':value[5],'moneda':value[9].strip(),
-                                'igv':value[11],'total':value[12],'base_imponible':value[13]
+                    'id':index,'codigo':value[0].strip(),'nombre':value[1].strip(),'precio':f"{value[2]:,.2f}",
+                                'cantidad':value[3],'monto':f"{value[5]:,.2f}",'moneda':value[9].strip(),
+                                'igv':value[11],'total':f"{value[12]:,.2f}",'base_imponible':f"{value[13]:,.2f}"
                 } for index,value in enumerate(result)
                 ]
             result = self.cabecera(year)
             data['cabecera'] = {
-                'base_imponible':result[0],
-                'igv':result[1],
-                'total':result[2],
+                'base_imponible':f"{result[0]:,.2f}",
+                'igv':f"{result[1]:,.2f}",
+                'total':f"{result[2]:,.2f}",
                 'moneda':result[3].strip()
             }
         except Exception as e:
@@ -261,7 +261,6 @@ class ReadDocumentoView(generics.GenericAPIView):
         return Response(data)
     def cabecera(self,year):
         conn = QuerysDb.conexion(self.kwargs['host'],self.kwargs['db'],self.kwargs['user'],self.kwargs['password'])
-
         sql = f"""SELECT
                 ROU_BRUTO,
                 ROU_IGV,

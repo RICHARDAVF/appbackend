@@ -171,3 +171,103 @@ class Targetas(GenericAPIView):
         except Exception as e:
             data['error'] = str(e)
         return Response(data)
+class DatosCombobox(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+
+        self.datos = request.data
+        self.credencial = Credencial(self.datos['credencial'])
+        try:
+            conn = CAQ().conexion(self.credencial)
+            cursor = conn.cursor()
+            if "1" in self.datos["querys"]:
+                sql = f"SELECT aux_razon,aux_clave FROM t_auxiliar"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                if result is None:
+                    raise Exception("NO hay clientes a mostrar")
+                data['clientes'] = [
+                    {
+                        "id":index,
+                        "value":value[1].strip(),
+                        "label":value[0].strip()
+                    } for index,value in enumerate(result)
+                ]
+            if "2" in self.datos["querys"]:
+                sql = "SELECT pag_nombre,pag_codigo from t_maepago"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                if result is None:
+                    raise Exception("No se pudo recuperar la lista de pago")
+                data['condiciones_pago'] = [
+                    {
+                        "id":index,
+                        "label":value[0].strip(),
+                        "value":value[1].strip()
+                    } for index,value in enumerate(result)
+                    ]
+            if "3" in self.datos["querys"]:
+                sql = "SELECT col_codigo,col_nombre FROM t_colores"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                if result is None:
+                    raise Exception("No se pudo recuperar la lista de colores")
+                data['colores'] = [
+                    {
+                        "id":index,
+                        "label":value[1].strip(),
+                        "value":value[0].strip()
+                    } for index,value in enumerate(result)
+                    ]
+            if "4" in self.datos["querys"]:
+                sql = "SELECT VEN_CODIGO,VEN_NOMBRE FROM t_vendedor"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                if result is None:
+                    raise Exception("No se pudo recuperar la lista de vendedores")
+                data['vendedores'] = [
+                    {
+                        "id":index,
+                        "value":value[0].strip(),
+                        "label":value[1].strip(),
+                    } for index,value in enumerate(result)
+                    ]
+            if "5" in self.datos["querys"]:
+                sql = "SELECT ope_codigo,ope_nombre FROM t_operacion"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                data['motivos'] = [
+                    {
+                        "id":index,
+                        "value":value[0].strip(),
+                        "label":value[1].strip(),
+                    } for index,value in enumerate(result)
+                    ]
+            if "6" in self.datos["querys"]:
+                sql = "SELECT det_codigo,det_nombre FROM t_detalle"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                data['modelos'] = [
+                    {
+                        "id":index,
+                        "label":value[1].strip(),
+                        "value":value[0].strip()
+                    } for index,value in enumerate(result)
+                    ]
+            if "7" in self.datos["querys"]:
+                sql = "SELECT ban_codigo,ban_nombre FROM t_banco"
+                cursor.execute(sql,())
+                result = cursor.fetchall()
+                data['bancos'] = [
+                    {
+                        "id":index,
+                        "label":value[1].strip(),
+                        "value":value[0].strip()
+                    } for index,value in enumerate(result)
+                    ]
+                
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)
