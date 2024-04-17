@@ -433,7 +433,7 @@ class GuiasView(generics.GenericAPIView):
 
         data = {"serie": "T003",
                 "numero": int(num_doc),
-                "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                # "fechaEmision":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 "tipoDocumentoGuia": "09",
                 "motivoTraslado": "01" if datos['codigo_operacion']=='05' else "04",
                 "pesoBrutoTotal": f"{peso if peso!=0 else 1}",
@@ -464,7 +464,7 @@ class GuiasView(generics.GenericAPIView):
 
         url,access_key,secret_key = self.query(sql,())
         token,timestap = RequestAPI(access_key.strip(),secret_key.strip()).encryptdates()
-        
+        self.save_json_tm(data)
         response = requests.post(f"{url.strip()}guiaremitente",headers={
             "Authorization":f"Fo {access_key.strip()}:{token}:{timestap}",
             },
@@ -472,7 +472,11 @@ class GuiasView(generics.GenericAPIView):
         )
      
         return response.json()
-        
+    def save_json_tm(self,data):
+        data_save = json.dumps(data,indent=4)
+        file_path = os.path.join(settings.BASE_DIR,'media/json/guias')
+        with open(file_path+f'/{data["serie"]}-{data["numero"]}-TM.json','w') as file:
+            file.write(data_save) 
         
 class PDFFACTView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]

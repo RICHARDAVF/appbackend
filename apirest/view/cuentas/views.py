@@ -104,7 +104,8 @@ class ReadCuentasView(generics.GenericAPIView):
         passsword = kwargs['password']
         codigo = kwargs['codigo']
         filtro = kwargs['filter']
- 
+        self.fecha = datetime.now()
+        print(codigo)
         sql = f"""
             SELECT
                 b.ven_codigo,
@@ -127,7 +128,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     a.mov_moned,
                     'mvc_debe' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d ELSE a.mov_d_d END),
                     'mvc_haber' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_h ELSE a.mov_h_d END),
-                    a.ban_nombre
+                    'ban_nombre' = ISNULL((SELECT TOP 1 ban_nombre FROM mova{self.fecha.year} AS n WHERE n.mov_docum = a.mov_docum AND n.ori_codigo<>'00' ORDER BY n.mov_fecha DESC ),'')
                 FROM
                     MOVA{datetime.now().year} a
                     LEFT JOIN t_documento b ON a.DOC_CODIGO = b.DOC_CODIGO AND a.MOV_SERIE = b.doc_serie
@@ -144,8 +145,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     a.mov_docum,
                     a.mov_moned,
                     a.aux_clave,
-                    a.DOC_CODIGO,
-                    a.ban_nombre
+                    a.DOC_CODIGO
             ) a
             INNER JOIN MOVA{datetime.now().year} b ON a.mvc_docum = b.mov_docum AND a.mvc_serie = b.MOV_SERIE
             LEFT JOIN t_origen c ON b.ORI_CODIGO = c.ori_codigo
@@ -158,12 +158,13 @@ class ReadCuentasView(generics.GenericAPIView):
                 )
                 OR (b.ORI_CODIGO = '00' AND b.MOV_MES = '00'))
                 {'AND a.mvc_debe <> a.mvc_haber' if filtro==0 else ''}
-                {'AND a.mvc_debe<>0' if filtro==0 else ''}
+           
                 AND SUBSTRING(b.pla_cuenta, 1, 2) >= '12'
                 AND SUBSTRING(b.pla_cuenta, 1, 2) <= '13'
             ORDER BY
                 a.mvc_docum ASC;
             """
+        print(sql)
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
         

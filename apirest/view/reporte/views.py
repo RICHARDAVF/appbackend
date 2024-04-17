@@ -344,23 +344,28 @@ class  LetraUbicacion(generics.GenericAPIView):
                     a.mov_femisi,
                     a.MOV_FVENC,
                     a.MOV_MONED,
-                    a.MOV_H_D,
+                    'total'=a.mov_d_d-a.mov_h_d,
                     a.fac_docref
                 FROM mova{self.fecha.year} AS a
                 LEFT JOIN t_auxiliar AS b ON a.AUX_CLAVE=b.AUX_CLAVE
+                LEFT JOIN plan{self.fecha.year} AS c ON a.pla_cuenta = c.pla_cuenta
                 WHERE 
                     a.ven_codigo=?
+                    --AND a.mov_h_d<>0 
+                    --AND a.mov_d_d<>0
                     AND (a.ban_codigo=? OR a.ban_codigo=?)
                     AND a.MOV_ELIMIN=0
+                    AND c.pla_aux=1
+                    AND a.pla_cuenta NOT IN('19001','12901','12902','12701')
+                    AND SUBSTRING(a.aux_clave,1,1)='C'
                     {
-                    f" AND a.aux_clave = '{self.datos["cliente"]}' " if self.datos['cliente']!='' else ""
+                    f" AND a.aux_clave = '{self.datos['cliente']}' " if self.datos['cliente']!='' else ""
                     }
-
                 """
         params = (self.datos['vendedor'],self.datos['banco1'],self.datos['banco2'])
         s,res = CAQ.request(self.credencial,sql,params,"get",1)
 
-        data = [[item[0].strip(),item[1].strip(),item[2].strftime('%d/%m/%Y'),item[3].strftime('%d/%m/%Y'),item[4].strip(),f"{float(item[5]):,.2f}",item[6].strip()] for item in res]
+        data = [[Paragraph(item[0].strip()),item[1].strip(),item[2].strftime('%d/%m/%Y'),item[3].strftime('%d/%m/%Y'),item[4].strip(),f"{float(item[5]):,.2f}",item[6].strip()] for item in res]
         def pie_pagina(canvas:Canvas,nombre):
           
             canvas.saveState()
