@@ -351,8 +351,7 @@ class  LetraUbicacion(generics.GenericAPIView):
                 LEFT JOIN plan{self.fecha.year} AS c ON a.pla_cuenta = c.pla_cuenta
                 WHERE 
                     a.ven_codigo=?
-                    --AND a.mov_h_d<>0 
-                    --AND a.mov_d_d<>0
+                    AND a.MOV_mes = '{self.fecha.strftime("%m")}'
                     AND (a.ban_codigo=? OR a.ban_codigo=?)
                     AND a.MOV_ELIMIN=0
                     AND c.pla_aux=1
@@ -361,10 +360,12 @@ class  LetraUbicacion(generics.GenericAPIView):
                     {
                     f" AND a.aux_clave = '{self.datos['cliente']}' " if self.datos['cliente']!='' else ""
                     }
+                ORDER BY a.mov_fecha
                 """
+        
         params = (self.datos['vendedor'],self.datos['banco1'],self.datos['banco2'])
         s,res = CAQ.request(self.credencial,sql,params,"get",1)
-
+    
         data = [[Paragraph(item[0].strip()),item[1].strip(),item[2].strftime('%d/%m/%Y'),item[3].strftime('%d/%m/%Y'),item[4].strip(),f"{float(item[5]):,.2f}",item[6].strip()] for item in res]
         def pie_pagina(canvas:Canvas,nombre):
           
@@ -396,11 +397,12 @@ class  LetraUbicacion(generics.GenericAPIView):
             hora.wrap(nombre.width,nombre.topMargin)
             hora.drawOn(canvas,60,735)
             canvas.restoreState()
-        header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
-        response = HttpResponse(content_type="application/pdf")
-        response['Content-Disposition'] = 'attachment;filename="REPORTE.pdf"'
-        file = CustomPDF(response,"richard",header,data,custom_header=pie_pagina)
-        file.generate()
-        return response
-        # except Exception as e:
-        #     return Response({"error":str(e)})
+        try:
+            header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
+            response = HttpResponse(content_type="application/pdf")
+            response['Content-Disposition'] = 'attachment;filename="REPORTE.pdf"'
+            file = CustomPDF(response,"richard",header,data,custom_header=pie_pagina)
+            file.generate()
+            return response
+        except Exception as e:
+            return Response({"error":str(e)})

@@ -16,36 +16,10 @@ from django.template.loader import render_to_string
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 from reportlab.pdfgen.canvas import Canvas
-from weasyprint import HTML,CSS
+
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
 from reportlab.lib.units import inch,mm
-class GeneratedPDF(GenericAPIView):
-    def post(self, request, *args, **kwargs):
-        self.datos = request.data
-        self.credencial = Credencial(self.datos['credencial'])
-        try:
-            sql = "SELECT emp_razon,emp_ruc,emp_direc FROM t_empresa"
-            s, result = CAQ.request(self.credencial,sql,(),'get',0)
-            if not s:
-                raise Exception("Error al generar el pdf")
-            if result is None:
-                raise Exception('La configuracion de la empresa esta incompleta')
-            context = {
-                "empresa":{
-                    "razon_social":result[0].strip(),
-                    "ruc":result[1].strip(),
-                    "direccion":result[2].strip()
-                }
-            }
-            html_string = render_to_string(template_name="mi_template_pdf.html",context=context)
-            html = HTML(string=html_string,base_url=request.build_absolute_uri())
-            pdf = html.write_pdf(stylesheets=[CSS(settings.STATIC_ROOT+'css/styles.css')],presentational_hints=True)
-            response = HttpResponse(pdf,content_type="application/pdf")
-            response['Content-Disposition'] = "inline;filename='reporte.pdf'"
-            return response
-        except Exception as e:
-            print(str(e))
-            return HttpResponse({"error":str(e)})
+
 class PDF:
     def __init__(self,empresa,cabecera,detalle) -> None:
         self.empresa = empresa
@@ -227,11 +201,15 @@ class CustomPDF:
         self.style = getSampleStyleSheet()
         self.header = header
         self.data =  data
+        self.total = sum(float(str(item[5]).replace(",",'')) for item in data)
+     
         self.custom_header = custom_header
     def generate(self):
        
         self.data.insert(0,self.header)
         col_widths = [220,50,60,60,50,60,80]
+        cell_total = ['','','',Paragraph("<b>TOTAL US$</b>"),"",Paragraph(f"<b>{self.total}</b>"),""]
+        self.data.append(cell_total)
         table = Table(self.data,repeatRows=1,colWidths=col_widths)
 
 
