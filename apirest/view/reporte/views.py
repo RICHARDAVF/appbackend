@@ -338,35 +338,53 @@ class  LetraUbicacion(generics.GenericAPIView):
         self.datos = request.data
         self.credencial = Credencial(self.datos['credencial'])
         self.fecha = datetime.now()
-        sql = f"""SELECT 
-                    b.AUX_RAZON,
-                    a.MOV_DOCUM,
+ 
+        sql = f"""SELECT
+                    c.aux_razon,
+                    a.mov_docum,
                     a.mov_femisi,
-                    a.MOV_FVENC,
-                    a.MOV_MONED,
-                    'total'=a.mov_d_d-a.mov_h_d,
-                    a.fac_docref
-                FROM mova{self.fecha.year} AS a
-                LEFT JOIN t_auxiliar AS b ON a.AUX_CLAVE=b.AUX_CLAVE
-                LEFT JOIN plan{self.fecha.year} AS c ON a.pla_cuenta = c.pla_cuenta
-                WHERE 
-                    a.ven_codigo=?
-                    AND a.MOV_mes = '{self.fecha.strftime("%m")}'
+                    a.mov_fvenc,
+                    a.mov_moned,
+                    'saldo'=(CASE WHEN a.mov_moned='S' THEN SUM(mov_d) WHEN a.mov_moned='D' THEN SUM(a.mov_d_d) ELSE 0 END) - 
+                    (CASE WHEN a.mov_moned='S' THEN SUM(mov_h) WHEN a.mov_moned='D' THEN SUM(a.mov_h_d) ELSE 0 END),
+                    'referencia'= a.fac_docref ,
+                    b.ban_nombre
+                    
+                FROM mova2024 AS a 
+                LEFT JOIN t_banco AS b ON a.ban_codigo = b.ban_codigo
+                LEFT JOIN t_auxiliar AS  c ON a.aux_clave=c.aux_clave
+                where 
+                    a.MOV_ELIMIN=0
+                    AND a.ven_codigo=?
                     AND (a.ban_codigo=? OR a.ban_codigo=?)
-                    AND a.MOV_ELIMIN=0
-                    AND c.pla_aux=1
-                    AND a.pla_cuenta NOT IN('19001','12901','12902','12701')
-                    AND SUBSTRING(a.aux_clave,1,1)='C'
+                    AND a.MOV_FECHA<='{self.fecha.strftime("%Y-%m-%d")}'
                     {
-                    f" AND a.aux_clave = '{self.datos['cliente']}' " if self.datos['cliente']!='' else ""
+                        f"AND a.AUX_CLAVE='{self.datos['cliente']}'" if self.datos['cliente']!='' else ''
                     }
-                ORDER BY a.mov_fecha
+                group by c.AUX_RAZON,c.aux_docum,a.DOC_CODIGO,a.mov_docum,a.mov_moned,a.mov_femisi,a.mov_fvenc,b.ban_nombre,a.fac_docref
+                HAVING (CASE WHEN a.mov_moned='S' THEN SUM(mov_d) WHEN a.mov_moned='D' 
+                THEN SUM(a.mov_d_d) ELSE 0 END)<>(CASE WHEN a.mov_moned='S' THEN SUM(mov_h) WHEN a.mov_moned='D' THEN SUM(a.mov_h_d) ELSE 0 END)
+
+                ORDER BY b.ban_nombre
                 """
-        
+       
         params = (self.datos['vendedor'],self.datos['banco1'],self.datos['banco2'])
+     
         s,res = CAQ.request(self.credencial,sql,params,"get",1)
-    
-        data = [[Paragraph(item[0].strip()),item[1].strip(),item[2].strftime('%d/%m/%Y'),item[3].strftime('%d/%m/%Y'),item[4].strip(),f"{float(item[5]):,.2f}",item[6].strip()] for item in res]
+        total_soles = 0
+        total_dolares = 0
+        title = res[0][-1]
+        data = [[Paragraph(f'<b>UBICACION: {title}</b>'),'','','','',' ','']]
+        for item in res:
+            if title.strip()!=item[-1].strip():
+                title = item[-1].strip()
+                data.append([Paragraph(f'<b>UBICACION: {title}</b>'),'','','','',' ',''])
+            if item[4].strip()=='D':
+                total_dolares+=float(item[5])
+            else:
+                total_soles+=float(item[5])
+            data.append([Paragraph(item[0].strip()),item[1].strip(),item[2].strftime('%d/%m/%Y'),item[3].strftime('%d/%m/%Y'),item[4].strip(),f"{float(item[5]):,.2f}",item[6].strip()])
+        
         def pie_pagina(canvas:Canvas,nombre):
           
             canvas.saveState()
@@ -401,7 +419,7 @@ class  LetraUbicacion(generics.GenericAPIView):
             header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
             response = HttpResponse(content_type="application/pdf")
             response['Content-Disposition'] = 'attachment;filename="REPORTE.pdf"'
-            file = CustomPDF(response,"richard",header,data,custom_header=pie_pagina)
+            file = CustomPDF(response,"richard",header,data,custom_header=pie_pagina,t_soles=total_soles,t_dolares=total_dolares)
             file.generate()
             return response
         except Exception as e:
