@@ -194,22 +194,21 @@ class PDF:
     
 
 class CustomPDF:
-    def __init__(self,filename,title:str,header:list,data:list,custom_header) -> None:
+    def __init__(self,filename,title:str,header:list,data:list,custom_header,t_soles:float=0,t_dolares:float=0) -> None:
         super(CustomPDF,self).__init__()
         self.filename = filename
         self.title = title
         self.style = getSampleStyleSheet()
         self.header = header
         self.data =  data
-        self.total = sum(float(str(item[5]).replace(",",'')) for item in data)
-     
+        self.t_soles = t_soles
+        self.t_dolares = t_dolares
         self.custom_header = custom_header
     def generate(self):
        
         self.data.insert(0,self.header)
         col_widths = [220,50,60,60,50,60,80]
-        cell_total = ['','','',Paragraph("<b>TOTAL US$</b>"),"",Paragraph(f"<b>{self.total}</b>"),""]
-        self.data.append(cell_total)
+
         table = Table(self.data,repeatRows=1,colWidths=col_widths)
 
 
@@ -218,7 +217,10 @@ class CustomPDF:
             ("FONTSIZE",(0,0),(-1,-1),10),
             ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
         ]))
-        content = [Spacer(1,.16*inch),table]
+        total_soles = Paragraph(f"<b>TOTAL S/ {self.t_soles:,.2f}</b>",style=ParagraphStyle(name='RightAligned', alignment=2))
+        total_dolares = Paragraph(f"<b>TOTAL US$$ {self.t_dolares:,.2f}</b>",style=ParagraphStyle(name='RightAligned', alignment=2))
+ 
+        content = [Spacer(1,.16*inch),table,total_soles,total_dolares]
         file = SimpleDocTemplate(self.filename,pagesize=letter,title="REPORTE",author="RICHARD AVILES FERRO")
         file.build(content,onFirstPage=self.custom_header,onLaterPages=self.custom_header,canvasmaker=Numeracion)
 class Numeracion(Canvas):
