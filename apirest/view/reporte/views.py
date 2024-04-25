@@ -350,7 +350,7 @@ class  LetraUbicacion(generics.GenericAPIView):
                     'referencia'= a.fac_docref ,
                     b.ban_nombre
                     
-                FROM mova2024 AS a 
+                FROM mova{self.fecha.year} AS a 
                 LEFT JOIN t_banco AS b ON a.ban_codigo = b.ban_codigo
                 LEFT JOIN t_auxiliar AS  c ON a.aux_clave=c.aux_clave
                 where 

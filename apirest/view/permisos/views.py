@@ -8,7 +8,7 @@ class PermisosView(generics.GenericAPIView):
         try:
             sql = """SELECT opc_codigo,acceso,crear,editar,anular,eliminar
             FROM t_accesos
-            WHERE usu_codigo=? AND opc_codigo IN ('050','051','060','629','005','008','285','251','464')"""
+            WHERE usu_codigo=? AND opc_codigo IN ('050','051','060','629','005','008','285','251','463')"""
             perms = Querys(kwargs).querys(sql,(kwargs['usuario'],),'get',1)
             permisos = {}
             for perm in perms:
@@ -28,6 +28,7 @@ class PermisosView(generics.GenericAPIView):
                                              'editar':perm[3]==1,
                                              'anular':perm[4]==1,
                                              'eliminar':perm[5]==1}
+            permisos['464'] = permisos['463']
             data['permisos'] = permisos
         except Exception as e:
             data['error'] = f"Ocurrio un error {str(e)}"
