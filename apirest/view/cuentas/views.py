@@ -23,24 +23,26 @@ class CuentasView(generics.GenericAPIView):
                 'letra_s' = SUM(CASE WHEN a.mov_moned = 'S' AND a.DOC_CODIGO = '50' THEN a.mov_d - a.MOV_H ELSE 0 END),
                 'letra_d' = SUM(CASE WHEN a.mov_moned = 'D' AND a.DOC_CODIGO = '50' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
                 'total_s' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d - a.MOV_H ELSE 0 END),
-              
                 'total_d' = SUM(CASE WHEN a.mov_moned = 'D' THEN a.mov_d_d - a.MOV_H_d ELSE 0 END),
-                b.aux_limite
+                b.aux_limite,
+                a.ven_codigo
                 
                
             FROM
-                MOVA{datetime.now().year} a
+                MOVA{datetime.now().year} AS a
                 INNER JOIN t_auxiliar b ON a.aux_clave = b.aux_clave
             WHERE
                 a.mov_fecha <= GETDATE()
                 AND a.mov_elimin = 0
                 AND SUBSTRING(a.pla_cuenta, 1, 2) >= '12'
                 AND SUBSTRING(a.pla_cuenta, 1, 2) <= '13'
+                
             
             GROUP BY
                 a.aux_clave,
                 b.aux_razon,
-                b.aux_limite
+                b.aux_limite,
+                a.ven_codigo
               
             {
                 '''HAVING
@@ -61,6 +63,7 @@ class CuentasView(generics.GenericAPIView):
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
             result = self.querys(conn,sql,(),'get')
+   
             tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
             data = [
                 {
@@ -75,14 +78,16 @@ class CuentasView(generics.GenericAPIView):
                     'total_dolares':f"{value[7]:,.2f}", #Formateo de la
                     'filtro':filtro,
                     "linea_credito":float(value[8]),
-                    "saldo_soles":f"{self.saldo(value[6],value[7],value[8],tipo_cambio):,.2f}",
-                    "saldo_dolares":f"{self.saldo(value[6],value[7],value[8],tipo_cambio)*tipo_cambio:,.2f}"
+                    "saldo_dolares":f"{self.saldo(value[6],value[7],value[8],tipo_cambio):,.2f}",
+                    "saldo_soles":f"{self.saldo(value[6],value[7],value[8],tipo_cambio)*tipo_cambio:,.2f}",
+                    "usuario":value[9].strip()
                     
                 }    for index,value in enumerate(result)]
+        
             conn.commit()
             conn.close()
         except Exception as e:
-            print(str(e))
+      
             data['error'] = 'Ocurrio un error al recuperar las cuentas'
         return Response(data)
     def saldo(self,soles,dolares,linea,tipo_cambio):
@@ -105,7 +110,7 @@ class ReadCuentasView(generics.GenericAPIView):
         codigo = kwargs['codigo']
         filtro = kwargs['filter']
         self.fecha = datetime.now()
-        print(codigo)
+    
         sql = f"""
             SELECT
                 b.ven_codigo,
@@ -164,7 +169,7 @@ class ReadCuentasView(generics.GenericAPIView):
             ORDER BY
                 a.mvc_docum ASC;
             """
-        print(sql)
+        
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
         
