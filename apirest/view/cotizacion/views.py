@@ -3,6 +3,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
+
 class Cotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         self.fecha = datetime.now()
@@ -194,9 +195,11 @@ class Cotizacion(GenericAPIView):
                                     f"AND a.ped_status='{datos['estado']}'" if datos['estado']!='' else ''
                                 }                
                     """
+        
             estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPTADO','3':'RECHAZADO'} 
             servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS','0':'NS'}
             s,result = CAQ.request(self.credencial,sql,(),'get',1)
+            
             if not s:
                 raise Exception('Error al recuperar las cotizaciones')
           

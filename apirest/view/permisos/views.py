@@ -28,7 +28,10 @@ class PermisosView(generics.GenericAPIView):
                                              'editar':perm[3]==1,
                                              'anular':perm[4]==1,
                                              'eliminar':perm[5]==1}
-            permisos['464'] = permisos['463']
+            try:
+                permisos['464'] = permisos['463']
+            except:
+                pass
             data['permisos'] = permisos
         except Exception as e:
             data['error'] = f"Ocurrio un error {str(e)}"
