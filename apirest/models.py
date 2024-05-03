@@ -1,6 +1,8 @@
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import os
+from django.conf import settings
 class UsuarioCredencial(models.Model):
     ruc = models.CharField(max_length=50,verbose_name="RUC",null=True,blank=True)
     razon_social = models.CharField(max_length=254,verbose_name='Razon Social',null=True,blank=True)
@@ -35,11 +37,15 @@ class VersionApp(models.Model):
     nombre = models.CharField(max_length=50,verbose_name="Nombre de la version")
     version = models.CharField(max_length=50,verbose_name="Version de la applicacion")
     fecha = models.DateField(auto_created=False,verbose_name="Fecha de la ultima actualizacion")
-    fpk_file = models.FileField(upload_to='apk/',verbose_name="Archivo de al aplicacion",null=True,blank=True)
+    apk_file = models.FileField(upload_to='apk/',verbose_name="Archivo de al aplicacion",null=True,blank=True)
     class Meta:
         verbose_name = "version"
         verbose_name_plural = "Versiones"
         db_table = 'versiones'
+    def get_file(self):
+        if self.apk_file:
+            return f"{os.path.join(settings.MEDIA_ROOT,self.apk_file)}"
+        return os.path.join(settings.MEDIA_ROOT,'app-release.apk')
 
 @receiver(post_save,sender=UsuarioCredencial)
 def add_automatic_c(sender,instance,created,**kwargs):
