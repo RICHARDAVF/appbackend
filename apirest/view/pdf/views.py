@@ -205,24 +205,27 @@ class CustomPDF:
         self.t_dolares = t_dolares
         self.custom_header = custom_header
     def generate(self):
-       
-        self.data.insert(0,self.header)
-        col_widths = [220,50,60,60,50,60,80]
+        try:
+            self.data.insert(0,self.header)
+            col_widths = [220,50,60,60,50,60,80]
 
-        table = Table(self.data,repeatRows=1,colWidths=col_widths)
+            table = Table(self.data,repeatRows=1,colWidths=col_widths)
 
 
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ("FONTSIZE",(0,0),(-1,-1),10),
-            ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
-        ]))
-        total_soles = Paragraph(f"<b>TOTAL S/ {self.t_soles:,.2f}</b>",style=ParagraphStyle(name='RightAligned', alignment=2))
-        total_dolares = Paragraph(f"<b>TOTAL US$$ {self.t_dolares:,.2f}</b>",style=ParagraphStyle(name='RightAligned', alignment=2))
- 
-        content = [Spacer(1,.16*inch),table,total_soles,total_dolares]
-        file = SimpleDocTemplate(self.filename,pagesize=letter,title="REPORTE",author="RICHARD AVILES FERRO")
-        file.build(content,onFirstPage=self.custom_header,onLaterPages=self.custom_header,canvasmaker=Numeracion)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ("FONTSIZE",(0,0),(-1,-1),10),
+                ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
+            ]))
+            total_soles = Paragraph(f"<b>TOTAL S/ {self.t_soles:,.2f}</b>",style=ParagraphStyle(name='RightAligned', alignment=2))
+            total_dolares = Paragraph(f"<b>TOTAL US$$ {self.t_dolares:,.2f}</b>",style=ParagraphStyle(name='RightAligned', alignment=2))
+
+            content = [Spacer(1,.16*inch),table,total_soles,total_dolares]
+            file = SimpleDocTemplate(self.filename,pagesize=letter,title="REPORTE",author="RICHARD AVILES FERRO")
+            file.build(content,onFirstPage=self.custom_header,onLaterPages=self.custom_header,canvasmaker=Numeracion)
+        except Exception as e:
+            raise Exception(str(e))
+
 class Numeracion(Canvas):
     def __init__(self,*args,**kwargs):
         Canvas.__init__(self,*args,**kwargs)
@@ -239,3 +242,4 @@ class Numeracion(Canvas):
         Canvas.save(self)
     def numeracion(self,numeros_pagina):
         self.drawRightString(204*mm,15*mm+(.2*inch),f"Pagina {self._pageNumber} de {numeros_pagina}")
+

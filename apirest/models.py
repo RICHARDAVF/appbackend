@@ -35,6 +35,7 @@ class VersionApp(models.Model):
     nombre = models.CharField(max_length=50,verbose_name="Nombre de la version")
     version = models.CharField(max_length=50,verbose_name="Version de la applicacion")
     fecha = models.DateField(auto_created=False,verbose_name="Fecha de la ultima actualizacion")
+    fpk_file = models.FileField(upload_to='apk/',verbose_name="Archivo de al aplicacion",null=True,blank=True)
     class Meta:
         verbose_name = "version"
         verbose_name_plural = "Versiones"

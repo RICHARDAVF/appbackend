@@ -8,7 +8,7 @@ import os
 from reportlab.lib.pagesizes import A4
 import base64
 from rest_framework.response import Response
-from rest_framework import generics
+from rest_framework.generics import GenericAPIView
 import io
 from datetime import datetime
 from PIL import Image
@@ -61,7 +61,7 @@ def agrupar(datos):
         else:
             datos_agrupados[nombre] = {'codigo': codigo, 'nombre': nombre, 'talla': [talla], 'stock': [stock]}
     return datos_agrupados
-class PDFView(generics.GenericAPIView):
+class PDFView(GenericAPIView):
     def post(self,request,*args,**kwargs):
         res = {}
         cred = request.data['cred']
@@ -167,14 +167,14 @@ class PDFView(generics.GenericAPIView):
             res['error'] = f"Ocurrio un error : {str(e)}"
         return Response(res)
         
-class DownloadPDF(generics.GenericAPIView):
+class DownloadPDF(GenericAPIView):
     def get(self,request,*args,**kwargs):
         cod = kwargs['cod']
         codigo = kwargs['codigo']
         ruc = kwargs['ruc']
         pdf = os.path.join(settings.BASE_DIR,'media',f'archivo{ruc}-{cod}-{codigo}.pdf')
         return FileResponse(open(pdf,'rb'),as_attachment=True)
-class PDFview1(generics.GenericAPIView):
+class PDFview1(GenericAPIView):
     def post(self,request,*args,**kwargs):
         res = {}
         try:
@@ -267,7 +267,7 @@ class PDFview1(generics.GenericAPIView):
             res['error'] = f"Ocurrio un error: {str(e)}"
         return Response(res)
 
-class PDFGENERATEView(generics.GenericAPIView):
+class PDFGENERATEView(GenericAPIView):
     def agrupar(self,datos):
         dates = {}
         for item in datos:
@@ -333,7 +333,7 @@ class PDFGENERATEView(generics.GenericAPIView):
             res['error'] = f'Ocurrio un error: f{str(e)}'
             
         return Response(res)
-class  LetraUbicacion(generics.GenericAPIView):
+class  LetraUbicacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         self.datos = request.data
         self.credencial = Credencial(self.datos['credencial'])
@@ -424,3 +424,38 @@ class  LetraUbicacion(generics.GenericAPIView):
             return response
         except Exception as e:
             return Response({"error":str(e)})
+class PDFCotizacion(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        self.datos = self.request.data
+        def pie_pagina(canvas:Canvas,nombre):
+            canvas.saveState()
+            style = getSampleStyleSheet()
+            image_style = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
+            file_path = os.path.join(settings.STATIC_ROOT,"img/logo_kasac.jpeg")
+            draw_image(canvas,file_path,10,680,250,120)
+            style_emision = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
+            value_emision = Paragraph(f"<b>Emision</b>:{self.datos['emision']}",style=style_emision)
+            value_emision.wrap(nombre.width,nombre.topMargin)
+            value_emision.drawOn(canvas,60,735)
+            style_emision = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
+            value_emision = Paragraph(f"<b>Emision</b>:{self.datos['emision']}",style=style_emision)
+            value_emision.wrap(nombre.width,nombre.topMargin)
+            value_emision.drawOn(canvas,60,500)
+            canvas.restoreState()
+        try:
+            self.numero_cotizacion = self.datos["numero_cotizacion"]
+
+            response = HttpResponse(content_type = "application/pdf")
+            response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
+            header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
+            dates = [["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]]
+
+            file = CustomPDF(response,"richard",header,dates,custom_header=pie_pagina,t_soles=0,t_dolares=0)
+            file.generate()
+            return response
+    
+        except Exception as e:
+            print(str(e))
+            data['error'] = str(e)
+            return Response(data)

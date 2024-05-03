@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from datetime import datetime
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
+
 class CuadreCajaView(GenericAPIView):
     credencial : object = None
     fecha : datetime = datetime.now()
@@ -11,20 +12,21 @@ class CuadreCajaView(GenericAPIView):
         data = {}
         datos = request.data
         ubicacion = datos['ubicacion']
-        if ubicacion=='':
-            raise Exception('El usuario no tiene una ubicacion.')
-        self.credencial = Credencial(datos['credencial'])
         self.dates : dict = {
-                    'ventas_efectivo':0,
-                    'ventas_credito':0,
-                    'ventas_nota_credito':0,
-                    'total_tarjetas_ingresos':0,
-                    'total_ventas':0,
-                    'total_devoluciones':0,
-                    'total_prendas':0,
-                    'total_prendas_devueltas':0
-        }
+                        'ventas_efectivo':0,
+                        'ventas_credito':0,
+                        'ventas_nota_credito':0,
+                        'total_tarjetas_ingresos':0,
+                        'total_ventas':0,
+                        'total_devoluciones':0,
+                        'total_prendas':0,
+                        'total_prendas_devueltas':0
+            }
+        
         try:
+            if ubicacion=='':
+                raise Exception('El usuario no tiene una ubicacion.')
+            self.credencial = Credencial(datos['credencial'])
             sql = f"""SELECT pag_codigo FROM t_parrametro WHERE par_anyo='{self.fecha.year}' """
             s,result = CAQ.request(self.credencial,sql,(),'get',0)
             if not s:
