@@ -15,7 +15,7 @@ class DownloadAppV1(GenericAPIView):
                 response['Content-Disposition'] = f'attachment;filename:"{os.path.basename(apk)}"'
                 return response
         else:
-            return HttpResponse({"error":"Archivo no encontrado"},statu=404)
+            return HttpResponse({"error":"Archivo no encontrado"},status=404)
 class DownloadAppMapring(GenericAPIView):
     def get(self,request,*args,**kwargs):
         apk = os.path.join(settings.BASE_DIR,'media',r'apk\mapring.apk')
