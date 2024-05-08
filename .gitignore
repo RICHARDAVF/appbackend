@@ -11,7 +11,3 @@ fact.json
 datos.json
 output.pdf
 token.txt
-.env
-peticiones.log
-media/json/
-web.config
