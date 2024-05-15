@@ -4,7 +4,7 @@ import io
 
 from rest_framework.generics import GenericAPIView
 
-from reportlab.lib.pagesizes import A4,letter
+from reportlab.lib.pagesizes import A4,letter,landscape
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
@@ -226,6 +226,26 @@ class CustomPDF:
         except Exception as e:
             raise Exception(str(e))
 
+
+class PDFHistorialCliente:
+    def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera):
+        super(PDFHistorialCliente,self).__init__()
+        self.filename = filename
+        self.title = title
+        self.header = header
+        self.data = data
+        self.custom_cabecera = custom_cabecera
+    def generate(self):
+        self.data.insert(0,self.header)
+        style = TableStyle([
+                            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ("FONTSIZE",(0,0),(-1,-1),10),
+                    ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
+        ])
+        table = Table(data=self.data,repeatRows=1,style=style)
+        file = SimpleDocTemplate(self.filename,pagesize=landscape(letter),title="REPORTE",author="RICHARD AVILES FERRO")
+        file.build([table],canvasmaker=Numeracion)
+        
 class Numeracion(Canvas):
     def __init__(self,*args,**kwargs):
         Canvas.__init__(self,*args,**kwargs)

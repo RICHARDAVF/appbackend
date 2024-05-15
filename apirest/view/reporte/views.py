@@ -1,4 +1,4 @@
-from reportlab.pdfgen import canvas
+# from reportlab.pdfgen import canvas
 from django.conf import settings
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
@@ -70,7 +70,7 @@ class PDFView(GenericAPIView):
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="example.pdf"'
 
-            p = canvas.Canvas(response, pagesize=A4)
+            p = Canvas(response, pagesize=A4)
             creden = tuple(request.data['creden'].values())
             sql = "SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen"
             date = query(sql,(),creden)
