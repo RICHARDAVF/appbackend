@@ -255,6 +255,7 @@ class PDFHistorialCliente:
         table1 = Table()
         file = SimpleDocTemplate(self.filename,pagesize=landscape(letter),title="REPORTE",author="RICHARD AVILES FERRO")
         file.build([table],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
+        # se hizo cambios 
         
 >>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
 class Numeracion(Canvas):
