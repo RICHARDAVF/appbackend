@@ -396,10 +396,7 @@ class ReadDocumentoView(generics.GenericAPIView):
             }
         except Exception as e:
             data['error'] = 'Ocurrio un error al recuperar los datos'
-<<<<<<< HEAD
             print(str(e))
-=======
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
         return Response(data)
     def cabecera(self,year):
         conn = QuerysDb.conexion(self.kwargs['host'],self.kwargs['db'],self.kwargs['user'],self.kwargs['password'])

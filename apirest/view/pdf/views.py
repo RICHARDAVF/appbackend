@@ -4,11 +4,8 @@ import io
 
 from rest_framework.generics import GenericAPIView
 
-<<<<<<< HEAD
 from reportlab.lib.pagesizes import A4,letter
-=======
 from reportlab.lib.pagesizes import A4,letter,landscape
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
@@ -230,8 +227,6 @@ class CustomPDF:
         except Exception as e:
             raise Exception(str(e))
 
-<<<<<<< HEAD
-=======
 
 class PDFHistorialCliente:
     def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera,saldo):
@@ -257,7 +252,6 @@ class PDFHistorialCliente:
         file.build([table],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
         # se hizo cambios 
         
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
 class Numeracion(Canvas):
     def __init__(self,*args,**kwargs):
         Canvas.__init__(self,*args,**kwargs)

@@ -66,36 +66,22 @@ class PDFView(GenericAPIView):
     def post(self,request,*args,**kwargs):
         res = {}
         cred = request.data['cred']
-<<<<<<< HEAD
         
-        try:
-            response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = 'inline; filename="example.pdf"'
 
-            p = canvas.Canvas(response, pagesize=A4)
-=======
      
         try:
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="example.pdf"'
             
             p = Canvas(response, pagesize=A4)
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             creden = tuple(request.data['creden'].values())
             codigos = [item["codigo"] for item in request.data["datos"]]
-            sql = f"SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen WHERE art_codigo IN ({','.join(f" '{cod}' " for cod in codigos)})"
+            sql = f"""SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen WHERE art_codigo IN ({','.join(f" '{cod}' " for cod in codigos)})"""
             
             date = query(sql,(),creden)
             for item in date:
                 try:
-<<<<<<< HEAD
-                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/static/img",f"{item[0]}A.JPG")): 
-                        decode_and_save_image(item[1],f"{item[0]}A")
-                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/static/img",f"{item[0]}B.JPG")): 
-                        decode_and_save_image(item[2],f"{item[0]}B")
-                except:
-                    pass
-=======
+                    
                     if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}A.JPG")): 
                         decode_and_save_image(item[1],f"{item[0]}A")
                     if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}B.JPG")): 
@@ -103,7 +89,6 @@ class PDFView(GenericAPIView):
                 except Exception as e :
                     print(str(e))
 
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             coordenadas = [
             [[30,580],[160,580]],[[320,580],[460,580]],
             [[30,355],[160,355]],[[320,355],[460,355]],
@@ -133,11 +118,8 @@ class PDFView(GenericAPIView):
                 genero, linea = key
                 grouped_data.setdefault(genero, {})
                 grouped_data[genero].setdefault(linea, []).extend(list(group))
-<<<<<<< HEAD
             file_path = os.path.join(settings.BASE_DIR, 'static', 'img\logo.png')
-=======
             file_path = os.path.join(settings.BASE_DIR, 'static', 'img/logo_denim.png')
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             draw_image(p,file_path,20,790,300,50)
             p.drawString(400,810,f'Fecha: {datetime.now().strftime("%d-%m-%Y")}')
             p.drawString(400,800,f'Hora : {datetime.now().strftime("%H:%M:%S")}')
@@ -154,7 +136,6 @@ class PDFView(GenericAPIView):
                         p.setFont("Helvetica", 8)
                 
                         try:
-<<<<<<< HEAD
                             file_path = os.path.join(settings.BASE_DIR, 'static', 'img', f"{item['codigo']}A.JPG")
                             draw_image(p,file_path,*coordenadas[itm][0],100,150)
                         except:
@@ -166,19 +147,14 @@ class PDFView(GenericAPIView):
                             draw_image(p,file_path,*coordenadas[itm][1],100,150)
                         except:
                             file_path = os.path.join(settings.BASE_DIR, 'static', 'img\default.jpg')
-=======
-                            file_path = os.path.join(settings.BASE_DIR, 'media', 'img', f"{item['codigo']}A.JPG")
+                
                             draw_image(p,file_path,*coordenadas[itm][0],100,150)
-                        except:
-                            
-                            file_path = os.path.join(settings.BASE_DIR, 'static', 'img/default.jpg')
-                            draw_image(p,file_path,*coordenadas[itm][0],100,150)
+                        
                         try:
                             file_path = os.path.join(settings.BASE_DIR, 'media', 'img', f"{item['codigo']}B.JPG")
                             draw_image(p,file_path,*coordenadas[itm][1],100,150)
                         except:
                             file_path = os.path.join(settings.BASE_DIR, 'static', 'img/default.jpg')
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
                             draw_image(p,file_path,*coordenadas[itm][1],100,150)
                         p.drawString(*coord_text[itm],item['nombre'].strip())
                         const =0
@@ -204,10 +180,7 @@ class PDFView(GenericAPIView):
                 file.write(response.content)
             res['success'] = "success"
         except Exception as e:
-<<<<<<< HEAD
-=======
             print(str(e))
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             res['error'] = f"Ocurrio un error : {str(e)}"
         return Response(res)
         
@@ -234,11 +207,8 @@ class PDFview1(GenericAPIView):
                 else:
                     partes[parte] = [item]
             story = []
-<<<<<<< HEAD
             first_page_image_path =os.path.join(settings.BASE_DIR, 'static', 'img\logo.png')
-=======
             first_page_image_path =os.path.join(settings.BASE_DIR, 'static', 'img/logo_denim.png')
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             first_page_image = img(first_page_image_path, width=300, height=60) 
             first_page_image.hAlign = 'CENTER'  
             story.append(first_page_image)
@@ -312,10 +282,7 @@ class PDFview1(GenericAPIView):
                 file.write(buffer.getvalue())
             res['success'] = "success"
         except Exception as e:
-<<<<<<< HEAD
-=======
             print(str(e))
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             res['error'] = f"Ocurrio un error: {str(e)}"
         return Response(res)
 
@@ -462,17 +429,14 @@ class  LetraUbicacion(GenericAPIView):
             hora.wrap(nombre.width,nombre.topMargin)
             hora.drawOn(canvas,nombre.leftMargin,735)
 
-<<<<<<< HEAD
             hora = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
             hora = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=hora)
             hora.wrap(nombre.width,nombre.topMargin)
             hora.drawOn(canvas,60,735)
-=======
             repo = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
             repo = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=repo)
             repo.wrap(nombre.width,nombre.topMargin)
             repo.drawOn(canvas,60,735)
->>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
             canvas.restoreState()
         try:
             header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
