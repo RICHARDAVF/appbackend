@@ -218,11 +218,10 @@ class ReadCuentasView(generics.GenericAPIView):
     def post(self,request,*args,**kwargs):
         self.fecha = datetime.now()
         self.credencial = Credencial(request.data["credencial"])
-    
+        self.datos = request.data
         try:
-            datos = request.data
-            filtro = datos["filtro"]
-            codigo = datos["codigo"]
+            filtro = self.datos["filtro"]
+            codigo = self.datos["codigo"]
             params = (codigo,)
 
             sql = f"""
@@ -238,7 +237,11 @@ class ReadCuentasView(generics.GenericAPIView):
                     b.mov_femisi,
                     b.MOV_FVENC,
                     a.ban_nombre,
-                    b.doc_codigo
+                    b.doc_codigo,
+                    b.ori_codigo,
+                    b.mov_compro,
+                    b.ven_codigo,
+                    b.fac_docref
             
                 FROM (
                     SELECT
@@ -266,6 +269,7 @@ class ReadCuentasView(generics.GenericAPIView):
                         a.mov_moned,
                         a.aux_clave,
                         a.DOC_CODIGO
+                       
                 ) a
                 INNER JOIN MOVA{self.fecha.year} b ON a.mvc_docum = b.mov_docum AND a.mvc_serie = b.MOV_SERIE
                 LEFT JOIN t_origen c ON b.ORI_CODIGO = c.ori_codigo
@@ -285,31 +289,56 @@ class ReadCuentasView(generics.GenericAPIView):
                     a.ban_nombre ASC;
                 """
             s,result = CAQ.request(self.credencial,sql,params,"get",1)
-
+        
             if not s:
                 raise Exception("Ocurrio un error al ercuperar datos para el REPORTE")
             tipo_documentos = {
-                "01":"FACT",
+                "01":"FAC",
                 "03":"NCR",
                 "08":"NDE",
                 "50":"LET"
             }
-            data = [[tipo_documentos[value[-1]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),value[5],value[6],value[7],value[10].strip()] for value in result]
+            data = [[tipo_documentos[value[11]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),value[5],
+                     value[6],value[7],value[10].strip(),value[12].strip(),value[13],value[14],value[15].strip()] for value in result]
+           
             def custom_cabecera(canvas:Canvas,nombre):
                 canvas.saveState()
                 style = getSampleStyleSheet()
                 razon_social = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
                 razon_social = Paragraph(self.datos['credencial']["razon_social"],style=razon_social)
                 razon_social.wrap(nombre.width,nombre.topMargin)
-                razon_social.drawOn(canvas,nombre.leftMargin,750)
+                razon_social.drawOn(canvas,50,580)
+
+                user = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
+                user = Paragraph(f"<b>Usuario</b>:{self.datos['usuario']}",style=user)
+                user.wrap(nombre.width,nombre.topMargin)
+                user.drawOn(canvas,50,5560)
+
+                repo = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
+                repo = Paragraph(f"<b>CUENTAS POR COBRAR</b>",style=repo)
+                repo.wrap(nombre.width,nombre.topMargin)
+                repo.drawOn(canvas,120,545)
+
+                
+                fecha = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
+                fecha = Paragraph(f"<b>Fecha</b>: {datetime.now().strftime('%d/%m/%Y')}",style=fecha)
+                fecha.wrap(nombre.width,nombre.topMargin)
+                fecha.drawOn(canvas,nombre.leftMargin,580)
+
+                hora = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
+                hora = Paragraph(f"<b>Hora</b>: {datetime.now().strftime('%H:%M:%S')}",style=hora)
+                hora.wrap(nombre.width,nombre.topMargin)
+                hora.drawOn(canvas,nombre.leftMargin,560)
                 canvas.restoreState()
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
+            headers = ["TIpo","Numª","Serie","F. Emsion","F. Venc.","Mon.","Debe","Haber","Saldo","Banco","Ori.","Vouc.","Vend.","Doc. Ref."]
 
-            file = PDFHistorialCliente(response,title="Cuentas por Cobrar",header=["TIpo","Numª","Serie","F. Emsion","F. Venc.","Mon.","Debe","Haber","Saldo","Banco"],data=data,custom_cabecera=custom_cabecera)
+            file = PDFHistorialCliente(response,title="Cuentas por Cobrar",header=headers,data=data,custom_cabecera=custom_cabecera,saldo=self.datos["saldo"])
             file.generate()
             return response
         except Exception as e:
+            print(str(e))
             return Response({"error":str(e)}) 
 
 class ReadDocumentoView(generics.GenericAPIView):
@@ -367,7 +396,6 @@ class ReadDocumentoView(generics.GenericAPIView):
             }
         except Exception as e:
             data['error'] = 'Ocurrio un error al recuperar los datos'
-            print(str(e))
         return Response(data)
     def cabecera(self,year):
         conn = QuerysDb.conexion(self.kwargs['host'],self.kwargs['db'],self.kwargs['user'],self.kwargs['password'])

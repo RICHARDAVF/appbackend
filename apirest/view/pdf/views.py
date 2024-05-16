@@ -228,13 +228,14 @@ class CustomPDF:
 
 
 class PDFHistorialCliente:
-    def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera):
+    def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera,saldo):
         super(PDFHistorialCliente,self).__init__()
         self.filename = filename
         self.title = title
         self.header = header
         self.data = data
         self.custom_cabecera = custom_cabecera
+        self.saldo = saldo
     def generate(self):
         self.data.insert(0,self.header)
         style = TableStyle([
@@ -243,8 +244,11 @@ class PDFHistorialCliente:
                     ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
         ])
         table = Table(data=self.data,repeatRows=1,style=style)
+        data = [
+            ["Linea de Credito",self.saldo["linea_credito"]],["Sald"]]
+        table1 = Table()
         file = SimpleDocTemplate(self.filename,pagesize=landscape(letter),title="REPORTE",author="RICHARD AVILES FERRO")
-        file.build([table],canvasmaker=Numeracion)
+        file.build([table],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
         
 class Numeracion(Canvas):
     def __init__(self,*args,**kwargs):
