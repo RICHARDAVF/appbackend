@@ -5,7 +5,7 @@ insert2.txt
 sqlcommands.txt
 scanner.txt
 staticfiles/img/
-media/
+media/img/
 prueba.json
 fact.json
 datos.json
@@ -16,3 +16,4 @@ peticiones.log
 media/json/
 web.config
 media/apk/app-release.apk
+*.pdf
