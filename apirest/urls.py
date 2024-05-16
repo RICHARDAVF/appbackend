@@ -139,6 +139,7 @@ urlpatterns = [
     #CUENTAS
     path('cuentas/<str:host>/<str:db>/<str:user>/<str:password>/<int:filter>/',CuentasView.as_view()),
     path('cuentas/read/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<int:filter>/',ReadCuentasView.as_view()),
+    path('v1/historial/client/<str:ruc>/',ReadCuentasView.as_view()),
     path('cuentas/read/doc/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:year>/',ReadDocumentoView.as_view()),
     #ORDEN REQUERIMIENTO
     path('orden/<str:host>/<str:db>/<str:user>/<str:password>/',OrdenView.as_view()),

@@ -5,7 +5,11 @@ insert2.txt
 sqlcommands.txt
 scanner.txt
 staticfiles/img/
+<<<<<<< HEAD
 media/
+=======
+media/img/
+>>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
 prueba.json
 fact.json
 datos.json
@@ -14,4 +18,10 @@ token.txt
 .env
 peticiones.log
 media/json/
+<<<<<<< HEAD
 web.config
+=======
+web.config
+media/apk/app-release.apk
+*.pdf
+>>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c

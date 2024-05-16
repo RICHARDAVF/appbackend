@@ -4,7 +4,11 @@ import io
 
 from rest_framework.generics import GenericAPIView
 
+<<<<<<< HEAD
 from reportlab.lib.pagesizes import A4,letter
+=======
+from reportlab.lib.pagesizes import A4,letter,landscape
+>>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
@@ -226,6 +230,33 @@ class CustomPDF:
         except Exception as e:
             raise Exception(str(e))
 
+<<<<<<< HEAD
+=======
+
+class PDFHistorialCliente:
+    def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera,saldo):
+        super(PDFHistorialCliente,self).__init__()
+        self.filename = filename
+        self.title = title
+        self.header = header
+        self.data = data
+        self.custom_cabecera = custom_cabecera
+        self.saldo = saldo
+    def generate(self):
+        self.data.insert(0,self.header)
+        style = TableStyle([
+                            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ("FONTSIZE",(0,0),(-1,-1),10),
+                    ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
+        ])
+        table = Table(data=self.data,repeatRows=1,style=style)
+        data = [
+            ["Linea de Credito",self.saldo["linea_credito"]],["Sald"]]
+        table1 = Table()
+        file = SimpleDocTemplate(self.filename,pagesize=landscape(letter),title="REPORTE",author="RICHARD AVILES FERRO")
+        file.build([table],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
+        
+>>>>>>> feb67b7546c10eb05f33df78758c80c21fefd53c
 class Numeracion(Canvas):
     def __init__(self,*args,**kwargs):
         Canvas.__init__(self,*args,**kwargs)

@@ -84,6 +84,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'noiapi.wsgi.application'
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 
 
 # Database
