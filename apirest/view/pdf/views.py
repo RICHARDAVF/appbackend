@@ -4,6 +4,7 @@ import io
 
 from rest_framework.generics import GenericAPIView
 
+from reportlab.lib.pagesizes import A4,letter
 from reportlab.lib.pagesizes import A4,letter,landscape
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle

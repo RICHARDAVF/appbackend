@@ -66,20 +66,18 @@ class PDFView(GenericAPIView):
     def post(self,request,*args,**kwargs):
         res = {}
         cred = request.data['cred']
-     
+        
         try:
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="example.pdf"'
             
             p = Canvas(response, pagesize=A4)
             creden = tuple(request.data['creden'].values())
-            codigos = [item["codigo"] for item in request.data["datos"]]
-            sql = f"SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen WHERE art_codigo IN ({','.join(f" '{cod}' " for cod in codigos)})"
-            
+            sql = "SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen"
             date = query(sql,(),creden)
             for item in date:
                 try:
-                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}A.JPG")): 
+                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/static/img",f"{item[0]}A.JPG")): 
                         decode_and_save_image(item[1],f"{item[0]}A")
                     if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}B.JPG")): 
                         decode_and_save_image(item[2],f"{item[0]}B")
@@ -416,10 +414,10 @@ class  LetraUbicacion(GenericAPIView):
             hora.wrap(nombre.width,nombre.topMargin)
             hora.drawOn(canvas,nombre.leftMargin,735)
 
-            repo = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
-            repo = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=repo)
-            repo.wrap(nombre.width,nombre.topMargin)
-            repo.drawOn(canvas,60,735)
+            hora = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
+            hora = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=hora)
+            hora.wrap(nombre.width,nombre.topMargin)
+            hora.drawOn(canvas,60,735)
             canvas.restoreState()
         try:
             header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
