@@ -9,12 +9,7 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
 from reportlab.platypus.flowables import PageBreak
-from django.http import HttpResponse
-import os
-from django.conf import settings
-from django.template.loader import render_to_string
-from apirest.credenciales import Credencial
-from apirest.querys import CAQ
+
 from reportlab.pdfgen.canvas import Canvas
 
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
