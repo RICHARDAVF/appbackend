@@ -300,7 +300,6 @@ class ReadCuentasView(generics.GenericAPIView):
             }
             data = [[tipo_documentos[value[11]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),value[5],
                      value[6],value[7],value[10].strip(),value[12].strip(),value[13],value[14],value[15].strip()] for value in result]
-           
             def custom_cabecera(canvas:Canvas,nombre):
                 canvas.saveState()
                 style = getSampleStyleSheet()
@@ -312,7 +311,7 @@ class ReadCuentasView(generics.GenericAPIView):
                 user = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
                 user = Paragraph(f"<b>Usuario</b>:{self.datos['usuario']}",style=user)
                 user.wrap(nombre.width,nombre.topMargin)
-                user.drawOn(canvas,50,5560)
+                user.drawOn(canvas,50,560)
 
                 repo = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
                 repo = Paragraph(f"<b>CUENTAS POR COBRAR</b>",style=repo)
@@ -332,7 +331,7 @@ class ReadCuentasView(generics.GenericAPIView):
                 canvas.restoreState()
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
-            headers = ["TIpo","Numª","Serie","F. Emsion","F. Venc.","Mon.","Debe","Haber","Saldo","Banco","Ori.","Vouc.","Vend.","Doc. Ref."]
+            headers = ["Tipo","Num°","Serie","F. Emision","F. Venc.","Mon.","Debe","Haber","Saldo","Banco","Ori.","Vouc.","Vend.","Doc. Ref."]
 
             file = PDFHistorialCliente(response,title="Cuentas por Cobrar",header=headers,data=data,custom_cabecera=custom_cabecera,saldo=self.datos["saldo"])
             file.generate()

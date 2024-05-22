@@ -239,12 +239,12 @@ class PDFHistorialCliente:
         ])
         table = Table(data=self.data,repeatRows=1,style=style)
         data = [
-            ["Linea de Credito",self.saldo["linea_credito"]],["Saldo Soles S/",self.saldo['soles']],["Saldo Dolares US$",self.saldo['dolares']]]
-        table1 = Table(data=data,style=style,hAlign=TA_RIGHT)
+            [Paragraph(text=f"""Linea de Credito"""),Paragraph(text=f"""<para alignment="right">{self.saldo["linea_credito"]:,.2f}</para>""")],["Saldo Soles S/",Paragraph(text=f"""<para alignment="right" >{self.saldo['soles']}</para>""")],["Saldo Dolares US$",Paragraph(text=f"""<para alignment="right">{self.saldo['dolares']}</para>""")]]
+        table1 = Table(data=data,hAlign=TA_RIGHT,colWidths=[100,100])
 
         
         file = SimpleDocTemplate(self.filename,pagesize=landscape(letter),title="REPORTE",author="RICHARD AVILES FERRO")
-        file.build([table,table1],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
+        file.build([table,Spacer(1,10,True),table1],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
         # se hizo cambios 
         
 class Numeracion(Canvas):
