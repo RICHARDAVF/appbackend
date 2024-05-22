@@ -4,6 +4,7 @@ import io
 
 from rest_framework.generics import GenericAPIView
 
+from reportlab.lib.pagesizes import A4,letter
 from reportlab.lib.pagesizes import A4,letter,landscape
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
@@ -112,8 +113,6 @@ class PDF:
                 [Paragraph("DEVOLUCION DEL DIA",style=normal_left),Paragraph(f"{datos[5]:.2f}",style=normal_right)],
                 [Paragraph("TOTAL VENTAS",style=negrita_left),Paragraph(f"{datos[6]:.2f}",style=negrita_right)],
             ]
-            
-      
             story.append(self.style_table(data))
             story.append(Spacer(1,12))
             story.append(Paragraph('INGRESOS',style=negrita_center))
@@ -228,13 +227,14 @@ class CustomPDF:
 
 
 class PDFHistorialCliente:
-    def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera):
+    def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera,saldo):
         super(PDFHistorialCliente,self).__init__()
         self.filename = filename
         self.title = title
         self.header = header
         self.data = data
         self.custom_cabecera = custom_cabecera
+        self.saldo = saldo
     def generate(self):
         self.data.insert(0,self.header)
         style = TableStyle([
@@ -243,8 +243,14 @@ class PDFHistorialCliente:
                     ('SPLITBYROWSPAN', (0, 0), (-1, -1), 1)
         ])
         table = Table(data=self.data,repeatRows=1,style=style)
+        data = [
+            ["Linea de Credito",self.saldo["linea_credito"]],["Saldo Soles S/",self.saldo['soles']],["Saldo Dolares US$",self.saldo['dolares']]]
+        table1 = Table(data=data,style=style,hAlign=TA_RIGHT)
+
+        
         file = SimpleDocTemplate(self.filename,pagesize=landscape(letter),title="REPORTE",author="RICHARD AVILES FERRO")
-        file.build([table],canvasmaker=Numeracion)
+        file.build([table,table1],canvasmaker=Numeracion,onFirstPage=self.custom_cabecera,onLaterPages=self.custom_cabecera)
+        # se hizo cambios 
         
 class Numeracion(Canvas):
     def __init__(self,*args,**kwargs):
