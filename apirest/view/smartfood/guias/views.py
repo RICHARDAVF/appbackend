@@ -406,6 +406,8 @@ class GuiasView(generics.GenericAPIView):
         for item in items:
             sql = "SELECT ume_sunat FROM t_umedida WHERE UME_CODIGO=(SELECT UME_CODIGO FROM t_articulo WHERE art_provee=? AND art_activo=0)"
             medida= self.query(sql,(item['codigo'],))
+            if medida is None:
+                raise Exception ("El articulo no tiene unidad de medida")
             sql = "SELECT ART_CODIGO,ART_NOMBRE,art_peso FROM t_articulo WHERE art_provee=?"
             res=self.query(sql,(item['codigo'],))
             peso+=res[2]*int(item['cantidad'])

@@ -67,22 +67,17 @@ class PDFView(GenericAPIView):
         res = {}
         cred = request.data['cred']
         
-
-     
         try:
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="example.pdf"'
             
             p = Canvas(response, pagesize=A4)
             creden = tuple(request.data['creden'].values())
-            codigos = [item["codigo"] for item in request.data["datos"]]
-            sql = f"""SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen WHERE art_codigo IN ({','.join(f" '{cod}' " for cod in codigos)})"""
-            
+            sql = "SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen"
             date = query(sql,(),creden)
             for item in date:
                 try:
-                    
-                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}A.JPG")): 
+                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/static/img",f"{item[0]}A.JPG")): 
                         decode_and_save_image(item[1],f"{item[0]}A")
                     if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}B.JPG")): 
                         decode_and_save_image(item[2],f"{item[0]}B")
@@ -118,7 +113,6 @@ class PDFView(GenericAPIView):
                 genero, linea = key
                 grouped_data.setdefault(genero, {})
                 grouped_data[genero].setdefault(linea, []).extend(list(group))
-            file_path = os.path.join(settings.BASE_DIR, 'static', 'img\logo.png')
             file_path = os.path.join(settings.BASE_DIR, 'static', 'img/logo_denim.png')
             draw_image(p,file_path,20,790,300,50)
             p.drawString(400,810,f'Fecha: {datetime.now().strftime("%d-%m-%Y")}')
@@ -136,20 +130,12 @@ class PDFView(GenericAPIView):
                         p.setFont("Helvetica", 8)
                 
                         try:
-                            file_path = os.path.join(settings.BASE_DIR, 'static', 'img', f"{item['codigo']}A.JPG")
+                            file_path = os.path.join(settings.BASE_DIR, 'media', 'img', f"{item['codigo']}A.JPG")
                             draw_image(p,file_path,*coordenadas[itm][0],100,150)
                         except:
                             
-                            file_path = os.path.join(settings.BASE_DIR, 'static', 'img\default.jpg')
+                            file_path = os.path.join(settings.BASE_DIR, 'static', 'img/default.jpg')
                             draw_image(p,file_path,*coordenadas[itm][0],100,150)
-                        try:
-                            file_path = os.path.join(settings.BASE_DIR, 'static', 'img', f"{item['codigo']}B.JPG")
-                            draw_image(p,file_path,*coordenadas[itm][1],100,150)
-                        except:
-                            file_path = os.path.join(settings.BASE_DIR, 'static', 'img\default.jpg')
-                
-                            draw_image(p,file_path,*coordenadas[itm][0],100,150)
-                        
                         try:
                             file_path = os.path.join(settings.BASE_DIR, 'media', 'img', f"{item['codigo']}B.JPG")
                             draw_image(p,file_path,*coordenadas[itm][1],100,150)
@@ -207,7 +193,6 @@ class PDFview1(GenericAPIView):
                 else:
                     partes[parte] = [item]
             story = []
-            first_page_image_path =os.path.join(settings.BASE_DIR, 'static', 'img\logo.png')
             first_page_image_path =os.path.join(settings.BASE_DIR, 'static', 'img/logo_denim.png')
             first_page_image = img(first_page_image_path, width=300, height=60) 
             first_page_image.hAlign = 'CENTER'  
@@ -433,10 +418,6 @@ class  LetraUbicacion(GenericAPIView):
             hora = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=hora)
             hora.wrap(nombre.width,nombre.topMargin)
             hora.drawOn(canvas,60,735)
-            repo = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
-            repo = Paragraph(f"UBICACION DE LETRAS(CLIENTES) ",style=repo)
-            repo.wrap(nombre.width,nombre.topMargin)
-            repo.drawOn(canvas,60,735)
             canvas.restoreState()
         try:
             header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
