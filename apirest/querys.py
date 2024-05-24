@@ -87,12 +87,11 @@ class CAQ:
             elif method == 'get' and option == 0:
                 data = cursor.fetchone()
             else:
-                pass
+                data['msg'] = "La operacion se realizo con exito"
             conn.commit()
             conn.close()
             return True,data
         except Exception as e:
-            print(str(e))
             data['error'] = 'Ocurrio un error en el servidor'
             return False,data
         

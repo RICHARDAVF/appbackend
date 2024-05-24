@@ -5,6 +5,51 @@ from apirest.credenciales import Credencial
 from apirest.querys import CAQ, Querys
 from datetime import datetime
 from apirest.views import QuerysDb
+from dataclasses import dataclass
+@dataclass
+class Client:
+    nro_documento : str = None
+    codigo : str = None
+    nombre : str = None
+    direccion : str = None
+    telefono : str = None
+
+class GetClient(Client):
+    def __init__(self,credencial:object,codigo:str,ruc:str):
+        self.codigo_client = codigo
+        self.ruc_client = ruc
+        self.credencial = credencial
+        self.get()
+    def get(self):
+
+        try:
+            sql = f"""
+                    SELECT  
+                        aux_docum, 
+                        aux_clave, 
+                        aux_razon,
+                        aux_direcc,
+                        aux_telef
+                    FROM t_auxiliar
+                    WHERE  
+                        aux_desac=0
+                        {
+                            f"AND aux_clave='{self.codigo_client}' " if self.codigo_client!='' else f"AND aux_docum='{self.ruc_client}' "
+                        }
+                """
+            s,result = CAQ.request(self.credencial,sql,(),"get",0)
+            if not s :
+                raise Exception(f"Ocurrio un error al recuperar datos del cliente")
+            self.nro_documento = result[0].strip()
+            self.codigo = result[1].strip()
+            self.nombre = result[2].strip()
+            self.direccion = result[3].strip()
+            self.telefono = result[4].strip()
+            
+        except Exception as e:
+            raise Exception(str(e))
+
+
 
 class ClienteCreateView(generics.GenericAPIView):
     def post(self,request,*args,**kwargs):
