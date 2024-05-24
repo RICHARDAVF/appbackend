@@ -238,7 +238,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     b.MOV_FVENC,
                     a.ban_nombre,
                     b.doc_codigo,
-                    b.ori_codigo,
+                    c.ori_nombre,
                     b.mov_compro,
                     b.ven_codigo,
                     b.fac_docref
@@ -286,7 +286,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     AND SUBSTRING(b.pla_cuenta, 1, 2) >= '12'
                     AND SUBSTRING(b.pla_cuenta, 1, 2) <= '13'
                 ORDER BY
-                    a.ban_nombre ASC;
+                    a.ban_nombre,b.MOV_FVENC,a.mvc_serie ASC;
                 """
             s,result = CAQ.request(self.credencial,sql,params,"get",1)
         
