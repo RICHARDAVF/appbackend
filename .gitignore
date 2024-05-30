@@ -12,7 +12,7 @@ output.pdf
 token.txt
 .env
 *.log
-media/
+
 web.config
 media/apk/app-release.apk
 *.pdf

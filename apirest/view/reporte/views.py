@@ -20,6 +20,9 @@ from django.http import HttpResponse
 from django.http import FileResponse
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
+import logging
+
+logger = logging.getLogger('django')
 def decode_and_save_image(base64_img, filename):
     try:
         image_data = base64.b64decode(base64_img)
@@ -29,6 +32,7 @@ def decode_and_save_image(base64_img, filename):
         file_path = os.path.join(f"{settings.BASE_DIR}/media/img", filename + ".JPG")
         img.save(file_path, "JPEG", quality=40) 
     except Exception as e:
+        logger.error('An error occurred: %s', e)
         # img = Image.open(os.path.join(f"{settings.BASE_DIR}/static/img",  "defaul.jpg"))
         # new_size = (300, 400)   
         # img = img.resize(new_size)
@@ -166,7 +170,7 @@ class PDFView(GenericAPIView):
                 file.write(response.content)
             res['success'] = "success"
         except Exception as e:
-            
+            logger.error('An error occurred: %s', e)
             res['error'] = f"Ocurrio un error : {str(e)}"
         return Response(res)
         
