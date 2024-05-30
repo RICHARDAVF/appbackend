@@ -75,14 +75,14 @@ class PDFView(GenericAPIView):
             creden = tuple(request.data['creden'].values())
             sql = "SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen"
             date = query(sql,(),creden)
-            for item in date:
-                try:
-                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/static/img",f"{item[0]}A.JPG")): 
-                        decode_and_save_image(item[1],f"{item[0]}A")
-                    if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0]}B.JPG")): 
-                        decode_and_save_image(item[2],f"{item[0]}B")
-                except Exception as e :
-                    print(str(e))
+            # for item in date:
+            #     try:
+            #         if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0].strip()}A.JPG")): 
+            #             decode_and_save_image(item[1],f"{item[0]}A")
+            #         if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0].strip()}B.JPG")): 
+            #             decode_and_save_image(item[2],f"{item[0]}B")
+            #     except Exception as e :
+            #         print(str(e),1)
 
             coordenadas = [
             [[30,580],[160,580]],[[320,580],[460,580]],
@@ -166,7 +166,7 @@ class PDFView(GenericAPIView):
                 file.write(response.content)
             res['success'] = "success"
         except Exception as e:
-            print(str(e))
+            
             res['error'] = f"Ocurrio un error : {str(e)}"
         return Response(res)
         
