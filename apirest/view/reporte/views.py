@@ -74,11 +74,10 @@ class PDFView(GenericAPIView):
         try:
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="example.pdf"'
-            
             p = Canvas(response, pagesize=A4)
-            creden = tuple(request.data['creden'].values())
-            sql = "SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen"
-            date = query(sql,(),creden)
+            # creden = tuple(request.data['creden'].values())
+            # sql = "SELECT art_codigo,art_image2,art_image3 FROM t_articulo_imagen"
+            # date = query(sql,(),creden)
             # for item in date:
             #     try:
             #         if not os.path.isfile(os.path.join(f"{settings.BASE_DIR}/media/img",f"{item[0].strip()}A.JPG")): 
@@ -87,7 +86,7 @@ class PDFView(GenericAPIView):
             #             decode_and_save_image(item[2],f"{item[0]}B")
             #     except Exception as e :
             #         print(str(e),1)
-
+  
             coordenadas = [
             [[30,580],[160,580]],[[320,580],[460,580]],
             [[30,355],[160,355]],[[320,355],[460,355]],

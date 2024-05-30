@@ -4,7 +4,7 @@ insert1.txt
 insert2.txt
 sqlcommands.txt
 scanner.txt
-media/
+/media/
 prueba.json
 fact.json
 datos.json
@@ -12,7 +12,6 @@ output.pdf
 token.txt
 .env
 *.log
-
 web.config
 media/apk/app-release.apk
 *.pdf
