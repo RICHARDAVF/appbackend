@@ -11,8 +11,8 @@ datos.json
 output.pdf
 token.txt
 .env
-peticiones.log
-media/json/
+*.log
+media/
 web.config
 media/apk/app-release.apk
 *.pdf

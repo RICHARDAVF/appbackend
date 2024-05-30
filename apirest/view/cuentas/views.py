@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import generics
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
+from apirest.view.clientes.views import GetClient
 from apirest.views import QuerysDb
 from datetime import datetime
 from reportlab.pdfgen.canvas import Canvas
@@ -238,7 +239,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     b.MOV_FVENC,
                     a.ban_nombre,
                     b.doc_codigo,
-                    b.ori_codigo,
+                    c.ori_codigo,
                     b.mov_compro,
                     b.ven_codigo,
                     b.fac_docref
@@ -286,7 +287,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     AND SUBSTRING(b.pla_cuenta, 1, 2) >= '12'
                     AND SUBSTRING(b.pla_cuenta, 1, 2) <= '13'
                 ORDER BY
-                    a.ban_nombre ASC;
+                    a.ban_nombre,b.MOV_FVENC,a.mvc_serie ASC;
                 """
             s,result = CAQ.request(self.credencial,sql,params,"get",1)
         
@@ -298,8 +299,16 @@ class ReadCuentasView(generics.GenericAPIView):
                 "08":"NDE",
                 "50":"LET"
             }
-            data = [[tipo_documentos[value[11]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),value[5],
-                     value[6],value[7],value[10].strip(),value[12].strip(),value[13],value[14],value[15].strip()] for value in result]
+            data:list = []
+            for value in result:
+                monto = value[5]-value[6]
+                if monto<0:
+                    dates = (0,monto)
+                else:
+                    dates = (monto,0)
+                d = [tipo_documentos[value[11]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),*dates,value[7],value[10].strip(),value[12].strip(),value[13],value[14],value[15].strip()]
+                data.append(d)
+            self.cliente : GetClient = GetClient(self.credencial,codigo,"")
             def custom_cabecera(canvas:Canvas,nombre):
                 canvas.saveState()
                 style = getSampleStyleSheet()
@@ -311,12 +320,16 @@ class ReadCuentasView(generics.GenericAPIView):
                 user = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
                 user = Paragraph(f"<b>Usuario</b>:{self.datos['usuario']}",style=user)
                 user.wrap(nombre.width,nombre.topMargin)
-                user.drawOn(canvas,50,560)
+                user.drawOn(canvas,50,570)
+                user = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
+                user = Paragraph(f"<b>Cliente: </b>:{self.cliente.nombre} <b>RUC: </b>{self.cliente.nro_documento}",style=user)
+                user.wrap(nombre.width,nombre.topMargin)
+                user.drawOn(canvas,50,550)
 
                 repo = ParagraphStyle(name="aline",alignment=TA_CENTER,parent=style["Normal"])
                 repo = Paragraph(f"<b>CUENTAS POR COBRAR</b>",style=repo)
                 repo.wrap(nombre.width,nombre.topMargin)
-                repo.drawOn(canvas,120,545)
+                repo.drawOn(canvas,120,540)
 
                 
                 fecha = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
