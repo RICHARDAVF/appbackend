@@ -41,8 +41,6 @@ class StockView(generics.GenericAPIView):
 
             """
         if int(talla) == 1:
-            
-            
             sql = f"""
                 select art_codigo,tal_codigo,'mom_cant'=sum(mom_cant),art_nombre,PA1_CODIGO,
                     PA2_CODIGO,

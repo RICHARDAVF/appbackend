@@ -223,8 +223,7 @@ JAZZMIN_SETTINGS = {
         {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
 
  
-        {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
-
+      
         {"model": "auth.User"},
 
       
@@ -233,7 +232,7 @@ JAZZMIN_SETTINGS = {
 
   
     "usermenu_links": [
-        {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
+       
         {"model": "auth.user"}
     ],
 
