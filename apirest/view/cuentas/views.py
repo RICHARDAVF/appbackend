@@ -11,7 +11,8 @@ from ..pdf.views import PDFHistorialCliente
 from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle,Spacer
-
+import logging
+logger = logging.getLogger('django')
 class CuentasView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
         host = kwargs['host']
@@ -96,10 +97,12 @@ class CuentasView(generics.GenericAPIView):
             conn.commit()
             conn.close()
         except Exception as e:
-      
+            logger.error('An error occurred: %s', e)
             data['error'] = 'Ocurrio un error al recuperar las cuentas'
         return Response(data)
     def saldo(self,soles,dolares,linea,tipo_cambio):
+        if linea==0:
+            return round((soles/tipo_cambio+dolares),2)
         return round(linea-(soles/tipo_cambio+dolares),2)
     def querys(self,conn,sql,params,request):
         cursor = conn.cursor()
@@ -203,6 +206,8 @@ class ReadCuentasView(generics.GenericAPIView):
                 data.append(d)
 
         except Exception as e:
+            logger.error('An error occurred: %s', e)
+
             data = str(e)
         return Response({'message':data})
 
@@ -295,7 +300,8 @@ class ReadCuentasView(generics.GenericAPIView):
                 raise Exception("Ocurrio un error al ercuperar datos para el REPORTE")
             tipo_documentos = {
                 "01":"FAC",
-                "03":"NCR",
+                "03":"BOL",
+                "07":"NCR",
                 "08":"NDE",
                 "50":"LET"
             }
@@ -350,6 +356,8 @@ class ReadCuentasView(generics.GenericAPIView):
             file.generate()
             return response
         except Exception as e:
+            logger.error('An error occurred: %s', e)
+
             print(str(e))
             return Response({"error":str(e)}) 
 
