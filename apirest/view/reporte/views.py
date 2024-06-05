@@ -100,7 +100,9 @@ class PDFView(GenericAPIView):
             ]
             data = request.data
             codigos = list(set(map(lambda item:item["codigo"],data["datos"])))
+            
             images_valid = self.verify_image(codigos)
+            
             if len(images_valid)>0:
                 self.save_images(images_valid)
             generos = {i['value']:i['label'] for i in data['genero']}
@@ -174,17 +176,19 @@ class PDFView(GenericAPIView):
             path2 = os.path.join(settings.MEDIA_ROOT,f'img/{item}B.JPG')
             if not(os.path.isfile(path1) or os.path.isfile(path2)):
                files_no_existes.append(item)
-        return  item
+        return  files_no_existes
     def save_images(self,data):
       
         sql = f"""SELECT art_image2,art_image3,art_codigo FROM t_articulo_imagen WHERE art_codigo IN ({','.join(f" '{i}' " for i in data)})  """
-        _,result = CAQ.request(self.credencial,sql,(),"GET",1)
+        _,result = CAQ.request(self.credencial,sql,(),"get",1)
         for image in result:
             try:
-                decode_and_save_image(image[0],f"{image[3].strip()}A")
-                decode_and_save_image(image[2],f"{image[3].strip()}B")
-            except:
-                pass
+                decode_and_save_image(image[0],f"{image[2].strip()}A")
+                decode_and_save_image(image[1],f"{image[2].strip()}B")
+            except Exception as e:
+                print(str(e))
+                # logger.error('An error occurred: %s', e)
+                
      
 class DownloadPDF(GenericAPIView):
     def get(self,request,*args,**kwargs):
