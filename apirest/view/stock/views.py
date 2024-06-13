@@ -4,6 +4,8 @@ from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 from apirest.views import QuerysDb
 from datetime import datetime
+import logging
+logger = logging.getLogger("django")
 class StockView(generics.GenericAPIView):
     def get(self,request,*args,**kwargs):
         host = kwargs['host']
@@ -663,7 +665,8 @@ class StockReview(generics.GenericAPIView):
 
         except Exception as e:
             data["error"] = f"Error en stock {str(e)}"
-        print(data)
+            logger.error('An error occurred: %s', e)
+
         return Response(data)
     def querys(self,conn,sql,params):
         cursor= conn.cursor()

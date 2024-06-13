@@ -4,6 +4,8 @@ from datetime import datetime
 from apirest.credenciales import Credencial
 
 from apirest.querys import CAQ
+import logging
+logger = logging.getLogger("django")
 class ArticuloStock(GenericAPIView):
     anio = datetime.now().year
     credencial = None
@@ -12,7 +14,7 @@ class ArticuloStock(GenericAPIView):
         self.credencial = Credencial(request.data['credencial'])
         try:
             datos = request.data
-           
+         
             if datos['almacen']=='':
                 data['error'] = 'Seleccione un almacen'
                 return Response(data)
@@ -22,10 +24,11 @@ class ArticuloStock(GenericAPIView):
             if datos['config']['separacion_pedido']:
                 sql = self.art_with_separacion()
             else:
-                
+
                 sql = self.art_off_separacion()
+
             params = (datos['almacen'],datos['ubicacion'])
-       
+           
             s,result = CAQ.request(self.credencial,sql,params,'get',1)
          
             if not s:
@@ -48,8 +51,9 @@ class ArticuloStock(GenericAPIView):
             ]
             
         except Exception as e:
-            print(str(e))
             data['error'] = 'Ocurrio un error al recuperar los articulos'
+            logger.error('An error occurred: %s', e)
+
         return Response(data)
 
     def art_with_separacion(self):
@@ -187,7 +191,7 @@ class ArticuloStock(GenericAPIView):
                         AND a.ALM_CODIGO = ?
                         AND a.UBI_COD1 = ?
                         {
-                            f'AND a.mov_pedido<>{codigo}' if codigo!='x' else ''
+                            f"AND a.mov_pedido<>'{codigo}'" if codigo!='x' else ''
                         }
                     GROUP BY
                         b.art_codigo,

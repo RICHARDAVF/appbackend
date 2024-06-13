@@ -13,6 +13,9 @@ from datetime import datetime
 from apirest.view.apis.views import TipoCambio
 from dataclasses import dataclass
 from apirest.view.pdf.views import PDF
+import logging
+
+logger = logging.getLogger('django')
 def agrupar(datos):
     datos_agrupados = {}
     for item in datos:
@@ -437,7 +440,7 @@ class GuardarPedido(GenericAPIView):
             data['success'] = self.message
             
         except Exception as e:
-            
+            logger.error('An error occurred: %s', e)
             data['error'] = str(e)
         return Response(data)
     def data_update(self,):
