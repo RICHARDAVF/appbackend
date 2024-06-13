@@ -490,7 +490,7 @@ class GuardarPedido(GenericAPIView):
                 stock_disponible = int(stock_real)-int(item['cantidad'])-int(pedidos_aprobados)-int(pedidos_pendientes)
        
                 if stock_disponible<0:
-                    data['error'] = f'El articulo {item["nombre"]} {item["talla"]} no tiene stock \nStock disponible : {stock_disponible}'
+                    data['error'] = f'El articulo {item["nombre"]} {item["talla"]} no tiene stock \nStock disponible : {stock_disponible:.2f}'
                     return False,data
             return True,''
         except Exception as e:

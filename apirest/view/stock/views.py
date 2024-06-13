@@ -548,7 +548,7 @@ class StockReview(generics.GenericAPIView):
 
             if not s:
                 raise
-            data['stock_real'] = round(date[0],2)
+            data['stock_real'] = round(float(date[0]),2)
             sql = f"""
                     SELECT 'mom_cant' = ISNULL(
                         SUM(zzz.mom_cant), 0
@@ -607,7 +607,7 @@ class StockReview(generics.GenericAPIView):
             s,date = CAQ.request(self.credencial,sql,params,'get',0)
             if not s:
                 raise
-            data['p_aprobados'] = round(date[0],2)
+            data['p_aprobados'] = round(float(date[0]),2)
             sql = f"""
                     SELECT 'mom_cant' = ISNULL(SUM(zzz.mom_cant), 0)
                     FROM (
@@ -657,12 +657,13 @@ class StockReview(generics.GenericAPIView):
         
         
             s,date = CAQ.request(self.credencial,sql,params,'get',0)
-            print(date,3)
-            data['p_pendientes'] = round(date[0],2)
+   
+            data['p_pendientes'] = round(float(date[0]),2)
 
 
         except Exception as e:
-            print(str(e))
+            data["error"] = f"Error en stock {str(e)}"
+        print(data)
         return Response(data)
     def querys(self,conn,sql,params):
         cursor= conn.cursor()
