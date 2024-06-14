@@ -157,6 +157,7 @@ class PdfPedidoView(GenericAPIView):
                 raise Exception('Error al consultar a la base de datos')
             data['pdf'] = PDF(empresa,cabecera,self.items(result)).generate()
         except Exception as e:
+            logger.error("A error ocurred %s",e)
             data['error'] = str(e)
         return Response(data)
     def items(self,detalle):
@@ -486,18 +487,21 @@ class GuardarPedido(GenericAPIView):
             for item in articulos:
                 
                 stock_real = self.stock_real(item['talla'],item['codigo'],datos['almacen'],datos['ubicacion'],item['lote'],item['fecha'])[0]
-               
                 pedidos_pendientes = self.pedidos_pendientes(item['codigo'],item['talla'],datos['ubicacion'],datos['almacen'],numero_pedido,item['lote'],item['fecha'])[0]
+ 
                 pedidos_aprobados = self.pedidos_aprobados(item['talla'],item['codigo'],datos['ubicacion'],datos['almacen'],item['fecha'],item['lote'])[0]
                 
-                stock_disponible = int(stock_real)-int(item['cantidad'])-int(pedidos_aprobados)-int(pedidos_pendientes)
-       
+      
+                stock_disponible = float(stock_real)-float(item['cantidad'])-float(pedidos_aprobados)-float(pedidos_pendientes)
+ 
                 if stock_disponible<0:
                     data['error'] = f'El articulo {item["nombre"]} {item["talla"]} no tiene stock \nStock disponible : {stock_disponible:.2f}'
                     return False,data
             return True,''
         except Exception as e:
-            print(str(e),'validacion de estok')
+        
+            logger.error("A error ocurred %s",e)
+
             data['error'] = "ocurrio un error "
             return False,data
     def stock_real(self,talla,codigo,almacen,ubicacion,lote,fecha):
