@@ -488,20 +488,19 @@ class Catalogo(GenericAPIView):
         data = {}
         try:
             datos = request.data
-           
+            genero = {item['value']:item['label'] for item in datos['genero']}
+            linea = {item['value']:item['label'] for item in datos['linea']}
             self.credencial = Credencial(datos["credencial"])
             codigos = list(set(map(lambda item:item["codigo"],datos["datos"])))
             images_validate = self.verify_image(codigos)
             if len(images_validate)>0:
                 self.save_images(images_validate)
-            group_by_codigo = self.group_by_codigo(datos["datos"])
-            print(group_by_codigo)
-            # group_by_gender = self.group_by_gender(datos["datos"])
-            # group_by_linea = self.group_by_linea(group_by_gender)
-            # group_by_color = self.group_by_color(group_by_linea)
+            group_by_gender = self.group_by_gender(datos["datos"])
+            group_by_linea = self.group_by_linea(group_by_gender)
+            
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
-           
+            self.pdf(group_by_linea,genero,linea,response)
             return response
         except Exception as e:
         
@@ -511,7 +510,6 @@ class Catalogo(GenericAPIView):
     def group_by_gender(self,datos):
         data = {}
         for date in datos:
-           
             if not date['genero'] in data:
                 data[date["genero"]] = []
             data[date["genero"]].append(date)
@@ -525,26 +523,27 @@ class Catalogo(GenericAPIView):
                 if not value['linea'] in lineas:
                     lineas[value['linea']] = []
                 lineas[value['linea']].append(value)
+            res = self.group_by_color(lineas)
+            
             if not item in data:
                 data[item] = []
-            data[item].append(lineas)
+            data[item].append(res)
         return data
     def group_by_color(self,datos):
         data = {}
+       
         for item in datos:
+            codigo = {}
+            pos = 0
             for value in datos[item]:
-                for items in value:
-                    for j in value[items]:
-                        print(j)
-                # for items in value:
-                #     print(items)
-
-    def group_by_codigo(self,datos):
-        data = {}
-        for item in datos:
-            if not item["codigo"] in data:
-                data[item["codigo"]] = []
-            data[item['codigo']].append(item)
+                if not value['codigo'] in codigo:
+                    codigo[value['codigo']] = {"nombre":value['nombre'],"codigo":value['codigo'],"talla":[],"stock":[],"pos":pos}
+                    pos+=1
+                    if pos==12:
+                        pos=0
+                codigo[value['codigo']]['talla'].append(value['talla'])
+                codigo[value['codigo']]['stock'].append(value['stock'])
+            data[item] = list(codigo.values())
         return data
     def verify_image(self,data):
         files_no_existes = []
@@ -563,4 +562,68 @@ class Catalogo(GenericAPIView):
                 decode_and_save_image(image[1],f"{image[2].strip()}B")
             except Exception as e:
                 pass
-        
+    def pdf(self,data,genero,lineas,buffer):
+        doc = Canvas(buffer,pagesize=A4)
+        x = 5
+        y = 760
+        cord_x = 50
+        cord_y = 610
+        for gender in data:
+            doc.drawString(x,y,genero[gender])
+            row = 0
+            col = 0
+            for linea in data[gender]:
+                for items in linea:
+                  
+                    doc.drawString(cord_x,cord_y+170,lineas[items])
+                
+                    for item in linea[items]:
+                   
+                        doc.drawString(cord_x,cord_y-20,item['nombre'])
+                        if item['pos']%2==0:
+                            print(item['pos'],end="\t")
+                        else:
+                            print(item['pos'],end="\n")
+
+                        try:
+                            path = os.path.join(settings.BASE_DIR,f'media/img/{item["codigo"]}A.JPG')
+                            doc.drawImage(path,cord_x,cord_y,100,150)
+                            
+                        except:
+                            path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
+                            doc.drawImage(path,cord_x,cord_y,100,150)
+                           
+
+                        try:
+                            path = os.path.join(settings.BASE_DIR,f'media/img/{item["codigo"]}B.JPG')
+                            doc.drawImage(path,cord_x+110,cord_y,100,150)
+                           
+
+                        except:
+                            path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
+                            doc.drawImage(path,cord_x+100,cord_y,100,150)
+                            
+
+                        if col==1:
+                            col = 0
+                            row+=1
+                            cord_x = 50
+                            cord_y-= 250
+                        else:
+                            col+=1
+                            cord_x += 260
+                        if row==3:
+                            row = 0
+                            cord_x = 50
+                            cord_y = 610
+                            doc.showPage()
+                    print("\n")
+                    cord_x = 50
+                    if row!=0:
+                        cord_y-=250
+                    if row==0:
+                        cord_y = 610
+                        col = 0
+                        row = 0
+        doc.save()
+
