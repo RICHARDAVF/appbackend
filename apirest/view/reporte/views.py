@@ -16,7 +16,7 @@ from itertools import groupby
 from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak,Table,TableStyle,Spacer
 from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
 from reportlab.platypus import Image as img
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.http import FileResponse
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
@@ -483,3 +483,84 @@ class PDFCotizacion(GenericAPIView):
             print(str(e))
             data['error'] = str(e)
             return Response(data)
+class Catalogo(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        try:
+            datos = request.data
+           
+            self.credencial = Credencial(datos["credencial"])
+            codigos = list(set(map(lambda item:item["codigo"],datos["datos"])))
+            images_validate = self.verify_image(codigos)
+            if len(images_validate)>0:
+                self.save_images(images_validate)
+            group_by_codigo = self.group_by_codigo(datos["datos"])
+            print(group_by_codigo)
+            # group_by_gender = self.group_by_gender(datos["datos"])
+            # group_by_linea = self.group_by_linea(group_by_gender)
+            # group_by_color = self.group_by_color(group_by_linea)
+            response = HttpResponse(content_type = "application/pdf")
+            response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
+           
+            return response
+        except Exception as e:
+        
+            data["error"] = f"Ocurrio un error: {str(e)}"
+        
+        return JsonResponse(data)
+    def group_by_gender(self,datos):
+        data = {}
+        for date in datos:
+           
+            if not date['genero'] in data:
+                data[date["genero"]] = []
+            data[date["genero"]].append(date)
+        return data
+    def group_by_linea(self,datos):
+        data = {}
+        for item in datos:
+            
+            lineas = {}
+            for value in datos[item]:
+                if not value['linea'] in lineas:
+                    lineas[value['linea']] = []
+                lineas[value['linea']].append(value)
+            if not item in data:
+                data[item] = []
+            data[item].append(lineas)
+        return data
+    def group_by_color(self,datos):
+        data = {}
+        for item in datos:
+            for value in datos[item]:
+                for items in value:
+                    for j in value[items]:
+                        print(j)
+                # for items in value:
+                #     print(items)
+
+    def group_by_codigo(self,datos):
+        data = {}
+        for item in datos:
+            if not item["codigo"] in data:
+                data[item["codigo"]] = []
+            data[item['codigo']].append(item)
+        return data
+    def verify_image(self,data):
+        files_no_existes = []
+        for item in data:
+            path1 = os.path.join(settings.MEDIA_ROOT,f'img/{item}A.JPG')
+            path2 = os.path.join(settings.MEDIA_ROOT,f'img/{item}B.JPG')
+            if not(os.path.isfile(path1) or os.path.isfile(path2)):
+               files_no_existes.append(item)
+        return  files_no_existes
+    def save_images(self,data):
+        sql = f"""SELECT art_image2,art_image3,art_codigo FROM t_articulo_imagen WHERE art_codigo IN ({','.join(f" '{i}' " for i in data)})  """
+        _,result = CAQ.request(self.credencial,sql,(),"get",1)
+        for image in result:
+            try:
+                decode_and_save_image(image[0],f"{image[2].strip()}A")
+                decode_and_save_image(image[1],f"{image[2].strip()}B")
+            except Exception as e:
+                pass
+        
