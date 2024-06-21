@@ -503,7 +503,7 @@ class Catalogo(GenericAPIView):
             self.pdf(group_by_linea,genero,linea,response)
             return response
         except Exception as e:
-        
+            print(str(e))
             data["error"] = f"Ocurrio un error: {str(e)}"
         
         return JsonResponse(data)
@@ -566,34 +566,56 @@ class Catalogo(GenericAPIView):
                 decode_and_save_image(image[1],f"{image[2].strip()}B")
             except Exception as e:
                 pass
+    def get_ubicaciones(self,lista_ubicaciones):
+        sql = f"""SELECT ubi_nombre FROM t_ubicacion WHERE ubi_codigo IN ({','.join(f"'{i}'" for i in self.request.data['ubicaciones'])})"""
+        s,result = CAQ.request(self.credencial,sql,(),'get',1)
+   
+        ubicaciones = ', '.join(i[0].strip() for i in result)
+        return ubicaciones
+    def header(self,doc,pag):
+        pathlogo = os.path.join(settings.BASE_DIR,'static/img/logo_denim.png')
+        doc.drawImage(pathlogo,40,780,150,40)
+        doc.setFont("Helvetica-Bold",18)
+        doc.drawString(300,820,f"{pag}")
+        doc.drawString(230,800,'CATALOGO DE PRENDAS')
+        doc.setFont("Helvetica",10)
+        doc.drawString(260,780,f"FECHA: {datetime.now().strftime('%d/%m/%Y')}")
+        doc.drawString(260,765,f"UBICACIÓN:{self.get_ubicaciones(self.request.data['ubicaciones'])}")
+
     def pdf(self,data,genero,lineas,buffer):
         doc = Canvas(buffer,pagesize=A4)
         COORDENADA_IMG = [
-            [(50,610),(170,610)],[(310,610),(420,610)],
-            [(50,360),(170,360)],[(310,360),(420,360)],
-            [(50,110),(170,110)],[(310,110),(420,110)],
+            [(50,580),(170,580)],[(310,580),(420,580)],
+            [(50,330),(170,330)],[(310,330),(420,330)],
+            [(50,80),(170,80)],[(310,80),(420,80)],
             ]
         COORDENADA_LINE = [
-            (50,780),(50,780),
-            (50,530),(50,530),
-            (50,280),(50,280),
+            (50,750),(50,750),
+            (50,500),(50,500),
+            (50,250),(50,250),
             
         ]
         COORDENADA_GENDER = [
-            (50,790),(50,790),
-            (50,540),(50,540),
-            (50,290),(50,290),
+            (40,765),(40,765),
+            (40,515),(40,515),
+            (40,265),(40,265),
             
         ]
         tallas = {"MM":"M","SS":"S","LL":"L"}
+        pag = 1
+        self.header(doc,pag)
         for gender in data:
             gen = list(data[gender][0].values())[0][0]['pos']
-            
-            doc.drawString(*COORDENADA_GENDER[gen],genero[gender])
+            doc.setFont("Helvetica-Bold",15)
+            doc.drawString(*COORDENADA_GENDER[gen],f"GENERO:{genero[gender]}")
+            doc.setFont("Helvetica",10)
+
             for linea in data[gender]:
                 for items in linea:
                     line = linea[items][0]["pos"]
-                    doc.drawString(*COORDENADA_LINE[line],lineas[items])
+                    doc.setFont("Helvetica-Bold",12)
+                    doc.drawString(*COORDENADA_LINE[line],f"LINEA: {lineas[items]}")
+                    doc.setFont("Helvetica",10)
                     for item in linea[items]:
                        
                         pos1 = COORDENADA_IMG[item["pos"]][0]
@@ -628,7 +650,12 @@ class Catalogo(GenericAPIView):
                         doc.rect(x_text-5,y_text-30,230,210,stroke=1,fill=0)
                         if item["pos"]==5:
                             doc.showPage()
+                            pag+=1
+                            self.header(doc,pag)
                     if item["pos"]==4:
                         doc.showPage()
+                        pag+=1
+                        self.header(doc,pag)
+
         doc.save()
 
