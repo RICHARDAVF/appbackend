@@ -21,7 +21,7 @@ from django.http import FileResponse
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
 import logging
-
+from reportlab.lib.colors import red, blue, green, black
 logger = logging.getLogger('django')
 def decode_and_save_image(base64_img, filename):
     try:
@@ -532,17 +532,21 @@ class Catalogo(GenericAPIView):
     def group_by_color(self,datos):
         data = {}
        
+        pos = 0
         for item in datos:
             codigo = {}
-            pos = 0
             for value in datos[item]:
                 if not value['codigo'] in codigo:
                     codigo[value['codigo']] = {"nombre":value['nombre'],"codigo":value['codigo'],"talla":[],"stock":[],"pos":pos}
                     pos+=1
-                    if pos==12:
-                        pos=0
+                if pos==6:
+                    pos=0
                 codigo[value['codigo']]['talla'].append(value['talla'])
                 codigo[value['codigo']]['stock'].append(value['stock'])
+            if pos%2!=0:
+                pos+=1
+            if pos==6:
+                pos = 0
             data[item] = list(codigo.values())
         return data
     def verify_image(self,data):
@@ -564,66 +568,67 @@ class Catalogo(GenericAPIView):
                 pass
     def pdf(self,data,genero,lineas,buffer):
         doc = Canvas(buffer,pagesize=A4)
-        x = 5
-        y = 760
-        cord_x = 50
-        cord_y = 610
+        COORDENADA_IMG = [
+            [(50,610),(170,610)],[(310,610),(420,610)],
+            [(50,360),(170,360)],[(310,360),(420,360)],
+            [(50,110),(170,110)],[(310,110),(420,110)],
+            ]
+        COORDENADA_LINE = [
+            (50,780),(50,780),
+            (50,530),(50,530),
+            (50,280),(50,280),
+            
+        ]
+        COORDENADA_GENDER = [
+            (50,790),(50,790),
+            (50,540),(50,540),
+            (50,290),(50,290),
+            
+        ]
+        tallas = {"MM":"M","SS":"S","LL":"L"}
         for gender in data:
-            doc.drawString(x,y,genero[gender])
-            row = 0
-            col = 0
+            gen = list(data[gender][0].values())[0][0]['pos']
+            
+            doc.drawString(*COORDENADA_GENDER[gen],genero[gender])
             for linea in data[gender]:
                 for items in linea:
-                  
-                    doc.drawString(cord_x,cord_y+170,lineas[items])
-                
+                    line = linea[items][0]["pos"]
+                    doc.drawString(*COORDENADA_LINE[line],lineas[items])
                     for item in linea[items]:
-                   
-                        doc.drawString(cord_x,cord_y-20,item['nombre'])
-                        if item['pos']%2==0:
-                            print(item['pos'],end="\t")
-                        else:
-                            print(item['pos'],end="\n")
-
+                       
+                        pos1 = COORDENADA_IMG[item["pos"]][0]
+                        pos2 = COORDENADA_IMG[item["pos"]][1]
+                        x_text = pos1[0]
+                        y_text = pos1[1]-20
+                        doc.drawString(x_text,y_text,item["nombre"])
                         try:
                             path = os.path.join(settings.BASE_DIR,f'media/img/{item["codigo"]}A.JPG')
-                            doc.drawImage(path,cord_x,cord_y,100,150)
-                            
+                            doc.drawImage(path,*pos1,100,150)
                         except:
                             path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
-                            doc.drawImage(path,cord_x,cord_y,100,150)
-                           
-
+                            doc.drawImage(path,*pos1,100,150)
                         try:
                             path = os.path.join(settings.BASE_DIR,f'media/img/{item["codigo"]}B.JPG')
-                            doc.drawImage(path,cord_x+110,cord_y,100,150)
-                           
-
+                            doc.drawImage(path,*pos2,100,150)
                         except:
                             path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
-                            doc.drawImage(path,cord_x+100,cord_y,100,150)
-                            
-
-                        if col==1:
-                            col = 0
-                            row+=1
-                            cord_x = 50
-                            cord_y-= 250
-                        else:
-                            col+=1
-                            cord_x += 260
-                        if row==3:
-                            row = 0
-                            cord_x = 50
-                            cord_y = 610
+                            doc.drawImage(path,*pos2,100,150)
+                        x = x_text
+                        y = y_text
+                        const = 0
+                        for t,s in zip(item["talla"],item["stock"]):
+                            t_ = t
+                            if t_ in tallas:
+                                t_ = tallas[t_]
+                            doc.drawString(x+const,y-12,t_)
+                            doc.setFillColor(blue)
+                            doc.drawString(x+const,y-25,str(s))
+                            doc.setFillColor(black)
+                            const+=20
+                        doc.rect(x_text-5,y_text-30,230,210,stroke=1,fill=0)
+                        if item["pos"]==5:
                             doc.showPage()
-                    print("\n")
-                    cord_x = 50
-                    if row!=0:
-                        cord_y-=250
-                    if row==0:
-                        cord_y = 610
-                        col = 0
-                        row = 0
+                    if item["pos"]==4:
+                        doc.showPage()
         doc.save()
 
