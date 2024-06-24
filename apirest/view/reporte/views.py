@@ -497,10 +497,12 @@ class Catalogo(GenericAPIView):
                 self.save_images(images_validate)
             group_by_gender = self.group_by_gender(datos["datos"])
             group_by_linea = self.group_by_linea(group_by_gender)
-            
+            precios = {}
+            if self.request.data['lista_precio']!='':
+                precios = self.get_precios(self.request.data['lista_precio'],codigos)
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
-            self.pdf(group_by_linea,genero,linea,response)
+            self.pdf(group_by_linea,genero,linea,precios,response)
             return response
         except Exception as e:
             print(str(e))
@@ -566,10 +568,9 @@ class Catalogo(GenericAPIView):
                 decode_and_save_image(image[1],f"{image[2].strip()}B")
             except Exception as e:
                 pass
-    def get_ubicaciones(self,lista_ubicaciones):
+    def get_ubicaciones(self):
         sql = f"""SELECT ubi_nombre FROM t_ubicacion WHERE ubi_codigo IN ({','.join(f"'{i}'" for i in self.request.data['ubicaciones'])})"""
         s,result = CAQ.request(self.credencial,sql,(),'get',1)
-   
         ubicaciones = ', '.join(i[0].strip() for i in result)
         return ubicaciones
     def header(self,doc,pag):
@@ -580,9 +581,16 @@ class Catalogo(GenericAPIView):
         doc.drawString(230,800,'CATALOGO DE PRENDAS')
         doc.setFont("Helvetica",10)
         doc.drawString(260,780,f"FECHA: {datetime.now().strftime('%d/%m/%Y')}")
-        doc.drawString(260,765,f"UBICACIÓN:{self.get_ubicaciones(self.request.data['ubicaciones'])}")
-
-    def pdf(self,data,genero,lineas,buffer):
+        doc.drawString(260,765,f"UBICACIÓN:{self.get_ubicaciones()}")
+    def get_precios(self,lista,codigos):
+        column = 'lis_pmino'
+        if int(lista)!=1:
+            column = f'lis_pmino{int(lista)}'
+        sql = f"""SELECT art_codigo, {column} FROM maelista WHERE art_codigo IN ({','.join(f"'{i}'" for i in codigos)})"""
+        s,result = CAQ.request(self.credencial,sql,(),'get',1)
+        return {f"{value[0].strip()}":float(value[1]) for value in result}
+    def pdf(self,data,genero,lineas,precios,buffer):
+      
         doc = Canvas(buffer,pagesize=A4)
         COORDENADA_IMG = [
             [(50,580),(170,580)],[(310,580),(420,580)],
@@ -603,6 +611,7 @@ class Catalogo(GenericAPIView):
         ]
         tallas = {"MM":"M","SS":"S","LL":"L"}
         pag = 1
+        lista_precios = self.request.data['lista_precio']!=''
         self.header(doc,pag)
         for gender in data:
             gen = list(data[gender][0].values())[0][0]['pos']
@@ -629,12 +638,21 @@ class Catalogo(GenericAPIView):
                         except:
                             path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
                             doc.drawImage(path,*pos1,100,150)
+
                         try:
                             path = os.path.join(settings.BASE_DIR,f'media/img/{item["codigo"]}B.JPG')
                             doc.drawImage(path,*pos2,100,150)
                         except:
                             path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
                             doc.drawImage(path,*pos2,100,150)
+                        if lista_precios:
+                            try:
+                                doc.drawString(480,y_text,'PRECIO')
+                                doc.drawString(480,y_text-10,f'S/ {precios[item["codigo"]]}')
+                                doc.drawString(210,y_text,'PRECIO')
+                                doc.drawString(210,y_text-10,f'S/ {precios[item["codigo"]]}')
+                            except:
+                                pass
                         x = x_text
                         y = y_text
                         const = 0
