@@ -571,6 +571,8 @@ class Catalogo(GenericAPIView):
     def get_ubicaciones(self):
         sql = f"""SELECT ubi_nombre FROM t_ubicacion WHERE ubi_codigo IN ({','.join(f"'{i}'" for i in self.request.data['ubicaciones'])})"""
         s,result = CAQ.request(self.credencial,sql,(),'get',1)
+        if len(result)>3:
+            result[-1] = ('etc',)
         ubicaciones = ', '.join(i[0].strip() for i in result)
         return ubicaciones
     def header(self,doc,pag):
@@ -638,6 +640,13 @@ class Catalogo(GenericAPIView):
                         except:
                             path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
                             doc.drawImage(path,*pos1,100,150)
+                        if lista_precios:
+                            try:
+                                doc.drawString(x_text+180,y_text-12,'PRECIO')
+                                doc.drawString(x_text+180,y_text-25,f'S/ {precios[item["codigo"]]}')
+                            except:
+                                doc.drawString(x_text+180,y_text-25,f'S/: ')
+
 
                         try:
                             path = os.path.join(settings.BASE_DIR,f'media/img/{item["codigo"]}B.JPG')
@@ -645,14 +654,7 @@ class Catalogo(GenericAPIView):
                         except:
                             path = os.path.join(settings.BASE_DIR,f'static/img/default.jpg')
                             doc.drawImage(path,*pos2,100,150)
-                        if lista_precios:
-                            try:
-                                doc.drawString(480,y_text,'PRECIO')
-                                doc.drawString(480,y_text-10,f'S/ {precios[item["codigo"]]}')
-                                doc.drawString(210,y_text,'PRECIO')
-                                doc.drawString(210,y_text-10,f'S/ {precios[item["codigo"]]}')
-                            except:
-                                pass
+                     
                         x = x_text
                         y = y_text
                         const = 0

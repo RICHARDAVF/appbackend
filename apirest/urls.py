@@ -33,6 +33,7 @@ from apirest.view.ticket.views import TicketCuadreCaja, TicketFactura,TicketNP
 from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
 from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion,CotizacionVars,CotizacionFilter
+from apirest.view.reporte_pedidos.views import ReportePedidos
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -124,6 +125,7 @@ urlpatterns = [
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:empresa>/',PdfPedidoView.as_view()),
     path('v1/pedidos/pdf/<str:ruc>/',PdfPedidoView.as_view()),
+    path('v1/reporte/pedido/<str:ruc>/',ReportePedidos.as_view()),
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
     path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
     path('v1/list/pedido/<str:ruc>/',ListPedidos.as_view()),

@@ -395,7 +395,7 @@ class CotizacionFilter(GenericAPIView):
         try:
             conn = CAQ().conexion(self.credencial)
             cursor = conn.cursor()
-            sql = f"SELECT aux_razon,aux_clave FROM t_auxiliar"
+            sql = f"SELECT aux_razon,aux_clave FROM t_auxiliar WHERE MAA_CODIGO='CL' "
             cursor.execute(sql,())
             result = cursor.fetchall()
             if result is None:

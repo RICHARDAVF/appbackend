@@ -389,9 +389,9 @@ class StockView(generics.GenericAPIView):
             color = [{'label':'COLOR',"value":'A'}]
         try:
             t  = set([i['temporada']  for i in stock if i['temporada'].strip()!=''])
-            
+         
             sql = f"""select tem_nombre,tem_codigo from t_temporada WHERE  tem_codigo IN ({','.join(f"'{i}'" for i in t)}) order by tem_nombre"""
-            datos = CAQ.request(self.credencial,sql,(alm,),"get",1)
+            _,datos = CAQ.request(self.credencial,sql,(),"get",1)
 
             temporada = [{'label':'TEMPORADA',"value":'A'}]+[
                 {
