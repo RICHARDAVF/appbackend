@@ -153,6 +153,7 @@ urlpatterns = [
     path('compra/detalle/<str:host>/<str:db>/<str:user>/<str:password>/<str:numero>/',DetalleViewOR.as_view()),
     #STOCK
     path('stock/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/<str:ubi>/<int:talla>/',StockView.as_view()),
+    path('v1/stock/<str:ruc>/',StockView.as_view()),
     path('stock/view/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/<str:ubi>/<str:codigo>/<str:pedido>/<str:talla>/',StockReview.as_view()),
     path('v1/stock/view/<str:ruc>/',StockReview.as_view()),
     #INVENTARIO
