@@ -10,8 +10,11 @@ class ReportePedidos(GenericAPIView):
             datos = request.data
             self.credencial = Credencial(datos['credencial'])
             action = datos['action']
-
             if action == 'report':
+                if datos['desde']=='' or datos['hasta']=='':
+                    raise Exception('El rango de fecha es incorrecto')
+                desde = datos['desde'].replace('/','-')
+                hasta = datos['hasta'].replace('/','-')
                 sql = f"""
                     SELECT 
                         a.MOV_COMPRO,
@@ -28,7 +31,7 @@ class ReportePedidos(GenericAPIView):
 					LEFT JOIN t_temporada AS c2 ON c1.tem_codigo = c2.tem_codigo
                     LEFT JOIN t_usuario AS d ON a.USUARIO = d.USU_CODIGO
                     WHERE 
-						a.MOV_FECHA BETWEEN '{datos["desde"]}' AND '{datos["hasta"]}'
+						a.MOV_FECHA BETWEEN '{desde}' AND '{hasta}'
                         {self.filters(datos)}
                     GROUP BY
                         a.MOV_COMPRO,
@@ -39,8 +42,9 @@ class ReportePedidos(GenericAPIView):
 					
 					ORDER BY a.MOV_COMPRO  ASC
                     """
+            
                 s,result = CAQ.request(self.credencial,sql,(),'get',1)
-                print(result)
+                
                 if not s:
                     raise Exception(result['error'])
                 data = [
@@ -116,6 +120,6 @@ class ReportePedidos(GenericAPIView):
         if datos["cliente"]!='':
             fil+=f"""AND a.mov_codaux='{datos["cliente"]}' """
         if datos["vendedor"]!='':
-            fil+=f"""AND a.ven_codigo='{datos["vendedor"]}' """
+            fil+=f"""AND a.usuario='{datos["vendedor"]}' """
 
         return fil

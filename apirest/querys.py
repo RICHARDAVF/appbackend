@@ -83,7 +83,7 @@ class CAQ:
             cursor.execute(sql,params)
             if method == 'get' and option == 1:
                 data = cursor.fetchall()
-            
+                
             elif method == 'get' and option == 0:
                 data = cursor.fetchone()
             else:
