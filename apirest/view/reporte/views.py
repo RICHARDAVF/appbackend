@@ -4,6 +4,7 @@ from apirest.credenciales import Credencial
 from apirest.querys import CAQ
 from apirest.view.pdf.views import CustomPDF
 from apirest.views import QuerysDb
+from apirest.view.pdf.views import PDFCOTIZACION
 import os
 from reportlab.lib.pagesizes import A4
 import base64
@@ -452,30 +453,84 @@ class PDFCotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
         self.datos = self.request.data
-        def pie_pagina(canvas:Canvas,nombre):
-            canvas.saveState()
-            style = getSampleStyleSheet()
-            image_style = ParagraphStyle(name="aline",alignment=TA_LEFT,parent=style["Normal"])
-            file_path = os.path.join(settings.STATIC_ROOT,"img/logo_kasac.jpeg")
-            draw_image(canvas,file_path,10,680,250,120)
-            style_emision = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
-            value_emision = Paragraph(f"<b>Emision</b>:{self.datos['emision']}",style=style_emision)
-            value_emision.wrap(nombre.width,nombre.topMargin)
-            value_emision.drawOn(canvas,60,735)
-            style_emision = ParagraphStyle(name="aline",alignment=TA_RIGHT,parent=style["Normal"])
-            value_emision = Paragraph(f"<b>Emision</b>:{self.datos['emision']}",style=style_emision)
-            value_emision.wrap(nombre.width,nombre.topMargin)
-            value_emision.drawOn(canvas,60,500)
-            canvas.restoreState()
+        self.credenial = Credencial(self.datos['credencial'])
         try:
-            self.numero_cotizacion = self.datos["numero_cotizacion"]
+            dates = {
+                "empresa":self.datos['credencial']['razon_social'],
+                "numero_cotizacion":self.datos['numero_cotizacion']
+            }
+           
 
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
-            header = ["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]
-            dates = [["Cliente","Letra","E/Emision","F/Vencim.","Moneda","Monto","Referencia"]]
+            sql = f"""
+                SELECT 
+                    a.MOV_FECHA,
+                    b.aux_docum,
+                    b.AUX_NOMBRE,
+                    b.AUX_DIRECC,
+                    a.aux_contac,
+                    c.ope_nombre,
+                    a.cot_modelo,
+                    a.cot_placa,
+                    a.cot_chasis,
+                    COALESCE(e.col_nombre,'') AS color,
+                    a.cot_anyo,
+                    a.cot_flota,
+                    a.gui_ordenc,
+                    a.cot_chk01,
+                    d.pag_nombre 
+                FROM cabecotiza  AS a
+                LEFT JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
+                LEFT JOIN t_operacion AS c ON a.gui_motivo=c.ope_codigo
+                LEFT JOIN t_maepago AS d ON a.pag_codigo = d.pag_codigo
+                LEFT JOIN t_colores AS e ON a.cot_color = e.col_codigo
+                
+                WHERE mov_compro=?
+"""
+            s,result = CAQ.request(self.credenial,sql,(self.datos['numero_cotizacion']),'get',0)
+            if not s:
+                raise Exception (result['error'])
+            servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS','0':'NS'}
+  
+            dates['emision'] = result[0].strftime("%d/%m/%Y")
+            dates['documento'] = result[1].strip()
+            dates["cliente"] = result[2].strip()
+            dates['direccion'] = result[3].strip()
+            dates['contacto'] = result[4].strip()
+            dates['motivo'] = result[5].strip()
+            dates['modelo'] = result[6].strip()
+            dates['placa'] = result[7].strip()
+            dates['chasis'] = result[8].strip()
+            dates['color'] = result[9].strip()
+            dates['anyo'] = result[10].strip()
+            dates['operacion'] = result[11].strip()
+            dates['orden_compra'] = result[12].strip()
+            dates['servicio'] = servicios[f"{int(result[13])}"]
+            dates['condicion_pago'] = result[14].strip()
 
-            file = CustomPDF(response,"richard",header,dates,custom_header=pie_pagina,t_soles=0,t_dolares=0)
+            sql = f"""                          
+                SELECT
+                    a.art_codigo,
+                    b.art_nombre,
+                    a.MOM_CANT,
+                    a.MOM_BRUTO,
+                    a.MOM_B_P_R,
+                    a.MOM_PUNIT,
+                    a.mom_dscto1,
+                    a.mom_valor,
+                    c.ume_abrev
+                FROM movicotiza AS a
+                LEFT JOIN t_articulo AS b ON a.art_codigo=b.art_codigo
+                LEFT JOIN t_umedida AS c ON b.ume_codigo = c.UME_CODIGO 
+                WHERE mov_compro=?
+
+"""
+            s,result = CAQ.request(self.credenial,sql,(self.datos['numero_cotizacion'],),'get',1)
+            if not s:
+                raise Exception(result['error'])
+            dates['items'] = result 
+            file = PDFCOTIZACION(dates,response)
             file.generate()
             return response
     
@@ -483,6 +538,7 @@ class PDFCotizacion(GenericAPIView):
             print(str(e))
             data['error'] = str(e)
             return Response(data)
+
 class Catalogo(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}

@@ -1,13 +1,10 @@
 # from weasyprint import HTML,CSS
 import base64
 import io
-
-from rest_framework.generics import GenericAPIView
-
 from reportlab.lib.pagesizes import A4,letter
 from reportlab.lib.pagesizes import A4,letter,landscape
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate,Paragraph,Frame,Table,Spacer,TableStyle
+from reportlab.platypus import SimpleDocTemplate,Image,Paragraph,Frame,Table,Spacer,TableStyle
 from reportlab.lib.styles import ParagraphStyle,getSampleStyleSheet
 from reportlab.platypus.flowables import PageBreak
 
@@ -15,7 +12,9 @@ from reportlab.pdfgen.canvas import Canvas
 
 from reportlab.lib.enums import TA_RIGHT,TA_CENTER,TA_LEFT
 from reportlab.lib.units import inch,mm
-
+from django.conf import settings
+import os
+from apirest.number_to_text import NumberToText
 class PDF:
     def __init__(self,empresa,cabecera,detalle) -> None:
         self.empresa = empresa
@@ -220,7 +219,62 @@ class CustomPDF:
         except Exception as e:
             raise Exception(str(e))
 
-
+class PDFCOTIZACION:
+    def __init__(self,data,blob):
+        self.data = data
+        self.blob = blob
+    def generate(self):
+        doc = SimpleDocTemplate(self.blob,pagesize=letter,leftMargin=0, rightMargin=0, topMargin=0, bottomMargin=0)
+        history = []
+        image = os.path.join(settings.BASE_DIR,'static/img/logo_kasac.jpeg')
+        img = Image(image,width=100,height=60)
+      
+        dates = f"""
+                <b>{self.data['empresa']}</b> <br/>
+                <b>RUC:20513669306</b><br/>
+                <b>DIRECCION</b> <br/>
+                <b>TELEFONO</b>
+"""
+        num_cotizacion = f"""
+            <b>N° COTIZACION : {self.data['numero_cotizacion']}</b>
+"""
+        header_data = [img,Paragraph(dates),Paragraph(num_cotizacion)]
+        table = Table([header_data],colWidths=[162,300,150])
+        history.append(table)
+        line1 = [[Paragraph(f"<b>EMISIÓN: </b> {self.data['emision']}"),Paragraph(f"<b>CONTACTO: </b> {self.data['contacto']}"),Paragraph(f"<b>MOTIVO: </b> {self.data['motivo']}")]]
+        table = Table(line1)
+        history.append(table)
+        line2 = [[Paragraph(f"<b>CLIENTE: </b> {self.data['cliente']}"),Paragraph(f"<b>CONDICIÓN DE PAGO: </b> {self.data['condicion_pago']}")]]
+        table = Table(line2)
+        history.append(table)
+        line3 = [[Paragraph(f"<b>RUC: </b> {self.data['documento']}"),Paragraph(f"<b>O. COMPRA: </b> {self.data['orden_compra']}"),Paragraph(f"<b>OPERACION:</b> {self.data['operacion']}")]]
+        table = Table(line3)
+        history.append(table)
+        line4 = [[Paragraph(f"<b>PLACA : </b> {self.data['placa']}"),Paragraph(f"<b>CHASIS: </b> {self.data['chasis']}"),Paragraph(f"<b>AÑO: </b> {self.data['anyo']}"),Paragraph(f"<b>COLOR: </b> {self.data['color']}")]]
+        table = Table(line4)
+        history.append(table)
+        history.append(Paragraph(f"<b>TIPO DE SERVICIO: </b>{self.data['servicio']}"))
+        text = "MEDIANTE EL PRESENTE LE AGRADECMOS SU INTERÉS Y PRESENCIA EN NUESTROS PORDUCTOS, A CONTINUACIÓN NOS COMPLACE HACERLES LLEGAR NNUESTRA PROPUESTA ECONOMICA SEGUN LAS ESPECIFICACIONES RECAUDADAS"
+        history.append(Spacer(1,12))
+        history.append(Paragraph(text))
+        history.append(Spacer(1,12))
+        items = [
+    ["CODIGO", "C/V", "CANT.", "ARTICULO","U/M","P. UNI","DSCTO (%)","TOTAL"],
+]
+        total_v = 0
+        for item in self.data['items']:
+            cantidad_vehiculos =  item[3] if item[3]!=0  else item[4]
+            total_v+=cantidad_vehiculos
+            items.append([Paragraph(item[0].strip()),Paragraph(f"{cantidad_vehiculos}"),Paragraph(f"{item[2]:.2f}"),Paragraph(item[1].strip()),Paragraph(f"{item[8].strip()}"),Paragraph(f"{item[5]:.2f}"),Paragraph(f"{item[6]:.2f}"),Paragraph(f"{item[7]:.2f}")])
+        items.append(['',Paragraph('<b>TOTAL</b>'),Paragraph(f"<b>{total_v}</b>"),'',"",""])
+        table = Table(items,colWidths=[70,50,50,200,60,60,50],style=TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ]))
+        history.append(table)
+        text = NumberToText(1500.66)
+        print(text)
+        history.append(Paragraph(text))
+        doc.build(history)
 class PDFHistorialCliente:
     def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera,saldo):
         super(PDFHistorialCliente,self).__init__()
