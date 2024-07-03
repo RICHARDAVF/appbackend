@@ -453,14 +453,12 @@ class PDFCotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
         self.datos = self.request.data
-        self.credenial = Credencial(self.datos['credencial'])
         try:
+            self.numero_cotizacion = self.datos["numero_cotizacion"]
             dates = {
                 "empresa":self.datos['credencial']['razon_social'],
-                "numero_cotizacion":self.datos['numero_cotizacion']
+                "numero_cotizacion" :self.numero_cotizacion
             }
-           
-
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
             sql = f"""
@@ -487,7 +485,7 @@ class PDFCotizacion(GenericAPIView):
                 LEFT JOIN t_colores AS e ON a.cot_color = e.col_codigo
                 
                 WHERE mov_compro=?
-"""
+            """
             s,result = CAQ.request(self.credenial,sql,(self.datos['numero_cotizacion']),'get',0)
             if not s:
                 raise Exception (result['error'])
