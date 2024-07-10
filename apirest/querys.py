@@ -92,7 +92,7 @@ class CAQ:
             conn.close()
             return True,data
         except Exception as e:
-          
+            print(str(e))
             data['error'] = f'Ocurrio un error en el servidor : {str(e)}'
             return False,data
         

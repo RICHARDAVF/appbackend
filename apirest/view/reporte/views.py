@@ -453,6 +453,7 @@ class PDFCotizacion(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
         self.datos = self.request.data
+        self.credencial = Credencial(self.datos['credencial'])
         try:
             self.numero_cotizacion = self.datos["numero_cotizacion"]
             dates = {
@@ -477,7 +478,13 @@ class PDFCotizacion(GenericAPIView):
                     a.cot_flota,
                     a.gui_ordenc,
                     a.cot_chk01,
-                    d.pag_nombre 
+                    d.pag_nombre,
+                    a.rou_bruto,
+                    a.rou_pigv,
+                    a.rou_igv,
+                    a.rou_tventa ,
+                    a.mov_moneda,
+                    a.cot_chk07
                 FROM cabecotiza  AS a
                 LEFT JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
                 LEFT JOIN t_operacion AS c ON a.gui_motivo=c.ope_codigo
@@ -486,7 +493,7 @@ class PDFCotizacion(GenericAPIView):
                 
                 WHERE mov_compro=?
             """
-            s,result = CAQ.request(self.credenial,sql,(self.datos['numero_cotizacion']),'get',0)
+            s,result = CAQ.request(self.credencial,sql,(self.datos['numero_cotizacion']),'get',0)
             if not s:
                 raise Exception (result['error'])
             servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS','0':'NS'}
@@ -506,7 +513,13 @@ class PDFCotizacion(GenericAPIView):
             dates['orden_compra'] = result[12].strip()
             dates['servicio'] = servicios[f"{int(result[13])}"]
             dates['condicion_pago'] = result[14].strip()
-
+            dates['base_imponible'] = float(result[15])
+            dates['igv_porcent'] = float(result[16]) 
+            dates['igv'] = float(result[17]) 
+            dates['venta_total'] = float(result[18]) 
+            dates['moneda'] ="$" if  result[19].strip()=='D' else 'S/'
+            dates['dias_validez'] = int(result[20])
+            
             sql = f"""                          
                 SELECT
                     a.art_codigo,
@@ -524,16 +537,29 @@ class PDFCotizacion(GenericAPIView):
                 WHERE mov_compro=?
 
 """
-            s,result = CAQ.request(self.credenial,sql,(self.datos['numero_cotizacion'],),'get',1)
+            s,result = CAQ.request(self.credencial,sql,(self.datos['numero_cotizacion'],),'get',1)
             if not s:
                 raise Exception(result['error'])
             dates['items'] = result 
+            sql = "SELECT emp_razon,emp_direc,emp_ruc,emp_telef,emp_ctapro,emp_ct2pro FROM t_empresa"
+            s,result = CAQ.request(self.credencial,sql,(),'get',0)
+            if not s:
+                raise Exception(result['error'])
+            empresa = {
+                'razon_social':result[0].strip(),
+                'direccion':result[1].strip(),
+                'ruc':result[2].strip(),
+                'telefono':result[3].strip(),
+                'cuenta_soles':result[4].strip(),
+                'cuenta_dolares':result[5].strip()
+            }
+            dates['empresa'] = empresa
             file = PDFCOTIZACION(dates,response)
             file.generate()
             return response
     
         except Exception as e:
-            print(str(e))
+            
             data['error'] = str(e)
             return Response(data)
 

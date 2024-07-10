@@ -224,56 +224,105 @@ class PDFCOTIZACION:
         self.data = data
         self.blob = blob
     def generate(self):
+
         doc = SimpleDocTemplate(self.blob,pagesize=letter,leftMargin=0, rightMargin=0, topMargin=0, bottomMargin=0)
         history = []
-        image = os.path.join(settings.BASE_DIR,'static/img/logo_kasac.jpeg')
-        img = Image(image,width=100,height=60)
-      
-        dates = f"""
-                <b>{self.data['empresa']}</b> <br/>
-                <b>RUC:20513669306</b><br/>
-                <b>DIRECCION</b> <br/>
-                <b>TELEFONO</b>
-"""
-        num_cotizacion = f"""
-            <b>N° COTIZACION : {self.data['numero_cotizacion']}</b>
-"""
-        header_data = [img,Paragraph(dates),Paragraph(num_cotizacion)]
-        table = Table([header_data],colWidths=[162,300,150])
-        history.append(table)
-        line1 = [[Paragraph(f"<b>EMISIÓN: </b> {self.data['emision']}"),Paragraph(f"<b>CONTACTO: </b> {self.data['contacto']}"),Paragraph(f"<b>MOTIVO: </b> {self.data['motivo']}")]]
-        table = Table(line1)
-        history.append(table)
-        line2 = [[Paragraph(f"<b>CLIENTE: </b> {self.data['cliente']}"),Paragraph(f"<b>CONDICIÓN DE PAGO: </b> {self.data['condicion_pago']}")]]
-        table = Table(line2)
-        history.append(table)
-        line3 = [[Paragraph(f"<b>RUC: </b> {self.data['documento']}"),Paragraph(f"<b>O. COMPRA: </b> {self.data['orden_compra']}"),Paragraph(f"<b>OPERACION:</b> {self.data['operacion']}")]]
-        table = Table(line3)
-        history.append(table)
-        line4 = [[Paragraph(f"<b>PLACA : </b> {self.data['placa']}"),Paragraph(f"<b>CHASIS: </b> {self.data['chasis']}"),Paragraph(f"<b>AÑO: </b> {self.data['anyo']}"),Paragraph(f"<b>COLOR: </b> {self.data['color']}")]]
-        table = Table(line4)
-        history.append(table)
-        history.append(Paragraph(f"<b>TIPO DE SERVICIO: </b>{self.data['servicio']}"))
-        text = "MEDIANTE EL PRESENTE LE AGRADECMOS SU INTERÉS Y PRESENCIA EN NUESTROS PORDUCTOS, A CONTINUACIÓN NOS COMPLACE HACERLES LLEGAR NNUESTRA PROPUESTA ECONOMICA SEGUN LAS ESPECIFICACIONES RECAUDADAS"
-        history.append(Spacer(1,12))
-        history.append(Paragraph(text))
-        history.append(Spacer(1,12))
-        items = [
-    ["CODIGO", "C/V", "CANT.", "ARTICULO","U/M","P. UNI","DSCTO (%)","TOTAL"],
-]
-        total_v = 0
-        for item in self.data['items']:
-            cantidad_vehiculos =  item[3] if item[3]!=0  else item[4]
-            total_v+=cantidad_vehiculos
-            items.append([Paragraph(item[0].strip()),Paragraph(f"{cantidad_vehiculos}"),Paragraph(f"{item[2]:.2f}"),Paragraph(item[1].strip()),Paragraph(f"{item[8].strip()}"),Paragraph(f"{item[5]:.2f}"),Paragraph(f"{item[6]:.2f}"),Paragraph(f"{item[7]:.2f}")])
-        items.append(['',Paragraph('<b>TOTAL</b>'),Paragraph(f"<b>{total_v}</b>"),'',"",""])
-        table = Table(items,colWidths=[70,50,50,200,60,60,50],style=TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ]))
-        history.append(table)
-        text = NumberToText(1500.66)
-        print(text)
-        history.append(Paragraph(text))
+        try:
+            image = os.path.join(settings.BASE_DIR,'static/img/logo_kasac.jpeg')
+            img = Image(image,width=100,height=60)
+        
+            dates = f"""
+                    <b>{self.data['empresa']['razon_social']}</b> <br/>
+                    <b>RUC:{self.data['empresa']['ruc']}</b><br/>
+                    <b>{self.data['empresa']['direccion']}</b> <br/>
+                    <b>TELEFONO:{self.data['empresa']['telefono']}</b>
+    """
+            num_cotizacion = f"""
+                <b>N° COTIZACION : {self.data['numero_cotizacion']}</b>
+    """
+            header_data = [img,Paragraph(dates),Paragraph(num_cotizacion)]
+            table = Table([header_data],colWidths=[162,300,150])
+            history.append(table)
+            line1 = [[Paragraph(f"<b>EMISIÓN: </b> {self.data['emision']}"),Paragraph(f"<b>CONTACTO: </b> {self.data['contacto']}"),Paragraph(f"<b>MOTIVO: </b> {self.data['motivo']}")]]
+            table = Table(line1)
+            history.append(table)
+            line2 = [[Paragraph(f"<b>CLIENTE: </b> {self.data['cliente']}"),Paragraph(f"<b>CONDICIÓN DE PAGO: </b> {self.data['condicion_pago']}")]]
+            table = Table(line2)
+            history.append(table)
+            line3 = [[Paragraph(f"<b>RUC: </b> {self.data['documento']}"),Paragraph(f"<b>O. COMPRA: </b> {self.data['orden_compra']}"),Paragraph(f"<b>OPERACION:</b> {self.data['operacion']}")]]
+            table = Table(line3)
+            history.append(table)
+            line4 = [[Paragraph(f"<b>PLACA : </b> {self.data['placa']}"),Paragraph(f"<b>CHASIS: </b> {self.data['chasis']}"),Paragraph(f"<b>AÑO: </b> {self.data['anyo']}"),Paragraph(f"<b>COLOR: </b> {self.data['color']}")]]
+            table = Table(line4)
+            history.append(table)
+            history.append(Paragraph(f"<b>TIPO DE SERVICIO: </b>{self.data['servicio']}"))
+            text = "MEDIANTE EL PRESENTE LE AGRADECEMOS SU INTERÉS Y PRESENCIA EN NUESTROS PORDUCTOS, A CONTINUACIÓN NOS COMPLACE HACERLES LLEGAR NNUESTRA PROPUESTA ECONOMICA SEGUN LAS ESPECIFICACIONES RECAUDADAS"
+            history.append(Spacer(1,12))
+            history.append(Paragraph(text))
+            history.append(Spacer(1,12))
+            items = [
+        ["CODIGO", "C/V", "CANT.", "ARTICULO","U/M","P. UNI","DSCTO (%)","TOTAL"],
+    ]
+            total_v = 0
+            for item in self.data['items']:
+                cantidad_vehiculos =  item[3] if item[3]!=0  else item[4]
+                total_v+=cantidad_vehiculos
+                items.append([Paragraph(item[0].strip()),Paragraph(f"{cantidad_vehiculos}"),Paragraph(f"{item[2]:.2f}"),Paragraph(item[1].strip()),Paragraph(f"{item[8].strip()}"),Paragraph(f"{item[5]:.2f}"),Paragraph(f"{item[6]:.2f}"),Paragraph(f"{item[7]:.2f}")])
+            items.append(['',Paragraph('<b>TOTAL</b>'),Paragraph(f"<b>{total_v}</b>"),'',"",""])
+            table = Table(items,colWidths=[70,50,50,200,60,60,50],style=TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ]))
+            history.append(table)
+            text = NumberToText(self.data['venta_total'])
+            history.append(Paragraph(text))
+            date = [["BASE IMPONIBLE",self.data['moneda'],f"{self.data['base_imponible']:,.2f}"],
+                    [f"IGV({int(self.data['igv_porcent'])}%",self.data['moneda'],f"{self.data['igv']:,.2f}"],
+                    [f"TOTAL VENTA",self.data['moneda'],f"{self.data['venta_total']:,.2f}"],
+                    ]
+            table = Table(date)
+            table.hAlign = 'RIGHT'
+            table.setStyle(TableStyle([    
+                                        ('ALIGN',(0,0),(-1,-1),'RIGHT'),
+                                        ('BACKGROUND', (0, 1), (-1, -1), colors.white)
+                                        ]))
+            history.append(table)
+            text = "TERMINOS Y CONDICIONES DE VENTA."
+            history.append(Paragraph(text))
+            text = "- LOS PRECIOS INCLUYEN IGV."
+            history.append(Paragraph(text))
+            text = f"- VALIDES DE LA COIZACION POR {self.data['dias_validez']} DIAS"
+            history.append(Paragraph(text))
+            text = "- ENTREGA INMEDIATA SEGUN CONFIRMACION DE LA ORDEN DE COMPRA."
+            history.append(Paragraph(text))
+            text = "PARA CUALQUIER CONSULTA SIRVASE AL TELEFONO DE LA REFERENCIA"
+            history.append(Paragraph(text))
+            data = [
+                [Paragraph("ENTIDAD FINANCIERA"),Paragraph("CUENTA"),Paragraph("MONEDA"),Paragraph("NUMERO DE CUENTA"),Paragraph("CÓDIGO CUENTA INTERBANCARIA")],
+                ["BANCO DE CRÉDITO DEL PERÚ","CUENTA CORRIENTE","SOLES",self.data['empresa']['cuenta_soles'],"00219400211411600695"],
+                ["BANCO DE CRÉDITO DEL PERÚ","CUENTA CORRIENTE","DOLARES",self.data['empresa']['cuenta_dolares'],"00219100157902717659"],
+                ["BANCO DE LA NACIÓN","CUENTA DE DETRACCIÓN","SOLES","00076021171","-"],
+            ]
+            history.append(Spacer(1,12))
+            table = Table(data)
+            table.setStyle(TableStyle([    
+                                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                                        ('ALIGN',(0,0),(-1,-1),'LEFT'),
+                                        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                                        ("GRID",(0,0),(-1,-1),1,colors.black)
+                                        ]))
+            history.append(table)
+            history.append(Spacer(1,12))
+
+            text = "ATENTAMENTE"
+            history.append(Paragraph(text))
+            text = '.'*50
+            history.append(Spacer(1,12))
+            style_ = ParagraphStyle(name='text-center',alignment=TA_CENTER)
+            history.append(Paragraph(text=text,style=style_))
+            text = self.data['empresa']['razon_social']
+            history.append(Paragraph(text=text,style=style_))
+        except Exception as e:
+            print(str(e))
         doc.build(history)
 class PDFHistorialCliente:
     def __init__(self,filename:str,title:str,header:list,data:list[list[str]],custom_cabecera,saldo):

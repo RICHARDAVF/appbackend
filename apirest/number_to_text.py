@@ -1,11 +1,10 @@
 from num2words import num2words
 class NumberToText:
     def __init__(self,number):
-        self.number = number
+        self.number = str(number).split(".")
     def convert(self):
-        part_int = int(self.number)
-        part_decimal = int(self.number-int(self.number))
-        return f"SON : {num2words(part_int,lang='es').upper()} CON {part_decimal}/100 SOLES"
+        
+        return f"SON : {num2words(self.number[0],lang='es').upper()} CON {self.number[1]}/100 SOLES"
     def __new__(cls, *args, **kwargs):
         instance = super().__new__(cls)
         instance.__init__(*args, **kwargs)
