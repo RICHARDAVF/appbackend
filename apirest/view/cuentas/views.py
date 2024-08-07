@@ -74,10 +74,11 @@ class CuentasView(generics.GenericAPIView):
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
             result = self.querys(conn,sql,(),'get')
-   
+     
+            cred = {'bdhost':self.kwargs['host'],'bdname':self.kwargs['db'],'bduser':self.kwargs['user'],'bdpassword':self.kwargs['password']}
             # tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
-            tipo_cambio = TipoCambio(self.kwargs,{'codigo':'001'})
-            print(tipo_cambio)
+            tipo_cambio = float(TipoCambio(cred,{'codigo':'001'}))
+       
             data = [
                 {
                     'id':index,
@@ -91,8 +92,8 @@ class CuentasView(generics.GenericAPIView):
                     'total_dolares':f"{value[7]:,.2f}", #Formateo de la
                     'filtro':filtro,
                     "linea_credito":float(value[8]),
-                    "saldo_dolares":f"{self.saldo(value[6],value[7],value[8],tipo_cambio):,.2f}",
-                    "saldo_soles":f"{self.saldo(value[6],value[7],value[8],tipo_cambio)*tipo_cambio:,.2f}",
+                    "saldo_dolares":f"{self.saldo(float(value[6]),float(value[7]),float(value[8]),tipo_cambio):,.2f}",
+                    "saldo_soles":f"{self.saldo(float(value[6]),float(value[7]),float(value[8]),tipo_cambio)*tipo_cambio:,.2f}",
                     "usuario":value[9].strip()
                     
                 }    for index,value in enumerate(result)]
@@ -100,6 +101,7 @@ class CuentasView(generics.GenericAPIView):
             conn.commit()
             conn.close()
         except Exception as e:
+            print(str(e))
             logger.error('An error occurred: %s', e)
             data['error'] = 'Ocurrio un error al recuperar las cuentas'
         return Response(data)

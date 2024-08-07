@@ -15,12 +15,14 @@ class TipoCambio:
             self.credencial = Credencial(self.kwargs)
             sql = f"SELECT TC_VENTA FROM t_tcambio WHERE TC_FECHA='{self.date.strftime('%Y-%m-%d')}' "
             s,result = CAQ.request(self.credencial,sql,(),'get',0)
+         
             if not s:
                 raise Exception("Error al obtener el tipo de cambio")
             if result is None:
                 self.get_tc()
             else:
                 self.tipo_c = float(result[0])
+                
         except :
             raise
     def get_tc(self):
