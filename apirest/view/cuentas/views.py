@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import generics
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
+from apirest.tipo_cambio import TipoCambio
 from apirest.view.clientes.views import GetClient
 from apirest.views import QuerysDb
 from datetime import datetime
@@ -74,7 +75,9 @@ class CuentasView(generics.GenericAPIView):
             conn = QuerysDb.conexion(host,bd,user,passsword)
             result = self.querys(conn,sql,(),'get')
    
-            tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
+            # tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
+            tipo_cambio = TipoCambio(self.kwargs,{'codigo':'001'})
+            print(tipo_cambio)
             data = [
                 {
                     'id':index,

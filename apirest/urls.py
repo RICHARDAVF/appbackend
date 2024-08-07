@@ -8,7 +8,7 @@ from apirest.view.nota_pedido.views import NotaPedido
 from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,EstadoPedido,
                     EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView,TipoPago)
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
-from apirest.view.ordenC.views import ListOCview,DetalleViewOR
+from apirest.view.ordenC.views import ListOCview,DetalleViewOR,ListOrdenCompra
 from apirest.view.stock.views import StockView,StockReview
 from apirest.view.inventario.views import InventarioView,ValidateView,DeleteInventario,InventarioWithLote
 from apirest.view.productos.views import ProductSeleView
@@ -32,8 +32,9 @@ from apirest.view.facturacion.views import Facturacion
 from apirest.view.ticket.views import TicketCuadreCaja, TicketFactura,TicketNP
 from apirest.view.emision_documentos.views import EmisionDocumentos,EnviarDocumento,VerificarEstado
 from apirest.view.ubicacion.views import UbicacionesCondicionados
-from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion,CotizacionVars,CotizacionFilter
+from apirest.view.cotizacion.views import Cotizacion,GuardarCotizacion,CotizacionVars,CotizacionFilter,CotizacionList,DetalleCotizacion
 from apirest.view.reporte_pedidos.views import ReportePedidos
+from apirest.view.seguimientos.views import SeguimientoPedidos,OptionsSeguimientos
 # from apirest.view.pdf.views import pdf_generate,GeneratedPDF
 router = routers.DefaultRouter()
 urlpatterns = [
@@ -92,6 +93,8 @@ urlpatterns = [
     path('v1/save/cotiza/<str:ruc>/',GuardarCotizacion.as_view()),
     path('v1/vars/cotiza/<str:ruc>/',CotizacionVars.as_view()),
     path('v1/dates/filter/<str:ruc>/',CotizacionFilter.as_view()),
+    path("v2/cotizacion/list/<str:ruc>/",CotizacionList.as_view()),
+    path("v2/cotizacion/list/items/<str:ruc>/",DetalleCotizacion.as_view()),
 
     #CLIENTES
     path('client/<str:host>/<str:db>/<str:user>/<str:password>/',ClienteView.as_view()),
@@ -152,6 +155,7 @@ urlpatterns = [
     path('orden/apro/<str:host>/<str:db>/<str:user>/<str:password>/',AprobacionORView.as_view()),
     #ORDEN DE COMPRA
     path('compra/<str:host>/<str:db>/<str:user>/<str:password>/',ListOCview.as_view()),
+    path("v2/list/orden/compra/<str:ruc>/",ListOrdenCompra.as_view()),
     path('compra/detalle/<str:host>/<str:db>/<str:user>/<str:password>/<str:numero>/',DetalleViewOR.as_view()),
     #STOCK
     path('stock/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/<str:ubi>/<int:talla>/',StockView.as_view()),
@@ -169,7 +173,9 @@ urlpatterns = [
     path('v1/save/caja/<str:ruc>/',SaveCuadreCaja.as_view()),
     path('v1/list/caja/<str:ruc>/',ListCuadreCaja.as_view()),
     path('v1/ticket/caja/<str:ruc>/',TicketCuadreCaja.as_view()),
-
+    #SEGUIMIENTO DE PEDIDOS
+    path('v2/seguimiento/pedidos/list/<str:ruc>/',SeguimientoPedidos.as_view()),
+    path('v2/seguimiento/bonos/list/<str:ruc>/',OptionsSeguimientos.as_view()),
 
     #LIQUIDACION DE REGALOS
     path('li-re/<str:host>/<str:db>/<str:user>/<str:password>/',LiquiRegaView.as_view()),

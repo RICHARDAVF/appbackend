@@ -62,7 +62,7 @@ class CAQ:
     @classmethod
     def request(cls,credencial:object,sql:str,params:tuple,method:str,option:int=-1):
         """
-        crendecial:Es un objeto que que atributos,host,name,user y passord
+        credencial:Es un objeto que contiene los atributos,host,name,user y password
         sql:Consulta sql para sql server 2016 o superrior
         params: Los parametros para la condicion 
         method:
