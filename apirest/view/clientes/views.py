@@ -200,8 +200,20 @@ class ClientList(generics.GenericAPIView):
             sql = f"""SELECT {
                 "TOP 100 " if cadena=='x' else '' 
             }
-                            aux_razon,aux_clave,aux_docum,'direccion'=ISNULL(aux_direcc,''),aux_telef,aux_email ,'codigo_vendedor'=ISNULL(b.ven_codigo,''),'nombre_vendedor'=ISNULL(b.VEN_NOMBRE,''),a.aux_desac,
-                            'distrio'=ISNULL(dis_codigo,''),'provincia'=ISNULL(pro_codigo,''),'region'=ISNULL(dep_codigo,'')
+                            aux_razon,
+                            aux_clave,
+                            aux_docum,
+                            'direccion'=ISNULL(aux_direcc,''),
+                            aux_telef,
+                            aux_email ,
+                            'codigo_vendedor'=ISNULL(b.ven_codigo,''),
+                            'nombre_vendedor'=ISNULL(b.VEN_NOMBRE,''),
+                            a.aux_desac,
+                            'distrio'=ISNULL(dis_codigo,''),
+                            'provincia'=ISNULL(pro_codigo,''),
+                            'region'=ISNULL(dep_codigo,''),
+                            a.lis_codigo,
+                            a.ofi_codigo
                         FROM t_auxiliar AS  a LEFT JOIN t_vendedor AS b on a.VEN_CODIGO=b.VEN_CODIGO 
                         WHERE 
                                 substring(aux_clave,1,1)=?
@@ -223,7 +235,9 @@ class ClientList(generics.GenericAPIView):
                     'correo':client[5].strip(),
                     'vendedor_codigo':client[6].strip(),
                     'vendedor_nombre':client[7].strip(),
-                    'activo':int(client[8])==0
+                    'activo':int(client[8])==0,
+                    'lista_precio':client[12].strip(),
+                    "familia":client[13].strip()
                     } for index,client in enumerate(result)]
            
         except Exception as e:
@@ -292,7 +306,7 @@ class RegisterSampleClient(generics.GenericAPIView):
                     dep_codigo,pro_codigo,dis_codigo,aux_tipope,aux_docum,aux_telef,aux_creado,aux_edi,usuario,aux_tipdoc,
                     aux_email,aux_fecing,aux_cuenta,aux_cuentd) VALUES({','.join('?' for i in params)})"""
             res = CAQ.request(self.credencial,sql,params,'post')
-            print(res)
+      
         except Exception as e:
             data['error'] = str(e)
         return Response(data)

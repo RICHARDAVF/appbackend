@@ -126,7 +126,8 @@ class UserView(generics.GenericAPIView):
                 datos['creden'] = serializer.data
                 datos['config_client'] = {'separacion_pedido':config.separacion_pedido,
                                           'cliente_user':config.cliente_user,
-                                          'guid_lote':config.guid_lote}
+                                          'guid_lote':config.guid_lote,
+                                          'valida_stock':config.valida_stock}
                 sql = "SELECT emp_inclu FROM t_empresa"
                 conn = QuerysDb.conexion(user.bdhost,user.bdname,user.bduser,user.bdpassword)
                 igv = self.querys(conn,sql,())[0][0]

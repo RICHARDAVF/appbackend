@@ -9,7 +9,7 @@ from .views import (UserView,ProductoView,ClienteView,ProducAddView,PedidosView,
                     EditPedidoView,AgenciaView,SucursalView,UbigeoView,LugarEntregaView,VersionAppView,TipoPago)
 from apirest.view.cuentas.views import CuentasView,ReadCuentasView,ReadDocumentoView
 from apirest.view.ordenC.views import ListOCview,DetalleViewOR,ListOrdenCompra
-from apirest.view.stock.views import StockView,StockReview
+from apirest.view.stock.views import StockView,StockReview,ArticulosPromo
 from apirest.view.inventario.views import InventarioView,ValidateView,DeleteInventario,InventarioWithLote
 from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
@@ -79,8 +79,10 @@ urlpatterns = [
     path('product/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',ProductSeleView.as_view()),
     path('product/venta/add/',ProducAddView.as_view()),
     path('v1/art/<str:host>/<str:db>/<str:user>/<str:password>/<str:alm>/',Articulos.as_view()),
+    path("v2/promo/articulo/list/<str:ruc>/",ArticulosPromo.as_view()),
     #PRECIO PRODUCTOS
     path('product/precio/<str:host>/<str:db>/<str:user>/<str:password>/<str:precio>/<str:moneda>/<str:codigo>/',PrecioProduct.as_view()),
+    path('v2/articulo/precio/<str:ruc>/',PrecioProduct.as_view()),
     #NOTA DE PEDIDO
     path('nota/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',Moneda.as_view()),
     path('v1/list/art/<str:ruc>/',ArticuloStock.as_view()),

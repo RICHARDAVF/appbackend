@@ -27,9 +27,10 @@ class ConfigCliente(models.Model):
     separacion_pedido = models.BooleanField(default=False,verbose_name="Separacion de pedido")
     cliente_user = models.BooleanField(verbose_name='Cliente asignado por usuario',default=False)
     guid_lote = models.BooleanField(verbose_name='El campo Lote es string',default=False)
+    valida_stock = models.BooleanField(verbose_name="Valida stock",default=True)
     class Meta:
-        verbose_name = "ConfigClient"
-        verbose_name_plural = "ConfigClients"
+        verbose_name = "Configuracion del Cliente"
+        verbose_name_plural = "Configuracion de Clientes"
         db_table = 'config_cliente'
     def __str__(self):
         return self.cliente.razon_social

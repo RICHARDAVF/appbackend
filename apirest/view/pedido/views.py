@@ -297,6 +297,7 @@ class PedidoWithQr(GenericAPIView):
 class PrecioProduct(GenericAPIView):
     def get(self,request,*args,**kwargs):
         data = {}
+
         p = '' if kwargs['precio'] =='01' else int(kwargs['precio'])
         moneda = kwargs['moneda']
         codigo = kwargs['codigo']
@@ -325,14 +326,125 @@ class PrecioProduct(GenericAPIView):
         except Exception as e:
             data['error'] = f'Ocurrio un error: {str(e)}'
         return Response(data)
+    def post(self,request,*args,**kwargs):
+        data = {}
+
+        self.tabla = 'maelista_familia'
+        datos = request.data
+
+        self.credencial = Credencial(datos['credencial'])
+        self.numero = '' if datos['lista_precio']=='01' else int(datos['lista_precio'])
+        self.codigo = datos['codigo']
+        self.moneda = datos['moneda']
+        self.familia = datos['familia']
+        try:
+
+            for i in range(3):
+                if i== 0:
+                    s,res = self.precio_familiar()
+
+                    if res is not None:
+                        break
+                elif i==1:
+                    s,res=self.precio_clientes()
+ 
+                    if res is not None:
+                        break
+                elif i==2:
+                    s,res =self.precio_general()
+
+                    if not s:
+                        raise ValueError(res['error'])
+            if not s:
+                raise ValueError(res['error'])
+           
+            if res is None:
+                data['error'] = 'El articulo no tiene precio' 
+            else:
+                data = {
+                    "precio":round(res[0],2),
+                    "moneda":res[1].strip(),
+                    'des_min':res[2],
+                    "des_max":res[3],
+                    'peso':round(res[4],2)
+                }
+           
+        except Exception as e:
+            logger.error("A error ocurred %s",e)
+            data['error'] = f"Ocurrio un error: {str(e)}"
+        return Response(data)
+    def precio_familiar(self):
+        params = (self.familia,self.moneda,self.codigo)
+        sql = f"""
+                SELECT
+                    a.lis_pmino{self.numero},
+                    a.lis_moneda,
+                    'des_min'=0,
+					'des_max'=0,
+                    b.art_peso
+                FROM maelista_familia AS a
+                LEFT JOIN t_articulo AS b ON a.art_codigo = b.ART_CODIGO
+                WHERE
+                    CAST(GETDATE() AS date)
+                        BETWEEN CAST(a.lis_fini AS date) AND CAST(a.lis_ffin AS date)
+                    AND a.ofi_codigo=?
+                    AND a.lis_moneda=?
+                    AND a.art_codigo=?
+            """
+        return CAQ.request(self.credencial,sql,params,'get',0)
+        
+    def precio_clientes(self):
+        params = (self.moneda,self.codigo)
+        sql = f"""
+                SELECT
+                    a.lis_pmino{self.numero},
+                    a.lis_moneda,
+					'des_min'=0,
+					'des_max'=0,
+                    b.art_peso
+                FROM maelista_cliente AS a
+                LEFT JOIN t_articulo AS b ON a.art_codigo = b.ART_CODIGO
+                WHERE
+                    CAST(GETDATE() AS date)
+                        BETWEEN CAST(a.lis_fini AS date) AND CAST(a.lis_ffin AS date)      
+                    AND a.lis_moneda=?
+                    AND a.art_codigo=?
+        """
+        return CAQ.request(self.credencial,sql,params,'get',0)
+
+    def precio_general(self):
+        sql = f"""
+                SELECT 
+                    a.lis_pmino{self.numero},
+                    a.lis_moneda,
+                    a.lis_mindes,
+                    a.lis_maxdes,
+                    b.art_peso
+                FROM maelista AS a 
+                LEFT JOIN t_articulo AS b ON a.art_codigo = b.ART_CODIGO
+                WHERE 
+                    CAST(GETDATE() AS date) 
+                    BETWEEN CAST(a.lis_fini AS date) AND CAST(a.lis_ffin AS date) 
+                    AND a.lis_tipo IN (1,0) 
+                    AND a.lis_moneda=?
+                    AND a.art_codigo=?
+                    """
+  
+        
+        params = (self.moneda,self.codigo)
+    
+        return CAQ.request(self.credencial,sql,params,'get',0)
+        
 class Moneda(GenericAPIView):
     def get(self,resquest,*args,**kwargs):
         data = {}
         try:
+           
             sql = f"""
                 SELECT par_moneda FROM t_parrametro WHERE par_anyo = {datetime.now().year}
                 """
             result = Querys(kwargs).querys(sql,(),'get',0)
+
             data = {
                 'moneda':result[0].strip()
             }
@@ -417,14 +529,13 @@ class GuardarPedido(GenericAPIView):
                 mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,mom_linea,mom_conpro,mom_conreg,
                 mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto,mom_lote,art_codadi) VALUES
                 """
-
+            cont = 1
             for item in datos['detalle']:
                 mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
                 mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
                 talla = item['talla'] if item['talla'] !='x' else ''
-                
                 params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],talla,'S',str(ope_codigo[0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
-                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1',0,0,0,0,0,0,0,0,mom_bruto,item['fecha'],item['lote']) 
+                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1',cont,0,0,0,0,0,0,0,mom_bruto,item['fecha'],item['lote']) 
 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
@@ -432,11 +543,24 @@ class GuardarPedido(GenericAPIView):
                 if 'error' in res:
                     data['error'] = 'Ocurrio un error en la grabacion'
                     return Response(data)
+      
+                if 'adicional' in item and len(item['adicional']['combo'])>0:
+                    dates = item['adicional']['combo']
+                    sql =  f"""
+                    INSERT INTO movipedido_combo(mov_compro,mom_fecha,art_codigo,art_codig2,mom_cant,usuario,mom_cant2,art_fijo,mom_linea)
+                    VALUES(?,?,?,?,?,?,?,?,?)"""
+                    for value in dates:
+                        params_ = (cor,fecha,value['codigo'],item['codigo'],value['cantidad'],datos['vendedor']['cod'],value['cant'],value['tipo'],cont)
+                        s,res = CAQ.request(self.credencial,sql,params_,'post')
+            
+                        if not s:
+                            raise ValueError(res['error'])
                 res = self.auditoria_movipedido(params,self.bk_message)
                 
                 if 'error' in res:
                     data['error'] = 'Ocurrio un error el grabar el pedido'
                     return Response(data)
+                cont+=1
             self.aprobacion_automatica(cor)
             data['success'] = self.message
             

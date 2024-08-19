@@ -5,6 +5,8 @@ from apirest.credenciales import Credencial
 
 from apirest.querys import CAQ
 import logging
+
+from apirest.view.generate_id import gen_id
 logger = logging.getLogger("django")
 class ArticuloStock(GenericAPIView):
     anio = datetime.now().year
@@ -37,14 +39,16 @@ class ArticuloStock(GenericAPIView):
          
             data= [
                 {
-                    'id':index,
+                    'id':gen_id(),
                     'codigo':item[0].strip(),
                     'talla':item[1].strip(),
                     'stock':item[2],
                     'nombre':item[3].strip(),
                     'moneda':item[4].strip(),
                     'peso':item[5],
-                    'vendedor':item[8].strip()
+                    'vendedor':item[8].strip(),
+                    'promocion':item[8]==0,
+                    'regalo':item[9]==0
 
                 }
                 for index,item in enumerate(result)
@@ -107,8 +111,9 @@ class ArticuloStock(GenericAPIView):
                     a.ALM_CODIGO,
                     a.UBI_COD1,
                     b.art_peso,
-                    b.ven_codigo
-                    
+                    b.ven_codigo,
+                    b.art_noprom,
+                    b.art_norega
                 FROM movm{self.anio} AS a 
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
@@ -122,7 +127,18 @@ class ArticuloStock(GenericAPIView):
                     {
                         f"AND b.PA1_CODIGO='{caida_codigo}' " if caida_codigo!='' else  ''
                     }
-                GROUP BY a.art_codigo, b.ART_NOMBRE, c.ume_nombre, a.ALM_CODIGO, a.UBI_COD1, b.art_peso, b.art_mansto, a.tal_codigo,b.ven_codigo
+                GROUP BY 
+                    a.art_codigo, 
+                    b.ART_NOMBRE, 
+                    c.ume_nombre, 
+                    a.ALM_CODIGO, 
+                    a.UBI_COD1, 
+                    b.art_peso, 
+                    b.art_mansto, 
+                    a.tal_codigo,
+                    b.ven_codigo,
+                    b.art_noprom,
+                    b.art_norega
                 HAVING 
                     SUM(CASE 
                         WHEN a.mom_tipmov='E' THEN a.mom_cant 
@@ -168,28 +184,30 @@ class ArticuloStock(GenericAPIView):
         return sql
     def art_off_separacion(self):
         codigo = self.request.data['codigo']
+        self.codigo_empresa = self.request.data['credencial']['codigo']
         sql = f"""
                 SELECT
-                        b.art_codigo,
-                        a.tal_codigo,
-                        'mom_cant' = SUM(CASE WHEN a.mom_tipmov = 'E' THEN a.mom_cant WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1 END),
+                        ISNULL(b.art_codigo,0) AS codigo,
+                        ISNULL(a.tal_codigo,0) AS talla,
+                        'mom_cant' = ISNULL(SUM(CASE WHEN a.mom_tipmov = 'E' THEN a.mom_cant WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1 END),0),
                         b.ART_NOMBRE,        
                         'lis_moneda' = ISNULL((SELECT par_moneda FROM t_parrametro WHERE par_anyo = DATEPART(YEAR, GETDATE())), ''),   
-                        a.ALM_CODIGO,
-						a.UBI_COD1,
+                        ISNULL(a.ALM_CODIGO,'') AS almacen,
+						ISNULL(a.UBI_COD1,'') AS ubicacion,
                         b.art_peso,
-                        b.ven_codigo
+                        b.ven_codigo,
+                        b.art_noprom,
+                        b.art_norega
                     FROM
                         movm{self.anio} AS a
-                    LEFT JOIN
-                        t_articulo b ON a.ART_CODIGO = b.art_codigo
+                    RIGHT JOIN
+                        t_articulo b ON a.ART_CODIGO = b.art_codigo AND   a.elimini = 0 AND a.ALM_CODIGO = ? AND a.UBI_COD1 = ?
                     LEFT JOIN
                         t_umedida c ON b.ume_precod = c.ume_codigo
                     WHERE
-                        a.elimini = 0
-                        AND b.art_mansto = 0
-                        AND a.ALM_CODIGO = ?
-                        AND a.UBI_COD1 = ?
+                      
+                        b.art_mansto = 0
+                        
                         {
                             f"AND a.mov_pedido<>'{codigo}'" if codigo!='x' else ''
                         }
@@ -201,9 +219,12 @@ class ArticuloStock(GenericAPIView):
                         a.UBI_COD1,
                         a.tal_codigo,
                         b.art_peso,
-                        b.ven_codigo                                
-                    HAVING
-                        SUM(CASE WHEN a.mom_tipmov = 'E' THEN a.mom_cant WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1 END) <> 0
+                        b.ven_codigo,
+                        b.art_noprom,
+                        b.art_norega
+                        {
+                            "HAVING SUM(CASE WHEN a.mom_tipmov = 'E' THEN a.mom_cant WHEN a.mom_tipmov = 'S' THEN a.mom_cant * -1 END) <> 0" if int(self.codigo_empresa)!=12 else ''
+                        }               
                     ORDER BY
                         b.art_nombre,
                         c.ume_nombre
