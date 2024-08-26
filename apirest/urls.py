@@ -15,11 +15,11 @@ from apirest.view.productos.views import ProductSeleView
 from apirest.view.liqui_regalos.views import LiquiRegaView
 from apirest.view.traslado.views import TrasladoView,ProducTrasladoView,StockViewProduct
 from apirest.view.ordenR.views import OrdenView,OrdenFormView,OrdenListView,OrdenDetalleView,AprobacionORView,EditOrdenView
-from apirest.view.reporte.views import PDFView,PDFview1,DownloadPDF,PDFGENERATEView,LetraUbicacion,PDFCotizacion,Catalogo
+from apirest.view.reporte.views import PDFStock, PDFView,PDFview1,DownloadPDF,PDFGENERATEView,LetraUbicacion,PDFCotizacion,Catalogo,PDFStockTalla
 from apirest.view.apis.views import SearchDNIRUC
 from apirest.view.guias.views import Guia,PDFFACTView,AnulacionGuiaView
 from apirest.view.clientes.views import  FamiliaView,FuenteView,TypeClienteView,ClienteCreateView,ClientList,ValidarCliente,RegisterSampleClient
-from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido
+from apirest.view.pedido.views import ListPedidos, PdfPedidoView,PrecioProduct,Moneda,GuardarPedido,EditPedido,PDFPEDIDO
 from apirest.view.apps.views import DownloadAppView,DownloadAppMapring,DownloadAppV1
 from apirest.view.permisos.views import PermisosView
 from apirest.view.login.views import Login
@@ -130,6 +130,7 @@ urlpatterns = [
     path('pedidos/sucursal/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/',SucursalView.as_view()),
     path('pedidos/pdf/<str:host>/<str:db>/<str:user>/<str:password>/<str:codigo>/<str:empresa>/',PdfPedidoView.as_view()),
     path('v1/pedidos/pdf/<str:ruc>/',PdfPedidoView.as_view()),
+    path('v2/pedidos/pdf/<str:ruc>/',PDFPEDIDO.as_view()),
     path('v1/reporte/pedido/<str:ruc>/',ReportePedidos.as_view()),
     path('guardar/pedido/<str:host>/<str:db>/<str:user>/<str:password>/',GuardarPedido.as_view()),
     path('v1/pedido/edit/<str:ruc>/',EditPedido.as_view()),
@@ -175,6 +176,7 @@ urlpatterns = [
     path('v1/save/caja/<str:ruc>/',SaveCuadreCaja.as_view()),
     path('v1/list/caja/<str:ruc>/',ListCuadreCaja.as_view()),
     path('v1/ticket/caja/<str:ruc>/',TicketCuadreCaja.as_view()),
+    path('v2/ticket/caja/<str:ruc>/',TicketCuadreCaja.as_view()),
     #SEGUIMIENTO DE PEDIDOS
     path('v2/seguimiento/pedidos/list/<str:ruc>/',SeguimientoPedidos.as_view()),
     path('v2/seguimiento/bonos/list/<str:ruc>/',OptionsSeguimientos.as_view()),
@@ -189,9 +191,10 @@ urlpatterns = [
     path('ubigeo/<str:host>/<str:db>/<str:user>/<str:password>/',UbigeoView.as_view()),
     #REPORTE
     path('reporte1/',PDFView.as_view()),
-    path('reporte2/',PDFview1.as_view()),
+    path('api/reporte2/',PDFview1.as_view()),
+    path('v2/reporte/stock/<str:ruc>/',PDFStockTalla.as_view()),
     path('download/pdf/<str:ruc>/<str:cod>/<str:codigo>/',DownloadPDF.as_view()),
-    path('reporte3/',PDFGENERATEView.as_view()),
+    path('v2/reporte/stock/st/<str:ruc>/',PDFStock.as_view()),
     path('v1/pdf/cotizacion/<str:ruc>/',PDFCotizacion.as_view()),
     path('v1/pdf/catalogo/<str:ruc>/',Catalogo.as_view()),
 

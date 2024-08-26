@@ -1,4 +1,5 @@
 import io
+from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from apirest.credenciales import Credencial
@@ -6,7 +7,7 @@ from datetime import datetime
 from apirest.querys import CAQ
 from num2words import num2words
 
-from apirest.view.pdf.views import PDF
+from apirest.view.pdf.views import PDF, PDFPedido
 class TicketFactura(GenericAPIView):
     credencial : object = None
     anio : int = datetime.now().year
@@ -351,7 +352,10 @@ class TicketCuadreCaja(GenericAPIView):
             formato+=f"[L]NUMERO TICKET BOLETA [R]{int(result2[44])}\n"
             formato+=f"[L]DESDE-HASTA  {result2[45].strip()}\n"
             data['format'] = formato
-            data['pdf'] = PDF(result1[0].strip(),'','').ticket(result2,self.tarjetas)
+            response = HttpResponse(content_type='application/pdf')
+            response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'"
+            PDFPedido(response,result1[0].strip(),'','').ticket(result2,self.tarjetas)
+            return response
         except Exception as e:
             data['error'] = str(e)
         return Response(data)

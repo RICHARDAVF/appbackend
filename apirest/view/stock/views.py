@@ -1003,7 +1003,7 @@ class StockReview(generics.GenericAPIView):
             return data
         data = [
             {
-                "id":gen_id(),
+                'id':gen_id()+f"{index}",
                 "codigo":value[0].strip(),
                 "nombre":value[1].strip(),
                 "tipo":value[2].strip(),
@@ -1021,6 +1021,7 @@ class ArticulosPromo(GenericAPIView):
         self.monto = datos['monto']
         try:
             action = datos['action']
+
             if action == 'promo_combo':
                 data = self.promocion_combo()
             elif action == 'promo_articulo':
@@ -1045,13 +1046,14 @@ class ArticulosPromo(GenericAPIView):
                     a.prm_monto<=? 
                     AND a.VIG_DESDE<=GETDATE() and a.VIG_HASTA>=GETDATE()
             """
+  
         params = (self.monto,)
         s,res = CAQ.request(self.credencial,sql,params,'get',1)
         if not s:
             return data
         data = [
             {
-                "id":gen_id(),
+                'id':gen_id()+f"{index}",
                 'codigo':value[0].strip(),
                 'nombre':value[1].strip(),
                 'precio':value[2],
@@ -1060,6 +1062,9 @@ class ArticulosPromo(GenericAPIView):
                 "total":value[2],
                 "tipo":"P1",
                 "talla":'x',
+                "lista_precio":"",
+                "peso":0,
+                "precio_parcial":0,
                 "lote":'',
                 'fecha':'',
                 'adicional':{
@@ -1088,7 +1093,7 @@ class ArticulosPromo(GenericAPIView):
             return data
         data = [
             {
-                "id":gen_id(),
+                'id':gen_id()+f"{index}",
                 "codigo":value[0].strip(),
                 "nombre":value[1].strip(),
                 "tipo":value[2].strip(),
@@ -1121,7 +1126,7 @@ class ArticulosPromo(GenericAPIView):
             return data
         data = [
                 {
-                    'id':gen_id(),
+                    'id':gen_id()+f"{index}",
                     'codigo_ref':value[0].strip(),
                     'nombre':value[1].strip(),
                     'precio':value[2],
@@ -1131,8 +1136,11 @@ class ArticulosPromo(GenericAPIView):
                     "descuento":0,
                     "total":value[2],
                     "tipo":"P2",
+                    "lista_precio":"",
+                    "precio_parcial":0,
                     "talla":'x',
                     "lote":'',
+                    "peso":0,
                     'fecha':'',
                     'adicional':{
                         "cantidad":1,
@@ -1154,13 +1162,14 @@ class ArticulosPromo(GenericAPIView):
             WHERE a.prm_monto<=?
         """
         params = (self.monto,)
-   
+
         s,res = CAQ.request(self.credencial,sql,params,'get',1)
+
         if not s:
             return data
         data = [
                 {
-                    'id':gen_id(),
+                    'id':gen_id()+f"{index}",
                     'codigo':value[0].strip(),
                     'nombre':value[1].strip(),
                     'precio':value[2],
@@ -1171,6 +1180,9 @@ class ArticulosPromo(GenericAPIView):
                     "tipo":"R",
                     "talla":'x',
                     "lote":'',
+                    "lista_precio":"",
+                    "precio_parcial":0,
+                    "peso":0,
                     'fecha':'',
                     'adicional':{
                         "cantidad":1,
