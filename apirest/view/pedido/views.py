@@ -552,6 +552,8 @@ class GuardarPedido(GenericAPIView):
                     INSERT INTO movipedido_combo(mov_compro,mom_fecha,art_codigo,art_codig2,mom_cant,usuario,mom_cant2,art_fijo,mom_linea)
                     VALUES(?,?,?,?,?,?,?,?,?)"""
                     for value in dates:
+                        if int(value['cant'])<=0:
+                            continue
                         params_ = (cor,fecha,value['codigo'],item['codigo'],value['cantidad'],datos['vendedor']['cod'],value['cant'],value['tipo'],cont)
                         s,res = CAQ.request(self.credencial,sql,params_,'post')
             
