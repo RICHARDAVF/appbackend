@@ -13,6 +13,7 @@ from apirest.querys import CAQ, Querys
 from datetime import datetime
 from apirest.view.apis.views import TipoCambio
 from dataclasses import dataclass
+from apirest.view.generate_id import gen_id
 from apirest.view.pdf.views import PDF, PDFPedido
 import logging
 import traceback
@@ -529,7 +530,7 @@ class GuardarPedido(GenericAPIView):
             sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
                 mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,mom_linea,mom_conpro,mom_conreg,
-                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto,mom_lote,art_codadi) VALUES
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto,mom_lote,art_codadi,ped_observ) VALUES
                 """
             cont = 1
             for item in datos['detalle']:
@@ -537,7 +538,8 @@ class GuardarPedido(GenericAPIView):
                 mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
                 talla = item['talla'] if item['talla'] !='x' else ''
                 params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],talla,'S',str(ope_codigo[0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
-                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1',cont,0,0,0,0,0,0,0,mom_bruto,item['fecha'],item['lote']) 
+                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1',cont,0,0,0,0,0,0,0,\
+                            mom_bruto,item['fecha'],item['lote'],item['obs']) 
 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
             
@@ -814,6 +816,7 @@ class GuardarPedido(GenericAPIView):
         parametros.pop(16)#ELMINAR mon_compre
         parametros.pop(16)#ELIMINAR mom_peso
         parametros.pop(16)#ELMINIAR mom_punit2
+        parametros.pop(-1)#ELMINIAR obser
         usuario = self.request.data['vendedor']['cod']
       
         fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -972,13 +975,52 @@ class EditPedido(GenericAPIView):
                     "precio_parcial":value[9],
                     "vendedor":value[10].strip(),
                     "lote":value[11].strip(),
-                    "fecha":value[12].strip()
+                    "fecha":value[12].strip(),
+                    "adicional":{
+                        "cantidad":1,
+                        "combo":self.get_items_combo(datos['codigo'],value[0])
+                    }
                 } for index, value in enumerate(result)
             ]
         except Exception as e:
             print(str(e))
             data['error'] = 'Sucedio un error al recuperar los datos'
         return Response(data)
+    def get_items_combo(self,numero_pedido,codigo_articulo):
+        data = []
+        try:
+            sql = f"""
+            SELECT 
+                a.art_codigo,
+                b.art_nombre,
+                a.art_fijo,
+                a.mom_cant
+            FROM movipedido_combo AS a
+            LEFT JOIN t_articulo AS b ON a.art_codigo=b.art_codigo
+            WHERE 
+                mov_compro=?
+                AND art_codig2=?
+                """
+            params = (numero_pedido,codigo_articulo)
+            s,res = CAQ.request(self.credencial,sql,params,'get',1)
+            if not s:
+                raise
+            if res is None:
+                raise
+            data = [
+                {
+                    'id':gen_id(),
+                    "codigo":value[0].strip(),
+                    "nombre":value[1].strip(),
+                    "tipo":value[2].strip(),
+                    "cantidad":f"{value[3]:.0f}",
+                    "cant":f"{value[3]:.0f}",
+                } for value in res
+            ]
+        except:
+            data = []
+        return data
+
 class ListPedidos(GenericAPIView):
     anio = datetime.now().year
     credencial = None
@@ -1128,7 +1170,8 @@ class PDFPEDIDO(GenericAPIView):
                         a.MOM_PUNIT,
                         b.ART_NOMBRE,
                         a.mom_valor,
-                        a.mom_dscto1
+                        a.mom_dscto1,
+                        a.ped_observ
                     FROM movipedido AS a 
                     INNER JOIN t_articulo AS b ON a.ART_CODIGO=b.art_CODIGO WHERE MOV_COMPRO=?
                     ORDER BY b.ART_NOMBRE"""
@@ -1151,7 +1194,7 @@ class PDFPEDIDO(GenericAPIView):
                 'codigo':item[0].strip(),
                 'cantidad':float(item[1]),
                 'precio':float(item[2]),
-                'nombre':item[3].strip(),
+                'nombre':f"{item[3].strip()}<br/>{item[-1].strip()}".replace('\n','<br/>'),
                 'subtotal':float(item[4]),
                 'descuento':float(item[5])
             }

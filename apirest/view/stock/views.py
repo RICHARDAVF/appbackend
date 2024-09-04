@@ -1067,6 +1067,7 @@ class ArticulosPromo(GenericAPIView):
                 "precio_parcial":0,
                 "lote":'',
                 'fecha':'',
+                'obs':'',
                 'adicional':{
                     "cantidad":1,
                     "combo":self.get_items_combo(value[0])
@@ -1142,6 +1143,7 @@ class ArticulosPromo(GenericAPIView):
                     "lote":'',
                     "peso":0,
                     'fecha':'',
+                    'obs':'',
                     'adicional':{
                         "cantidad":1,
                         "combo":self.get_items_combo(value[3])
@@ -1184,6 +1186,7 @@ class ArticulosPromo(GenericAPIView):
                     "precio_parcial":0,
                     "peso":0,
                     'fecha':'',
+                    'obs':'',
                     'adicional':{
                         "cantidad":1,
                         "combo":self.get_items_combo(value[0])

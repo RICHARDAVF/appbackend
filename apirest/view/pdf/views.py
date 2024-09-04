@@ -398,7 +398,7 @@ class PDFPedido:
         story.append(Paragraph(f"DOCUMENTO: {self.cabecera.documento}",custom_style))
         story.append(Paragraph(f"DIRECCIÓN: {self.cabecera.direccion}",custom_style))
         story.append(Paragraph(f"VENDEDOR: {self.cabecera.vendedor}",custom_style))
-        header = ['CODIGO','ARTICULO','CANTIDAD','P. UNIT','TOTAL']
+        header = ['CODIGO','ARTICULO','CANT.','P. UNIT','TOTAL']
         data = [header]
         for item in self.detalle:
             items = [item['codigo'],Paragraph(item['nombre']),item['cantidad'],item['precio'],item['subtotal']]
@@ -406,12 +406,17 @@ class PDFPedido:
 
         story.append(Spacer(0,20))
         w,h = A4
-        col_widths = [w*.15,w*.35,w*.15,w*.15,w*.10,w*.10]
+        col_widths = [w*.15,w*.55,w*.10,w*.10,w*.10,]
         table = Table(data,colWidths=col_widths,repeatCols=1)
         table.hAlign  = 'CENTER'
         table.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
                                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                        ('ALIGN', (0, 0), (0, -1), 'LEFT'),#codigo
+                                        ('ALIGN', (1, 0), (1, -1), 'LEFT'),#nombre
+                                        ('ALIGN', (2, 0), (2, -1), 'RIGHT'),#cantidad
+                                        ('ALIGN', (3, 0), (3, -1), 'RIGHT'),#precio
+                                        ('ALIGN', (4, 0), (4, -1), 'RIGHT'),#subototal
+                                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                                         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                                         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
