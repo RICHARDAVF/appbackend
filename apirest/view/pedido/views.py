@@ -523,22 +523,26 @@ class GuardarPedido(GenericAPIView):
                 data['error'] = 'Ocurrio un error en la grabacion'
                 return Response(data)
         
-            res = self.auditoria_cabepedido(params,self.bk_message)
-            if 'error' in res:
-                data['error'] = 'Ocurrio un error al grabar el pedido'
-                return Response(data)
+            # res = self.auditoria_cabepedido(params,self.bk_message)
+            # if 'error' in res:
+            #     data['error'] = 'Ocurrio un error al grabar el pedido'
+            #     return Response(data)
             sql1 = """INSERT movipedido (ALM_CODIGO,MOM_MES,mov_compro,MOM_FECHA,ART_CODIGO,tal_codigo,MOM_TIPMOV,
                 ope_codigo,MOM_CANT,mom_valor,MOM_PUNIT,USUARIO,FECHAUSU,art_afecto,mom_dscto1,gui_inclu,
-                mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,mom_linea,mom_conpro,mom_conreg,
-                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_conpr2,mom_bruto,mom_lote,art_codadi,ped_observ) VALUES
+                mom_conpre,mom_peso,MOM_PUNIT2,doc_codigo,mom_linea,mom_conpro,mom_conpr2,mom_conreg,
+                mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_bruto,mom_lote,art_codadi,ped_observ) VALUES
                 """
             cont = 1
             for item in datos['detalle']:
                 mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
                 mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
                 talla = item['talla'] if item['talla'] !='x' else ''
+                promo1 = 1 if item["tipo"] == 'P1' else 0
+                promo2 = 1 if item["tipo"] == 'P2' else 0
+                regalo = 1 if item['tipo'] == 'R' else 0
+                flete = 1 if item["tipo"] == 'F' else 0 
                 params = ('53',str(fecha).split('-')[1],cor,fecha,item['codigo'],talla,'S',str(ope_codigo[0]).strip(),float(item['cantidad']),float(item['total']),float(item['precio']),\
-                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1',cont,0,0,0,0,0,0,0,\
+                        datos['vendedor']['cod'],fecha,'S',float(item['descuento']),gui_inclu[0],mom_conpre,float(item['peso']),float(item['precio_parcial']),'F1',cont,promo1,promo2,regalo,flete,0,0,0,\
                             mom_bruto,item['fecha'],item['lote'],item['obs']) 
 
                 sql = sql1+'('+ ','.join('?' for i in range(len(params)))+')'
@@ -561,11 +565,12 @@ class GuardarPedido(GenericAPIView):
             
                         if not s:
                             raise ValueError(res['error'])
-                res = self.auditoria_movipedido(params,self.bk_message)
+                        
+                # res = self.auditoria_movipedido(params,self.bk_message)
                 
-                if 'error' in res:
-                    data['error'] = 'Ocurrio un error el grabar el pedido'
-                    return Response(data)
+                # if 'error' in res:
+                #     data['error'] = 'Ocurrio un error el grabar el pedido'
+                #     return Response(data)
                 cont+=1
             self.aprobacion_automatica(cor)
             data['success'] = self.message
@@ -952,7 +957,8 @@ class EditPedido(GenericAPIView):
                 'tipo_envio':int(result[16]), 
             }
             sql = """ SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,
-                        a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2,b.ven_codigo,a.art_codadi,a.mom_lote
+                        a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2,b.ven_codigo,a.art_codadi,a.mom_lote,
+                        a.mom_confle,a.mom_conreg,a.mom_conpro,a.mom_conpr2,a.ped_observ
                         FROM movipedido AS a 
                         INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo 
                         WHERE a.mov_compro = ?"""
@@ -960,6 +966,7 @@ class EditPedido(GenericAPIView):
             if not s:
                 data['error'] = result['error']
                 return Response(data)
+            
             data['articulos'] = [
                 {
                     "id":index,
@@ -976,6 +983,8 @@ class EditPedido(GenericAPIView):
                     "vendedor":value[10].strip(),
                     "lote":value[11].strip(),
                     "fecha":value[12].strip(),
+                    "tipo":self.get_tipo(value[13],value[14],value[15],value[16]),
+                    "obs":value[17].strip(),
                     "adicional":{
                         "cantidad":1,
                         "combo":self.get_items_combo(datos['codigo'],value[0])
@@ -983,9 +992,22 @@ class EditPedido(GenericAPIView):
                 } for index, value in enumerate(result)
             ]
         except Exception as e:
-            print(str(e))
+          
             data['error'] = 'Sucedio un error al recuperar los datos'
         return Response(data)
+    def get_tipo(self,promo1,promo2,regalo,flete):
+      
+        if int(promo1)==1:
+            t = 'P1'
+        elif int(promo2)==1:
+            t = 'P2'
+        elif int(regalo)==1:
+            t= "R"
+        elif int(flete)==1:
+            t = "F"
+        else:
+            t = "SP"
+        return t
     def get_items_combo(self,numero_pedido,codigo_articulo):
         data = []
         try:
