@@ -613,7 +613,7 @@ class StockView(generics.GenericAPIView):
                 'id': index,
                 'codigo': value[0].strip(),
                 'talla': value[1].strip(),
-                'stock': value[2],
+                'stock': int(value[2]),
                 'nombre': value[3].strip(),
                 'genero':value[4].strip(),
                 'linea':value[5].strip(),

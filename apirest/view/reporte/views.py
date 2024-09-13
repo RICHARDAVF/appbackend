@@ -744,7 +744,7 @@ class Catalogo(GenericAPIView):
                                 t_ = tallas[t_]
                             doc.drawString(x+const,y-12,t_)
                             doc.setFillColor(blue)
-                            doc.drawString(x+const,y-25,str(s))
+                            doc.drawString(x+const,y-25,str(int(s)))
                             doc.setFillColor(black)
                             const+=20
                         doc.rect(x_text-5,y_text-30,230,210,stroke=1,fill=0)
