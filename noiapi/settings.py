@@ -15,9 +15,6 @@ import django
 from django.core.management.utils import get_random_secret_key 
 import os
 from dotenv import load_dotenv
-
-from urllib.parse import quote
-django.utils.http.urlquote = quote
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apirest',
+    'core.apinoi_v2'
 
 
   
@@ -87,29 +85,6 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 
-
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'mssql',
-#         'NAME': 'api_noi_systems',
-#         'USER': 'sa',
-#         'PASSWORD': 'Noi2011',
-#         'HOST': '192.168.1.81',
-#         'PORT': '1433',
-#         'OPTIONS': {
-#             'driver': 'ODBC Driver 17 for SQL Server',
-#         }
-#     }
-# }
 DATABASES = {
     'default': {
         'ENGINE':os.getenv('BD_ENGINE'),
@@ -169,11 +144,7 @@ STATICFILES_DIRS = [
 # settings.py
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# CORS_ORIGIN_WHITELIST = [
-#      'http://192.168.0.104:8000',
-#      'http://192.168.1.110:8000',
-#      'http://192.168.1.40:8000',
-# ]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',

@@ -1,4 +1,5 @@
 venv/
+env/
 __pycache__/
 insert1.txt
 insert2.txt
@@ -15,3 +16,4 @@ token.txt
 web.config
 media/apk/app-release.apk
 *.pdf
+staticfiles/

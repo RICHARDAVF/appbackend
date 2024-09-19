@@ -16,13 +16,13 @@ from django.conf import settings
 import os
 from apirest.number_to_text import NumberToText
 class PDF:
-    def __init__(self,empresa,cabecera,detalle) -> None:
+    def __init__(self,filename,empresa,cabecera,detalle) -> None:
+        self.filename = filename
         self.empresa = empresa
         self.cabecera = cabecera
         self.detalle = detalle
     def generate(self):
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer,pagesize=A4) 
+        doc = SimpleDocTemplate(self.filename,pagesize=A4) 
         style = getSampleStyleSheet()
         custom_style = ParagraphStyle(name='Negrita',parent=style['Normal'])
         custom_style.fontName = 'Helvetica-Bold'
@@ -80,10 +80,7 @@ class PDF:
                                 ]))
         story.append(table)
         story.append(PageBreak())
-
         doc.build(story)
-        pdf = buffer.getvalue()
-        return base64.b64encode(pdf).decode('utf-8')
     def ticket(self,datos,tarjetas):
         try:
             buffer = io.BytesIO()
