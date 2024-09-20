@@ -10,7 +10,6 @@ class Credencial:
         self.user = credencial['bduser']
         self.password = credencial['bdpassword']
 class Config:
- 
     moneda : str  = None
     detracion : bool = False
     def __init__(self,credencial:object):
