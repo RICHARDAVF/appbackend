@@ -14,6 +14,6 @@ class AdminViewVersionApp(admin.ModelAdmin):
 admin.site.register(VersionApp,AdminViewVersionApp)
 
 class AdminViewConfigCLient(admin.ModelAdmin):
-    list_display = ('cliente','separacion_pedido','cliente_user','guid_lote')
-    list_editable = ('separacion_pedido','cliente_user','guid_lote')
+    list_display = ('cliente','separacion_pedido','cliente_user','guid_lote','valida_stock')
+    list_editable = ('separacion_pedido','cliente_user','guid_lote','valida_stock')
 admin.site.register(ConfigCliente,AdminViewConfigCLient)
