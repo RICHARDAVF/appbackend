@@ -1161,7 +1161,9 @@ class ArticulosPromo(GenericAPIView):
                 a.prm_monto
             FROM t_promocion_regalo AS a
             LEFT JOIN t_articulo AS b ON a.art_codigo=b.art_codigo
-            WHERE a.prm_monto<=?
+            WHERE 
+                a.prm_monto<=?
+                AND a.VIG_DESDE<=GETDATE() and a.VIG_HASTA>=GETDATE()
         """
         params = (self.monto,)
 

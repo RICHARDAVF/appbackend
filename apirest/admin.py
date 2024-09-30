@@ -11,6 +11,7 @@ admin.site.register(UsuarioCredencial,AdminViewUsuario)
 
 class AdminViewVersionApp(admin.ModelAdmin):
     list_display = ('id','nombre','version','fecha')
+    list_editable =  ('nombre','version','fecha')
 admin.site.register(VersionApp,AdminViewVersionApp)
 
 class AdminViewConfigCLient(admin.ModelAdmin):
