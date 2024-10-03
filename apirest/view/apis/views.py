@@ -13,6 +13,7 @@ class SearchDNIRUC(generics.GenericAPIView):
         data = {}
         try:
             data = Validation(doc,tipo).valid()
+         
         except Exception as e:
             data ['error'] = f"Ocurrio un error : {str(e)}"
         return Response(data)
