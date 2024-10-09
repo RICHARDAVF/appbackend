@@ -13,7 +13,7 @@ from reportlab.lib import colors
 import logging
 import traceback
 
-from apirest.view.pdf.views import PDF
+from apirest.view.pdf.views import PDFPedido
 
 
 logger = logging.getLogger('django')
@@ -168,7 +168,7 @@ class PedidoPDF(GenericAPIView):
        
             response = HttpResponse(content_type='application/pdf')
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'"
-            PDF(response,empresa,cabecera,self.items(result)).generate()
+            PDFPedido(response,cabecera,self.items(result),empresa).generate()
             return response
         except Exception as e:
             logger.error("A error ocurred %s",e)
