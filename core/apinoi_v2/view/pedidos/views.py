@@ -48,7 +48,7 @@ class GuardarPedido(GenericAPIView):
             descuento = self.calculate_descuento(total1,monto_vale_porcent,datos['detalle'])
 
             if int(gui_inclu[0])==1:
-                total = total1-descuento
+                total = total1
                 base_impo = round(float(total)/1.18,2)
             else:
                 base_impo= total1
@@ -75,7 +75,7 @@ class GuardarPedido(GenericAPIView):
             codigo_vendedor = self.validar_vendedor()
            
             params = (cor,fecha,datos['cabeceras']['codigo'],datos['moneda'], datos['vendedor']['cod'],datetime.now().strftime('%Y-%m-%d %H:%M:%S'),total,1,datos['ubicacion'],datos['tipo_pago'],datos['cabeceras']['direccion'],datos['precio'],codigo_vendedor,str(ope_codigo[0]).strip(),datos['almacen'],datos['cabeceras']['ruc'],datos['obs'],18,igv,base_impo,
-                    gui_inclu[0],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['nombre'],datos['direccion'],total1,descuento,
+                    gui_inclu[0],datos['tipo_venta'],'F1',0,0,0,0,0,0,datos['agencia'],datos['sucursal'],datos['nombre'],datos['direccion'],self.sumaSDesc(datos["detalle"]),descuento,
                     datos['tipo_envio'],datos['vale_codigo'],monto_vale_porcent)
             sql = """INSERT INTO cabepedido (MOV_COMPRO,MOV_FECHA,MOV_CODAUX,MOV_MONEDA,USUARIO,FECHAUSU,ROU_TVENTA,
             rou_export,ubi_codigo,pag_codigo,gui_direc,lis_codigo,ven_codigo,ope_codigo,ubi_codig2,gui_ruc,
@@ -175,7 +175,7 @@ class GuardarPedido(GenericAPIView):
         total = 0
         for item in datos:
             total+=float(item['cantidad'])*float(item['precio'])
-        return total
+        return round(total,2)
     def aprobacion_automatica(self,numero_pedido):
         if self.request.data['credencial']['codigo'] != '6':
             return
