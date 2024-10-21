@@ -314,15 +314,16 @@ class PDFStock(GenericAPIView):
     def post(self,request,*args,**kwargs):
         res = {}
         try:
+
             datos = request.data['datos']
             ubicacion = request.data['ubicacion']
-            cred = request.data['cred']
+            credencial = request.data['credencial']
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'attachment;filename="REPORTE.pdf"'
             doc = SimpleDocTemplate(response, pagesize=A4)
             style = getSampleStyleSheet()
             story = []
-            titulo = Paragraph(f'{cred["razon_social"]}',style['Title'])
+            titulo = Paragraph(f'{credencial["razon_social"]}',style['Title'])
             story.append(titulo)
             ubi = Paragraph(f"<b>UBICACION</b>: {ubicacion}")
             story.append(ubi)
