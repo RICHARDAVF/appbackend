@@ -9,10 +9,12 @@ from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableSty
 from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
 from reportlab.platypus.flowables import PageBreak
 from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Image as img
 from reportlab.lib import colors
 import logging
 import traceback
-
+import os
+from django.conf import settings
 from apirest.view.pdf.views import PDFPedido
 
 
@@ -362,3 +364,105 @@ class PDFStock(GenericAPIView):
             print(str(e))
             res['error'] = f'Ocurrio un error: f{str(e)}'
         return Response(res)
+class PDFview1(GenericAPIView):
+    def agrupar(self,datos):
+        datos_agrupados = {}
+        for item in datos:
+            codigo = item['codigo']
+            nombre = item['nombre']
+            talla = 'S'if item['talla']=='SS' else ('M' if item['talla']=='MM' else('L' if item['talla']=='LL' else item['talla'] ))
+            stock = item['stock']
+            if nombre in datos_agrupados:
+                datos_agrupados[nombre]['talla'].append(talla)
+                datos_agrupados[nombre]['stock'].append(int(stock))
+            else:
+                datos_agrupados[nombre] = {'codigo': codigo, 'nombre': nombre, 'talla': [talla], 'stock': [stock]}
+        return datos_agrupados
+    def post(self,request,*args,**kwargs):
+        res = {}
+        try:
+            data = request.data
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment;filename="REPORTE.pdf"'
+            doc = SimpleDocTemplate(response, pagesize=A4)
+            partes = {}  
+            for item in data['datos']:
+                parte = item['parte']
+                if parte in partes:
+                    partes[parte].append(item)
+                else:
+                    partes[parte] = [item]
+            story = []
+            first_page_image_path =os.path.join(settings.BASE_DIR, 'static', 'img/logo_denim.png')
+            first_page_image = img(first_page_image_path, width=300, height=60) 
+            first_page_image.hAlign = 'CENTER'  
+            story.append(first_page_image)
+            ubi = Paragraph(request.data['ubicacion'])
+            ubi.hAlign = "CENTER"
+            story.append(ubi)
+            now = datetime.now()
+            fecha = Paragraph(f"Fecha: {now.strftime('%d-%m-%Y')}")
+            fecha.hAlign = "RIGHT"
+            hora = Paragraph(f"Hora: {now.strftime('%H:%M:%S')}")
+            hora.hAlign = "RIGHT"
+            talla_orden = {'S': 1, 'M': 2, 'L': 3, 'XL': 4}
+            story.append(fecha)
+            story.append(hora)
+            for parte in partes:
+                styles = getSampleStyleSheet()
+                normal_style = styles["Normal"]
+                table_data = []
+                datos = list(self.agrupar(partes[parte]).values())
+                tallas = sorted(list(set([str(talla).replace('SS','S').replace('LL','L').replace('MM','M') for i in datos for talla in i['talla']])))
+                if "XL" in tallas or 'S' in tallas or 'M' in tallas or 'L' in tallas:
+                    tallas = sorted(tallas, key=lambda x: talla_orden.get(x, 99))
+                cabeceras = [Paragraph("Codigo", normal_style),
+                        Paragraph("Nombre", normal_style),
+                        Paragraph("Stock", normal_style),
+                        ]
+                for tal in tallas:
+                    cabeceras.insert(-1,tal)
+                table_data.append(cabeceras)
+                total = 0
+                for item in datos:
+                    itm = tuple(item.values())
+                    tal = [i.replace("MM","M").replace("SS",'S').replace("LL",'L') for i in  item['talla']]
+                    index = [tallas.index(i) for i in tal]
+                    stk = item['stock']
+                    lineas = [
+                        Paragraph(itm[0], normal_style),
+                        Paragraph(itm[1], normal_style),
+                        
+                    ]+[Paragraph('', normal_style) for i in tallas]
+                
+                    for i,j in zip(index,stk):
+                        lineas[i+2] = Paragraph(str(j),normal_style)
+                    t = sum([int(i) for i in stk])
+                    lineas.append(Paragraph(str(t),normal_style))
+                    table_data.append(lineas)
+                    total+=t
+                sum_stock = ['']*len(cabeceras)
+                sum_stock[-1] = Paragraph(str(total),normal_style)
+                sum_stock[1] = Paragraph('TOTAL',normal_style)
+                table_data.append(sum_stock)
+                w,h = A4
+                col_width = [w*0.11,w*0.32]+[w*0.5/len(tallas) for i in tallas]+[w*0.07]
+                table = Table(table_data,colWidths=col_width,repeatRows=1)    
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), (0.7, 0.7, 0.7)),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), (1, 1, 1)),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), (1, 1, 1))
+                ]))
+                story.append(table)
+                story.append(Spacer(1,12))
+        
+            story.append(PageBreak())
+            doc.build(story)
+            return response
+        except Exception as e:
+            print(str(e))
+            res['error'] = f"Ocurrio un error: {str(e)}"
+            return Response(res)
