@@ -7,7 +7,7 @@ class TipoCambio:
     credencial : object = None
     def __init__(self,kwargs:dict,user:dict):
         self.kwargs : dict = kwargs
-        self.tipo_c : int = 0
+        self.tipo_c : float = 0
         self.user : dict = user
         self.tipo_cambio()
     def tipo_cambio(self):

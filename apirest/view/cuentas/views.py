@@ -76,7 +76,6 @@ class CuentasView(generics.GenericAPIView):
             result = self.querys(conn,sql,(),'get')
      
             cred = {'bdhost':self.kwargs['host'],'bdname':self.kwargs['db'],'bduser':self.kwargs['user'],'bdpassword':self.kwargs['password']}
-            # tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
             tipo_cambio = float(TipoCambio(cred,{'codigo':'001'}))
        
             data = [

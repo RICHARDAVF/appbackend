@@ -11,13 +11,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import django
 from django.core.management.utils import get_random_secret_key 
 import os
 from dotenv import load_dotenv
-
-from urllib.parse import quote
-django.utils.http.urlquote = quote
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,12 +28,11 @@ SECRET_KEY = get_random_secret_key()
 DEBUG = os.getenv('DEBUG_MODE')!="False"
 
 ALLOWED_HOSTS = ['*']
-
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 
 INSTALLED_APPS = [
-    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -48,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'apirest',
+    'core.apinoi_v2'
 
 
   
@@ -87,29 +83,6 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 
-
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'mssql',
-#         'NAME': 'api_noi_systems',
-#         'USER': 'sa',
-#         'PASSWORD': 'Noi2011',
-#         'HOST': '192.168.1.81',
-#         'PORT': '1433',
-#         'OPTIONS': {
-#             'driver': 'ODBC Driver 17 for SQL Server',
-#         }
-#     }
-# }
 DATABASES = {
     'default': {
         'ENGINE':os.getenv('BD_ENGINE'),
@@ -147,8 +120,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
 LANGUAGE_CODE = 'es-pe'
-
-TIME_ZONE = 'UTC'
+DATE_FORMAT = 'Y-m-d'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 
@@ -169,11 +142,7 @@ STATICFILES_DIRS = [
 # settings.py
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-# CORS_ORIGIN_WHITELIST = [
-#      'http://192.168.0.104:8000',
-#      'http://192.168.1.110:8000',
-#      'http://192.168.1.40:8000',
-# ]
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
@@ -183,105 +152,6 @@ REST_FRAMEWORK = {
 
 
 
-JAZZMIN_SETTINGS = {
-   
-    "site_title": "Library Admin",
-
- 
-    "site_header": "Noi Systems",
-
-    
-    "site_brand": "Noi Systems",
-
-  
-    "site_logo":None,
-
-    "login_logo": None,
-
-    "login_logo_dark": None,
-
-  
-    "site_logo_classes": "img-circle",
-
- 
-    "site_icon": None,
-
-    "welcome_sign": "BIENVENIDO",
-
-
-    "copyright": "Aprende Python",
-
-  
-    "search_model": ["auth.User", "auth.Group"],
-
-
-    "user_avatar": None,
-
-    "topmenu_links": [
-
-
-        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
-
- 
-      
-        {"model": "auth.User"},
-
-      
-        {"app": "books"},
-    ],
-
-  
-    "usermenu_links": [
-       
-        {"model": "auth.user"}
-    ],
-
-
-    "show_sidebar": True,
-
-
-    "navigation_expanded": True,
-
-    "hide_apps": [],
-
-    "hide_models": [],
-
-    "order_with_respect_to": ["auth", "books", "books.author", "books.book"],
-
-    "custom_links": {
-        "books": [{
-            "name": "Make Messages", 
-            "url": "make_messages", 
-            "icon": "fas fa-comments",
-            "permissions": ["books.view_book"]
-        }]
-    },
-
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-    },
-
-    "default_icon_parents": "fas fa-chevron-circle-right",
-    "default_icon_children": "fas fa-circle",
-
-
-    "related_modal_active": False,
-
-
-    "custom_css": None,
-    "custom_js": None,
-  
-    "use_google_fonts_cdn": True,
-
-    "show_ui_builder": False,
-
-   
-    "changeform_format": "horizontal_tabs",
-
-    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},   
-}
 
 LOGGING = {
     'version': 1,
