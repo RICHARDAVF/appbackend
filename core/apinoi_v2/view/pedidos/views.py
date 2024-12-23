@@ -20,6 +20,7 @@ class GuardarPedido(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
         datos = request.data
+
         self.credencial = Credencial(datos['credencial'])
 
         try:
@@ -100,8 +101,12 @@ class GuardarPedido(GenericAPIView):
                 mom_confle,mom_cofleg,mom_concom,mom_concoa,mom_bruto,mom_lote,art_codadi,ped_observ) VALUES
                 """
             cont = 1
+
             for item in datos['detalle']:
-                mom_conpre = 'K' if item['lista_precio'] =='02' else ('U' if item['lista_precio']=='01' else '')
+              
+                mom_conpre = ""
+                if datos['credencial']['codigo']=='3':
+                    mom_conpre = 'K' if item['lista_precio'] =='02' else 'U' 
                 mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
                 talla = item['talla'] if item['talla'] !='x' else ''
                 promo1 = 1 if item["tipo"] == 'P1' else 0
@@ -535,19 +540,20 @@ class EditPedido(GenericAPIView):
                 'lista_precio':result[6].strip(),
                 'moneda':result[7].strip(),
                 'obs':result[8].strip(),
-                'gui_inclu':int(result[9]),
-                'tipo_venta':int(result[10]),
+                'gui_inclu':result[9],
+                'tipo_venta':result[10],
                 'agencia_codigo':result[11].strip(),
                 'agencia_nombre':result[17].strip(),
                 'entrega_codigo':result[12].strip(),
                 'entrega_nombre':result[13].strip(),
                 'entrega_direccion':result[14].strip(),
                 'tipo_pago':result[15].strip(),
-                'tipo_envio':int(result[16]), 
+                'tipo_envio':result[16], 
                 'vale_codigo':result[21].strip(),
                 'vale_monto':self.vale_valor(result[21].strip())[0],
                 'vale_monto_ref':self.vale_valor(result[21].strip())[1]
             }
+            lista_precio = result[6].strip()
             sql = """ SELECT a.ART_CODIGO, a.MOM_CANT, a.mom_valor, a.MOM_PUNIT, a.mom_dscto1, b.art_nombre,
                         a.tal_codigo,a.mom_peso,a.mom_conpre,a.MOM_PUNIT2,b.ven_codigo,a.art_codadi,a.mom_lote,
                         a.mom_confle,a.mom_conreg,a.mom_conpro,a.mom_conpr2,a.mom_concoa,a.ped_observ,a.mom_cofleg
@@ -570,7 +576,7 @@ class EditPedido(GenericAPIView):
                     "nombre":value[5].strip(),
                     "talla":value[6].strip(),
                     "peso":value[7],
-                    "lista_precio":'',
+                    "lista_precio":'02' if value[8]=='K' else('01' if value[8]=='U' else lista_precio),
                     "precio_parcial":value[9],
                     "vendedor":value[10].strip(),
                     "lote":value[11].strip(),
@@ -584,7 +590,7 @@ class EditPedido(GenericAPIView):
                     }
                 } for index, value in enumerate(result)
             ]
-
+         
         except Exception as e:
             print(str(e))
             logger.error('An error occurred: %s', e)
@@ -682,7 +688,7 @@ class PrecioProduct(GenericAPIView):
         return Response(data)
     def post(self,request,*args,**kwargs):
         data = {}
-   
+     
         self.tabla = 'maelista_familia'
         datos = request.data
 
