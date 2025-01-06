@@ -15,4 +15,4 @@ token.txt
 web.config
 media/apk/app-release.apk
 *.pdf
-
+env/
