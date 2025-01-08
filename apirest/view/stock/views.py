@@ -305,6 +305,8 @@ class StockView(generics.GenericAPIView):
             sql = ''
             if datos["credencial"]["codigo"]=='1':
                 sql = self.stock_with_tallas()
+            elif datos["credencial"]["codigo"]=='18':
+                sql = self.stock_color_talla()
             else:
                 sql = self.stock_off_tallas()
             params = (datos["almacen"],)
@@ -421,6 +423,31 @@ class StockView(generics.GenericAPIView):
             tallas = [{'label':'TALLA',"value":'A'}]
         
         return {"stock":stock,"genero":genero,"linea":linea,"modelo":modelo,"color":color,"temporada":temporada,"talla":tallas}
+    def stock_color_talla(self):
+        ubicaciones = ','.join(f"'{i}'" for i in self.request.data["lista_ubicaciones"])
+        sql = f"""
+                SELECT
+                    a.art_codigo,
+                    'ART_NOMBRE'=rtrim(b.ART_NOMBRE)+' '+rtrim(isnull(c.col_nombre,a.col_codigo))+' '+rtrim(isnull(d.tal_nombre,a.tal_codigo)),
+                    ubi.ubi_nombre AS ubicacion,
+                    SUM(CASE WHEN a.mom_tipmov='E' THEN a.mom_cant ELSE -a.mom_cant END) AS mom_cant
+                FROM
+                    movm{datetime.now().year} AS a
+                    INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo
+                    LEFT JOIN t_ubicacion AS ubi ON a.UBI_COD1 = ubi.ubi_codigo
+                    LEFT JOIN t_colores AS c on a.col_codigo = c.col_codigo
+                    LEFT JOIN t_tallas AS d on a.tal_codigo = d.tal_codigo
+                WHERE
+                    a.UBI_COD1 IN ({ubicaciones})
+                    AND a.elimini = 0
+                    AND b.art_mansto = 0
+                    AND a.alm_codigo = ?
+                GROUP BY
+                    a.art_codigo, b.ART_NOMBRE, ubi.ubi_nombre, a.col_codigo, a.tal_codigo, a.UBI_COD1, c.col_nombre, d.tal_nombre
+                ORDER BY
+                    b.ART_NOMBRE
+        """
+        return sql
     def stock_off_tallas(self):
         ubicaciones = ','.join(f"'{i}'" for i in self.request.data["lista_ubicaciones"])
         sql = f"""
