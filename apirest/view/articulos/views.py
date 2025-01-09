@@ -7,30 +7,26 @@ from apirest.querys import CAQ
 import logging
 logger = logging.getLogger("django")
 class ArticuloStock(GenericAPIView):
-    anio = datetime.now().year
+    fecha = datetime.now()
     credencial = None
     def post(self,request,*args,**kwargs):
         data = {}
         self.credencial = Credencial(request.data['credencial'])
         try:
             datos = request.data
-         
             if datos['almacen']=='':
                 data['error'] = 'Seleccione un almacen'
                 return Response(data)
             if datos['ubicacion']=='':
                 data['error'] = 'Seleccione una ubicacion'
                 return Response(data)
-            if datos['config']['separacion_pedido']:
+            if datos['config']['separacion_pedido'] and datos['credencial']['codigo']!='3':
                 sql = self.art_with_separacion()
             else:
-
                 sql = self.art_off_separacion()
-
             params = (datos['almacen'],datos['ubicacion'])
            
             s,result = CAQ.request(self.credencial,sql,params,'get',1)
-         
             if not s:
                 data = result
                 return Response(data)
@@ -80,7 +76,7 @@ class ArticuloStock(GenericAPIView):
                                                             ELSE -z.mom_cant 
                                                         END
                                                     ), 0) 
-                                                FROM movm{self.anio} z 
+                                                FROM movm{self.fecha.year} z 
                                                 LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                                 WHERE y.mov_compro=z.mov_pedido 
                                                     AND x.art_codigo=z.art_codigo 
@@ -109,7 +105,7 @@ class ArticuloStock(GenericAPIView):
                     b.art_peso,
                     b.ven_codigo
                     
-                FROM movm{self.anio} AS a 
+                FROM movm{self.fecha.year} AS a 
                 LEFT JOIN t_articulo b ON a.ART_CODIGO=b.art_codigo 
                 LEFT JOIN t_umedida c ON b.ume_precod=c.ume_codigo
                 WHERE a.elimini=0 
@@ -141,7 +137,7 @@ class ArticuloStock(GenericAPIView):
                                                 ELSE -z.mom_cant 
                                             END
                                         ), 0) 
-                                    FROM movm{self.anio} AS z 
+                                    FROM movm{self.fecha.year} AS z 
                                     LEFT JOIN cabepedido zz ON z.mov_pedido=zz.mov_compro 
                                     WHERE y.mov_compro=z.mov_pedido 
                                         AND x.art_codigo=z.art_codigo 
@@ -164,7 +160,6 @@ class ArticuloStock(GenericAPIView):
                         ) AS zzz
                     ) <> 0 
                 ORDER BY b.art_nombre, c.ume_nombre"""
-       
         return sql
     def art_off_separacion(self):
         codigo = self.request.data['codigo']
@@ -180,7 +175,7 @@ class ArticuloStock(GenericAPIView):
                         b.art_peso,
                         b.ven_codigo
                     FROM
-                        movm{self.anio} AS a
+                        movm{self.fecha.year} AS a
                     LEFT JOIN
                         t_articulo b ON a.ART_CODIGO = b.art_codigo
                     LEFT JOIN
@@ -211,7 +206,7 @@ class ArticuloStock(GenericAPIView):
                 """
         return sql
 class ArticulosConTalla(GenericAPIView):
-    anio = datetime.now().year
+    fecha = datetime.now().year
     credencial = None
     def post(self,request,*args,**kwargs):
         data = {}
@@ -232,7 +227,7 @@ class ArticulosConTalla(GenericAPIView):
                                                                     WHEN z.mom_tipmov = 'E' THEN z.mom_cant
                                                                     ELSE -z.mom_cant
                                                                 END), 0)
-                                                FROM movm{self.anio}z
+                                                FROM movm{self.fecha.year}z
                                                     LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                                                 WHERE y.mov_compro = z.mov_pedido
                                                     AND x.art_codigo = z.art_codigo
@@ -257,7 +252,7 @@ class ArticulosConTalla(GenericAPIView):
                     a.art_codigo,
                     b.art_nombre
                 FROM
-                    movm{self.anio} a
+                    movm{self.fecha.year} a
                     LEFT JOIN t_articulo b ON a.art_codigo = b.art_codigo
                     LEFT JOIN t_umedida c ON b.ume_precod = c.ume_codigo
                 WHERE
@@ -287,7 +282,7 @@ class ArticulosConTalla(GenericAPIView):
                                                         WHEN z.mom_tipmov = 'E' THEN z.mom_cant
                                                         ELSE -z.mom_cant
                                                     END), 0)
-                                    FROM movm{self.anio} z
+                                    FROM movm{self.fecha.year} z
                                         LEFT JOIN cabepedido zz ON z.mov_pedido = zz.mov_compro
                                     WHERE y.mov_compro = z.mov_pedido
                                         AND x.art_codigo = z.art_codigo
