@@ -212,7 +212,6 @@ class Cotizacion(GenericAPIView):
                                         f"AND a.ped_status='{datos['estado']}'" if datos['estado']!='' else ''
                                     }                
                         """
-                print(sql)
                 
                 estados = {'0':'BORRADOR','1':'BORRADOR','2':'ACEPTADO','3':'RECHAZADO'} 
                 servicios = {'1':'EQUIPAMIENTO','2':'ALMACEN','3':'ADICIONAL','4':'OTROS','0':'NS'}
@@ -257,30 +256,35 @@ class Cotizacion(GenericAPIView):
                 data = [data[i:i+100] for i in range(0,len(data),100) ]
             elif action == 'edit':
                 sql = """SELECT
-                            MOV_MONEDA,
-                            gui_motivo,
-                            ubi_codigo,
-                            pag_codigo,
-                            aux_contac,
-                            gui_inclu,
-                            cot_modelo,
-                            cot_flota,
-                            cot_diaofe,
-                            cot_chk01,
-                            cot_chk07,
-                            cot_placa,
-                            cot_chasis,
-                            cot_anyo,
-                            cot_color,
-                            gui_ordenc,
-                            gui_exp001,
-                            MOV_CODAUX
-                        FROM cabecotiza WHERE mov_compro =? """
+                            a.MOV_MONEDA,
+                            a.gui_motivo,
+                            a.ubi_codigo,
+                            a.pag_codigo,
+                            a.aux_contac,
+                            a.gui_inclu,
+                            a.cot_modelo,
+                            a.cot_flota,
+                            a.cot_diaofe,
+                            a.cot_chk01,
+                            a.cot_chk07,
+                            a.cot_placa,
+                            a.cot_chasis,
+                            a.cot_anyo,
+                            a.cot_color,
+                            a.gui_ordenc,
+                            a.gui_exp001,
+                            a.MOV_CODAUX,
+                            ISNULL(b.col_nombre,'') AS color,
+                            ISNULL(c.det_nombre,'') AS modelo
+                        FROM cabecotiza AS a 
+                        LEFT JOIN t_colores AS b ON a.cot_color=b.col_codigo
+                        LEFT JOIN t_detalle AS c on a.cot_modelo = c.det_codigo
+                        WHERE a.mov_compro =? """
 
                 s,result = CAQ.request(self.credencial,sql,(datos['numero_cotizacion'],),'get',0)
                 if not s:
                     raise ValueError(result['error'])
-                data = {
+                cabecera = {
                     "numero_cotizacion":datos['numero_cotizacion'],
                     "moneda" : result[0].strip(),
                     "motivo":int(result[1]),
@@ -288,31 +292,69 @@ class Cotizacion(GenericAPIView):
                     "condicion_pago":result[3].strip(),
                     "contacto":result[4].strip(),
                     "gui_inclu":int(result[5]),
-                    "modelo":result[6].strip(),
+                    "modelo_codigo":result[6].strip(),
                     "operacion":result[7].strip(),
                     "vehiculos":int(result[8]),
                     "servicio":int(result[9]),
-                    "dias_validez":int(result[10]),
+                    "dias_validez":f"{int(result[10])}",
                     "placa" :result[11].strip(),
                     "chasis":result[12].strip(),
                     "year":result[13].strip(),
-                    "color":result[14].strip(),
+                    "color_codigo":result[14].strip(),
                     "orden_compra":result[15].strip(),
                     "obs":result[16].strip(),
                     "cliente":result[17].strip(),
+                    "color_value":result[18].strip(),
+                    "modelo_value":result[19].strip(),
+                    'action':'edit'
                     
                 }
                 sql = "SELECT aux_docum,aux_razon,AUX_DIRECC,AUX_EMAIL,AUX_TELEF FROM t_auxiliar WHERE aux_clave=? "
-                s,result = CAQ.request(self.credencial,sql,(data['cliente'],),"get",0)
+                s,result = CAQ.request(self.credencial,sql,(cabecera['cliente'],),"get",0)
                 if not s:
                     raise ValueError(result['error'])
-                data['nombre'] = result[1].strip()
-                data['ruc'] = result[1].strip()
-                data['direccion'] = result[2].strip()
-                data['email'] = result[3].strip()
-                data['telefono'] = result[4].strip()
+                cabecera['ruc'] = result[0].strip()
+                cabecera['nombre'] = result[1].strip()
+                cabecera['direccion'] = result[2].strip()
+                cabecera['email'] = result[3].strip()
+                cabecera['telefono'] = result[4].strip()
+                data['cabecera'] = cabecera
+                sql = """SELECT   
+                            a.art_codigo,
+                            a.mom_cant,
+                            a.mom_punit,
+                            a.mom_b_p_r,
+                            a.mom_bruto,
+                            a.mom_dscto1,
+                            b.art_nombre,
+                            a.mom_valor
+                        FROM movicotiza AS a
+                        LEFT JOIN t_articulo AS b ON a.art_codigo=b.art_codigo
+                        WHERE a.mov_compro=?
+                        """
+               
+                s,result = CAQ.request(self.credencial,sql,(cabecera['numero_cotizacion'],),'get',1)
+
+                if not s:
+                    raise ValueError(result['error'])
+                data['items'] = [
+                    {
+                        "id":index,
+                        "codigo":value[0].strip(),
+                        "cantidad":int(value[1]),
+                        "precio":round(float(value[2]),2),
+                        "cantidad_vehiculos":int(value[3]),
+                        "autos":int(value[4]),
+                        "descuento":round(float(value[5]),2),
+                        "nombre":value[6].strip(),
+                        "subtotal":round(float(value[7]),2),
+                        "obs":''
+                    }
+                    for index,value in enumerate(result)
+                ]
+                
         except Exception as e:
-            print(str(e))
+
             data['error'] = str(e)
         return Response(data)
 
@@ -563,6 +605,94 @@ class CotizacionFilter(GenericAPIView):
                 ]
             conn.commit()
             conn.close()
+        except Exception as e:
+            data['error'] = str(e)
+        return Response(data)
+class CotizacionList(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+    
+        self.credencial = Credencial(datos['credencial'])
+        filter_ = ''
+        if datos['filter']!='':
+            filter_ = f"AND (a.mov_compro LIKE '%{datos['filter']}%' OR b.aux_nombre LIKE '%{datos['filter']}%') "
+        try:
+            sql = f"""
+               SELECT TOP 100
+                    a.mov_compro,
+                    b.AUX_NOMBRE,
+                    a.MOV_FECHA,
+                    a.ROU_IGV,
+                    a.ROU_TVENTA,
+                    a.ped_status,
+                    a.gui_exp001,
+                    a.mov_moneda
+                FROM cabecotiza AS a
+                LEFT JOIN t_auxiliar AS b ON a.MOV_CODAUX = b.AUX_CLAVE
+                WHERE 
+                    a.elimini = 0
+                    {filter_}
+                ORDER BY a.mov_fecha DESC
+                    
+"""
+            s,res = CAQ.request(self.credencial,sql,(),'get',1)
+
+            if not s:
+                raise ValueError(res['error'])
+            estados = {"0":'Pendiente',"1":"Pendiente","2":'Aprobado',"3":"Rechazado"}
+            data = [
+                {
+                    'id':index,
+                    "numero_cotizacion":value[0].strip(),
+                    "cliente":value[1].strip(),
+                    "fecha":value[2].strftime('%Y-%m-%d'),
+                    "igv":f"{value[3]:.2f}",
+                    "total":f"{value[4]:.2f}",
+                    "estado":estados[f"{value[5]}"],
+                    "obs":value[6].strip(),
+                    "moneda":'S/' if value[7].strip()=='S' else '$'
+                } for index,value in enumerate(res)
+            ]
+        except Exception as e:
+           
+            data['error'] = str(e)
+        return Response(data)
+class DetalleCotizacion(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        try:
+            sql = f"""
+                SELECT
+                    b.art_nombre,
+                    a.MOM_PUNIT,
+                    a.MOM_CANT,
+                    a.mom_dscto1,
+                    a.mom_valor
+                FROM movicotiza AS a
+                LEFT JOIN t_articulo AS b ON a.ART_CODIGO = b.ART_CODIGO
+                WHERE a.mov_compro=?
+                """
+            params = (datos['numero_cotizacion'],)
+           
+            s,res = CAQ.request(self.credencial,sql,params,"get",1)
+            
+            if not s:
+                raise ValueError(res['error'])
+            
+            data = [
+                {
+                    "id":index,
+                    "articulo":value[0].strip(),
+                    "precio":f"{value[1]:.2f}",
+                    "cantidad":f"{value[2]:.0f}",
+                    "descuento":f"{value[3]:.2f}%",
+                    "subtotal":f"{value[4]:.2f}"
+                }
+                for index,value in enumerate(res)
+            ]
         except Exception as e:
             data['error'] = str(e)
         return Response(data)

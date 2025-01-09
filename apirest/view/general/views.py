@@ -271,3 +271,39 @@ class DatosCombobox(GenericAPIView):
         except Exception as e:
             data['error'] = str(e)
         return Response(data)
+class User:
+    def __init__(self,user_codigo,credencial):
+        self.user_codigo = user_codigo
+        self.orden_compra_apro1 = None
+        self.orden_compra_apro2 = None
+        self.orden_compra_apro3 = None
+        self.desde = None
+        self.hasta = None
+        self.is_admin:bool = False
+        self.credencial = credencial
+        self.load()
+    def load(self):
+        sql = """SELECT
+                usu_alogi1,
+                usu_alogi2,
+                usu_alogi3,
+                usu_rangde,
+                usu_rangha,
+                USU_CODIGO,
+                usu_admin
+            FROM
+            t_usuario
+            WHERE USU_CODIGO=?
+        """
+
+        _,res = CAQ.request(self.credencial,sql,(self.user_codigo,),'get',0)
+        self.orden_compra_apro1 = res[0]==1
+        self.orden_compra_apro2 = res[1]==1
+        self.orden_compra_apro3 = res[2]==1
+        self.desde = res[3]
+        self.hasta = res[4]
+        self.is_admin = res[6]==1
+    
+
+        
+        

@@ -671,6 +671,16 @@ class Catalogo(GenericAPIView):
         sql = f"""SELECT art_codigo, {column} FROM maelista WHERE art_codigo IN ({','.join(f"'{i}'" for i in codigos)})"""
         s,result = CAQ.request(self.credencial,sql,(),'get',1)
         return {f"{value[0].strip()}":float(value[1]) for value in result}
+    def order_tallas_stock(self,tallas,stocks):
+        order_tallas = {"S": 1, "M": 2, "L": 3, "XL": 4}
+        def clave_order(talla):
+            if talla in order_tallas:
+                return order_tallas[talla]
+            return talla
+        pares = list(zip(tallas,stocks))
+        pares_ordenados = sorted(pares,key=lambda x:clave_order(x[0]))
+        tallas_ordenadas,stock_ordenado = zip(*pares_ordenados)
+        return list(tallas_ordenadas),list(stock_ordenado)
     def pdf(self,data,genero,lineas,precios,buffer):
       
         doc = Canvas(buffer,pagesize=A4)
@@ -691,7 +701,7 @@ class Catalogo(GenericAPIView):
             (40,265),(40,265),
             
         ]
-        tallas = {"MM":"M","SS":"S","LL":"L"}
+        tallas = {"MM":"M","SS":"S","LL":"L","XL":"XL"}
         pag = 1
         lista_precios = self.request.data['lista_precio']!=''
         self.header(doc,pag)
@@ -738,13 +748,17 @@ class Catalogo(GenericAPIView):
                         x = x_text
                         y = y_text
                         const = 0
-                        for t,s in zip(item["talla"],item["stock"]):
-                            t_ = t
-                            if t_ in tallas:
-                                t_ = tallas[t_]
-                            doc.drawString(x+const,y-12,t_)
+                        tallas_item = item["talla"]
+                        if item["talla"][0] in tallas:
+                            tallas_item = [tallas[i.strip()] for i in item["talla"]]
+        
+                        tallas_,stocks_ = self.order_tallas_stock(tallas_item,item["stock"])
+           
+                        for t,s in zip(tallas_,stocks_):
+                            
+                            doc.drawString(x+const,y-12,t)
                             doc.setFillColor(blue)
-                            doc.drawString(x+const,y-25,str(s))
+                            doc.drawString(x+const,y-25,str(int(s)))
                             doc.setFillColor(black)
                             const+=20
                         doc.rect(x_text-5,y_text-30,230,210,stroke=1,fill=0)

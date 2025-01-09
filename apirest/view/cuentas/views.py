@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import generics
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
+from apirest.tipo_cambio import TipoCambio
 from apirest.view.clientes.views import GetClient
 from apirest.views import QuerysDb
 from datetime import datetime
@@ -73,8 +74,10 @@ class CuentasView(generics.GenericAPIView):
         try:
             conn = QuerysDb.conexion(host,bd,user,passsword)
             result = self.querys(conn,sql,(),'get')
-   
-            tipo_cambio = self.querys(conn,sql1,(),'get')[0][0]
+     
+            cred = {'bdhost':self.kwargs['host'],'bdname':self.kwargs['db'],'bduser':self.kwargs['user'],'bdpassword':self.kwargs['password']}
+            tipo_cambio = float(TipoCambio(cred,{'codigo':'001'}))
+       
             data = [
                 {
                     'id':index,
@@ -88,8 +91,8 @@ class CuentasView(generics.GenericAPIView):
                     'total_dolares':f"{value[7]:,.2f}", #Formateo de la
                     'filtro':filtro,
                     "linea_credito":float(value[8]),
-                    "saldo_dolares":f"{self.saldo(value[6],value[7],value[8],tipo_cambio):,.2f}",
-                    "saldo_soles":f"{self.saldo(value[6],value[7],value[8],tipo_cambio)*tipo_cambio:,.2f}",
+                    "saldo_dolares":f"{self.saldo(float(value[6]),float(value[7]),float(value[8]),tipo_cambio):,.2f}",
+                    "saldo_soles":f"{self.saldo(float(value[6]),float(value[7]),float(value[8]),tipo_cambio)*tipo_cambio:,.2f}",
                     "usuario":value[9].strip()
                     
                 }    for index,value in enumerate(result)]
@@ -97,6 +100,7 @@ class CuentasView(generics.GenericAPIView):
             conn.commit()
             conn.close()
         except Exception as e:
+            print(str(e))
             logger.error('An error occurred: %s', e)
             data['error'] = 'Ocurrio un error al recuperar las cuentas'
         return Response(data)
@@ -247,7 +251,8 @@ class ReadCuentasView(generics.GenericAPIView):
                     c.ori_codigo,
                     b.mov_compro,
                     b.ven_codigo,
-                    b.fac_docref
+                    b.fac_docref,
+                    a.num_unico
             
                 FROM (
                     SELECT
@@ -257,7 +262,16 @@ class ReadCuentasView(generics.GenericAPIView):
                         a.mov_moned,
                         'mvc_debe' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_d ELSE a.mov_d_d END),
                         'mvc_haber' = SUM(CASE WHEN a.mov_moned = 'S' THEN a.mov_h ELSE a.mov_h_d END),
-                        'ban_nombre' = ISNULL((SELECT TOP 1 ban_nombre FROM mova{self.fecha.year} AS n WHERE n.mov_docum = a.mov_docum AND n.ban_nombre<>''  ORDER BY identi DESC ),'')
+                        'ban_nombre' = ISNULL((SELECT TOP 1 ban_nombre FROM mova{self.fecha.year} AS n WHERE n.mov_docum = a.mov_docum AND n.ban_nombre<>''  ORDER BY identi DESC ),''),
+                        'num_unico' = ISNULL((SELECT TOP 1 let_numuni FROM mova{self.fecha.year} WHERE 
+                                                aux_clave=a.aux_clave
+                                                AND SUBSTRING(pla_cuenta, 1, 2) >= '12'
+                                                AND SUBSTRING(pla_cuenta, 1, 2) <= '13'
+                                                AND mov_fecha <= GETDATE()
+                                                AND MOV_SERIE=a.MOV_SERIE
+                                                AND MOV_DOCUM=a.MOV_DOCUM and let_numuni<>''
+                                                ORDER BY mov_fecha DESC
+                                                ),'')
                     FROM
                         MOVA{self.fecha.year} a
                         LEFT JOIN t_documento b ON a.DOC_CODIGO = b.DOC_CODIGO AND a.MOV_SERIE = b.doc_serie
@@ -269,8 +283,8 @@ class ReadCuentasView(generics.GenericAPIView):
                         AND a.mov_elimin = 0
                         AND (a.mov_moned = 'D' AND a.mov_d_d + a.mov_h_d <> 0 OR a.mov_moned <> 'D')
                     GROUP BY
-                        COALESCE(b.DOC_NOMBRE, a.DOC_CODIGO),
-                        COALESCE(a.mov_serie, ''),
+                        b.DOC_NOMBRE,
+                        a.mov_serie,
                         a.mov_docum,
                         a.mov_moned,
                         a.aux_clave,
@@ -312,7 +326,7 @@ class ReadCuentasView(generics.GenericAPIView):
                     dates = (0,monto)
                 else:
                     dates = (monto,0)
-                d = [tipo_documentos[value[11]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),*dates,value[7],value[10].strip(),value[12].strip(),value[13],value[14],value[15].strip()]
+                d = [tipo_documentos[value[11]],value[2].strip(),value[3].strip(),value[8].strftime("%Y-%m-%d"),value[9].strftime("%Y-%m-%d"),value[4].strip(),*dates,value[7],value[10].strip(),value[-1].strip(),value[12].strip(),value[13],value[14],value[15].strip()]
                 data.append(d)
             self.cliente : GetClient = GetClient(self.credencial,codigo,"")
             def custom_cabecera(canvas:Canvas,nombre):
@@ -350,7 +364,7 @@ class ReadCuentasView(generics.GenericAPIView):
                 canvas.restoreState()
             response = HttpResponse(content_type = "application/pdf")
             response["Content-Disposition"] = "attachment;filename='REPORTE.pdf'" 
-            headers = ["Tipo","Num°","Serie","F. Emision","F. Venc.","Mon.","Debe","Haber","Saldo","Banco","Ori.","Vouc.","Vend.","Doc. Ref."]
+            headers = ["Tipo","Num°","Serie","F. Emision","F. Venc.","Mon.","Debe","Haber","Saldo","Banco","N-Uni","Ori.","Vouc.","Vend.","Doc. Ref."]
 
             file = PDFHistorialCliente(response,title="Cuentas por Cobrar",header=headers,data=data,custom_cabecera=custom_cabecera,saldo=self.datos["saldo"])
             file.generate()

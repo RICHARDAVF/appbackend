@@ -27,8 +27,7 @@ urlpatterns = [
     path('', index),
     path('api/',include('apirest.urls')),
     path('api/',include('apirest.view.smartfood.urls')),
-    
-    
+    path('api/',include('core.apinoi_v2.urls')),  
 ]
 
 urlpatterns+= static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

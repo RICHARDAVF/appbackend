@@ -1,7 +1,9 @@
 from rest_framework import generics
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from apirest.credenciales import Credencial
 from apirest.querys import CAQ
+from apirest.view.generate_id import gen_id
 from apirest.views import QuerysDb
 from datetime import datetime
 import logging
@@ -209,7 +211,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1],
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -225,7 +227,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -240,7 +242,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1],
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -255,7 +257,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -271,7 +273,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -286,7 +288,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -305,8 +307,6 @@ class StockView(generics.GenericAPIView):
             sql = ''
             if datos["credencial"]["codigo"]=='1':
                 sql = self.stock_with_tallas()
-            elif datos["credencial"]["codigo"]=='18':
-                sql = self.stock_color_talla()
             else:
                 sql = self.stock_off_tallas()
             params = (datos["almacen"],)
@@ -334,7 +334,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1],
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -352,7 +352,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -367,7 +367,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1],
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -383,7 +383,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -399,7 +399,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -415,7 +415,7 @@ class StockView(generics.GenericAPIView):
                 {
                     'label':value[0],
                     'value':value[1].strip(),
-                    'id':index
+                    "id":gen_id()
                 }
                 for index,value in enumerate(datos)
             ]
@@ -423,31 +423,6 @@ class StockView(generics.GenericAPIView):
             tallas = [{'label':'TALLA',"value":'A'}]
         
         return {"stock":stock,"genero":genero,"linea":linea,"modelo":modelo,"color":color,"temporada":temporada,"talla":tallas}
-    def stock_color_talla(self):
-        ubicaciones = ','.join(f"'{i}'" for i in self.request.data["lista_ubicaciones"])
-        sql = f"""
-                SELECT
-                    a.art_codigo,
-                    'ART_NOMBRE'=rtrim(b.ART_NOMBRE)+' '+rtrim(isnull(c.col_nombre,a.col_codigo))+' '+rtrim(isnull(d.tal_nombre,a.tal_codigo)),
-                    ubi.ubi_nombre AS ubicacion,
-                    SUM(CASE WHEN a.mom_tipmov='E' THEN a.mom_cant ELSE -a.mom_cant END) AS mom_cant
-                FROM
-                    movm{datetime.now().year} AS a
-                    INNER JOIN t_articulo AS b ON a.ART_CODIGO = b.art_codigo
-                    LEFT JOIN t_ubicacion AS ubi ON a.UBI_COD1 = ubi.ubi_codigo
-                    LEFT JOIN t_colores AS c on a.col_codigo = c.col_codigo
-                    LEFT JOIN t_tallas AS d on a.tal_codigo = d.tal_codigo
-                WHERE
-                    a.UBI_COD1 IN ({ubicaciones})
-                    AND a.elimini = 0
-                    AND b.art_mansto = 0
-                    AND a.alm_codigo = ?
-                GROUP BY
-                    a.art_codigo, b.ART_NOMBRE, ubi.ubi_nombre, a.col_codigo, a.tal_codigo, a.UBI_COD1, c.col_nombre, d.tal_nombre
-                ORDER BY
-                    b.ART_NOMBRE
-        """
-        return sql
     def stock_off_tallas(self):
         ubicaciones = ','.join(f"'{i}'" for i in self.request.data["lista_ubicaciones"])
         sql = f"""
@@ -842,6 +817,7 @@ class StockReview(generics.GenericAPIView):
     def post(self,request,*args,**kwagrs):
         datos = request.data
         self.credencial = Credencial(datos['credencial'])
+        self.codigo = request.data['codigo']
         try:
             
             pedido_numero = datos['pedido']
@@ -854,7 +830,6 @@ class StockReview(generics.GenericAPIView):
             fecha_date = "-".join(i for i in reversed(fecha.split('/')))
             anio = datetime.now().year
             data = {}
-          
             params = (codigo,almacen,ubicacion)
 
 
@@ -998,7 +973,7 @@ class StockReview(generics.GenericAPIView):
             s,date = CAQ.request(self.credencial,sql,params,'get',0)
    
             data['p_pendientes'] = round(float(date[0]),2)
-
+            data['combo'] = self.get_items_combo()
 
         except Exception as e:
             data["error"] = f"Error en stock {str(e)}"
@@ -1009,4 +984,215 @@ class StockReview(generics.GenericAPIView):
         cursor= conn.cursor()
         cursor.execute(sql,params)
         data = cursor.fetchone()
+        return data
+    def get_items_combo(self):
+        data = []
+        sql = f"""SELECT 
+                    a.art_codigo,
+                    b.ART_NOMBRE,
+                    a.art_fijo,
+                    a.mom_cant
+                FROM t_arti_combo AS a
+                LEFT JOIN t_articulo AS B ON a.art_codigo=b.ART_CODIGO
+                WHERE 
+                    a.art_codig2=?
+                """
+        params = (self.codigo,)
+        s,res = CAQ.request(self.credencial,sql,params,'get',1)
+        if not s or res is None:
+            return data
+        data = [
+            {
+                'id':gen_id()+f"{index}",
+                "codigo":value[0].strip(),
+                "nombre":value[1].strip(),
+                "tipo":value[2].strip(),
+                "cantidad":f"{value[3]:.0f}",
+                "cant":f"{value[3]:.0f}"
+            } for index,value in enumerate(res)
+        ]
+        return data
+            
+class ArticulosPromo(GenericAPIView):
+    def post(self,request,*args,**kwargs):
+        data = {}
+        datos = request.data
+        self.credencial = Credencial(datos['credencial'])
+        self.monto = datos['monto']
+        try:
+            action = datos['action']
+
+            if action == 'promo_combo':
+                data = self.promocion_combo()
+            elif action == 'promo_articulo':
+                data = self.promocion_articulo()
+            elif action =='promo_regalo':
+                data = self.promocion_regalo()
+            else:
+                data['error'] = 'No envio una opcion valida'
+        except Exception as e:
+            data['error'] = f"Ocurrio un error : {str(e)}"
+        return Response(data)
+    def promocion_combo(self):
+        data = []
+        sql = f"""
+                SELECT 
+                    a.art_codigo,
+                    b.art_nombre,
+                    a.prm_precio
+                FROM t_promocion_combo  AS a
+                INNER JOIN t_articulo AS b ON a.art_codigo=b.art_codigo
+                WHERE 
+                    a.prm_monto<=? 
+                    AND a.VIG_DESDE<=GETDATE() and a.VIG_HASTA>=GETDATE()
+            """
+  
+        params = (self.monto,)
+        s,res = CAQ.request(self.credencial,sql,params,'get',1)
+        if not s:
+            return data
+        data = [
+            {
+                'id':gen_id()+f"{index}",
+                'codigo':value[0].strip(),
+                'nombre':value[1].strip(),
+                'precio':value[2],
+                'cantidad':1,
+                "descuento":0,
+                "total":value[2],
+                "tipo":"P1",
+                "talla":'x',
+                "lista_precio":"",
+                "peso":0,
+                "precio_parcial":0,
+                "lote":'',
+                'fecha':'',
+                'obs':'',
+                'adicional':{
+                    "cantidad":1,
+                    "combo":self.get_items_combo(value[0])
+                    }
+            } for index,value in enumerate(res)
+        ]
+
+        return data
+    def get_items_combo(self,codigo):
+        data = []
+        sql = f"""SELECT 
+                    a.art_codigo,
+                    b.ART_NOMBRE,
+                    a.art_fijo,
+                    a.mom_cant
+                FROM t_arti_combo AS a
+                LEFT JOIN t_articulo AS B ON a.art_codigo=b.ART_CODIGO
+                WHERE 
+                    a.art_codig2=?
+                """
+        params = (codigo,)
+        s,res = CAQ.request(self.credencial,sql,params,'get',1)
+        if not s or res is None:
+            return data
+        data = [
+            {
+                'id':gen_id()+f"{index}",
+                "codigo":value[0].strip(),
+                "nombre":value[1].strip(),
+                "tipo":value[2].strip(),
+                "cantidad":f"{value[3]:.0f}",
+                "cant":f"{value[3]:.0f}"
+            } for index,value in enumerate(res)
+        ]
+        return data
+    def promocion_articulo(self):
+        data = []
+        codigos = ','.join(f"'{i}'" for i in self.request.data['codigos'])
+        
+        sql = f"""
+            SELECT
+                a.art_codigo,
+                ISNULL(b.art_nombre,'') AS nombre,
+                a.prm_precio,
+                a.art_codig2,
+                ISNULL(c.ART_NOMBRE,'') AS nombre_ref
+            FROM t_promocion_articulo  AS a
+            LEFT JOIN t_articulo AS b ON a.art_codig2=b.art_codigo
+            LEFT JOIN t_articulo AS c ON a.art_codigo=c.art_codigo
+            WHERE
+                a.VIG_DESDE<=GETDATE() and a.VIG_HASTA>=GETDATE()
+                AND a.art_codigo IN ({codigos})
+
+        """
+        s,res = CAQ.request(self.credencial,sql,(),'get',1)
+        if not s:
+            return data
+        data = [
+                {
+                    'id':gen_id()+f"{index}",
+                    'codigo_ref':value[0].strip(),
+                    'nombre':value[1].strip(),
+                    'precio':value[2],
+                    'codigo':value[3].strip(),
+                    'nombre_ref':value[4].strip(),
+                    'cantidad':1,
+                    "descuento":0,
+                    "total":value[2],
+                    "tipo":"P2",
+                    "lista_precio":"",
+                    "precio_parcial":0,
+                    "talla":'x',
+                    "lote":'',
+                    "peso":0,
+                    'fecha':'',
+                    'obs':'',
+                    'adicional':{
+                        "cantidad":1,
+                        "combo":self.get_items_combo(value[3])
+                        }
+                } for index,value in enumerate(res)
+            ]
+        return data
+    def promocion_regalo(self):
+        data = []
+        sql = f"""
+           SELECT
+                a.art_codigo,
+                b.ART_NOMBRE,
+                a.prm_precio,
+                a.prm_monto
+            FROM t_promocion_regalo AS a
+            LEFT JOIN t_articulo AS b ON a.art_codigo=b.art_codigo
+            WHERE 
+                a.prm_monto<=?
+                AND a.VIG_DESDE<=GETDATE() and a.VIG_HASTA>=GETDATE()
+        """
+        params = (self.monto,)
+
+        s,res = CAQ.request(self.credencial,sql,params,'get',1)
+
+        if not s:
+            return data
+        data = [
+                {
+                    'id':gen_id()+f"{index}",
+                    'codigo':value[0].strip(),
+                    'nombre':value[1].strip(),
+                    'precio':value[2],
+                    'monto':value[3],
+                    'cantidad':1,
+                    "descuento":0,
+                    "total":value[2],
+                    "tipo":"R",
+                    "talla":'x',
+                    "lote":'',
+                    "lista_precio":"",
+                    "precio_parcial":0,
+                    "peso":0,
+                    'fecha':'',
+                    'obs':'',
+                    'adicional':{
+                        "cantidad":1,
+                        "combo":self.get_items_combo(value[0])
+                        }
+                } for index,value in enumerate(res)
+            ]
         return data
