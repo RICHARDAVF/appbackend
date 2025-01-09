@@ -689,6 +689,8 @@ class PrecioProduct(GenericAPIView):
     def post(self,request,*args,**kwargs):
         data = {}
      
+
+     
         self.tabla = 'maelista_familia'
         datos = request.data
 
