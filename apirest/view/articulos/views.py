@@ -2,7 +2,6 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from datetime import datetime
 from apirest.credenciales import Credencial
-
 from apirest.querys import CAQ
 import logging
 logger = logging.getLogger("django")
