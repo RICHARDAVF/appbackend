@@ -6,5 +6,4 @@ media/
 *.log
 web.config
 *.pdf
-staticfiles/
-db.sqlite3
+env/

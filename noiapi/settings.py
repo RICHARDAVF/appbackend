@@ -83,19 +83,42 @@ WSGI_APPLICATION = 'noiapi.wsgi.application'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
 
+
+# Database
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
 DATABASES = {
     'default': {
-        'ENGINE':os.getenv('BD_ENGINE'),
-        'NAME': os.getenv('BD_NAME'),
-        'USER': os.getenv('BD_USER'),
-        'PASSWORD': os.getenv('BD_PASSWORD'),
-        'HOST': os.getenv('BD_HOST'),  
-        'PORT': os.getenv('BD_POST'),    
-        'OPTIONS': {
-            'sql_mode': os.getenv('BD_OPTIONS'),
-        },       
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'mssql',
+#         'NAME': 'api_noi_systems',
+#         'USER': 'sa',
+#         'PASSWORD': 'Noi2011',
+#         'HOST': '192.168.1.81',
+#         'PORT': '1433',
+#         'OPTIONS': {
+#             'driver': 'ODBC Driver 17 for SQL Server',
+#         }
+#     }
+# }
+# DATABASES = {
+#     'default': {
+#         'ENGINE':os.getenv('BD_ENGINE'),
+#         'NAME': os.getenv('BD_NAME'),
+#         'USER': os.getenv('BD_USER'),
+#         'PASSWORD': os.getenv('BD_PASSWORD'),
+#         'HOST': os.getenv('BD_HOST'),  
+#         'PORT': os.getenv('BD_POST'),    
+#         'OPTIONS': {
+#             'sql_mode': os.getenv('BD_OPTIONS'),
+#         },       
+#     }
+# }
 # SESSION_COOKIE_AGE = 0
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
