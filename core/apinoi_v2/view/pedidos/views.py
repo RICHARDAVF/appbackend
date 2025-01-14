@@ -107,7 +107,7 @@ class GuardarPedido(GenericAPIView):
                 mom_conpre = ""
                 if datos['credencial']['codigo']=='3':
                     mom_conpre = 'K' if item['lista_precio'] =='02' else 'U' 
-                mom_bruto = float(item['peso'])*int(item['cantidad']) if mom_conpre!= '' else 0
+                mom_bruto = float(item['peso'])*float(item['cantidad']) if mom_conpre!= '' else 0
                 talla = item['talla'] if item['talla'] !='x' else ''
                 promo1 = 1 if item["tipo"] == 'P1' else 0
                 promo2 = 1 if item["tipo"] == 'P2' else 0

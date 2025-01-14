@@ -307,6 +307,7 @@ class StockView(generics.GenericAPIView):
                 sql = self.stock_with_tallas()
             elif datos["credencial"]["codigo"]=='18':
                 sql = self.stock_color_talla()
+                print(sql)
             else:
                 sql = self.stock_off_tallas()
             params = (datos["almacen"],)
